@@ -1490,8 +1490,14 @@ function toggleTheme() {
 
 // ── SESSÃO ────────────────────────────────────────────────────────────────
 function salvarSessao() {
+  const agora = new Date();
+  const timestamp = agora.toISOString();
+  const dataLocal = agora.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+
   const sessao = {
     versao: '1.0',
+    salvoEm: timestamp,
+    salvoEmFormatado: dataLocal,
     mesRef: document.getElementById('mes-ref').textContent || '—',
     liquidadosQt: getVal('#gc-liq-qt'),
     manuais: state.manuais,
@@ -1501,12 +1507,16 @@ function salvarSessao() {
     juridico: state.juridico,
     totalCreditosEmpresa: state.totalCreditosEmpresa,
   };
+
   const blob = new Blob([JSON.stringify(sessao, null, 2)], { type: 'application/json' });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
-  const mes  = sessao.mesRef.replace(/\s/g,'_');
+
+  // Nome do arquivo: sessao_pbl_abril_2026_2026-05-05_18-30.json
+  const mes  = sessao.mesRef.replace(/\s/g,'_').replace(/[^a-zA-Z0-9_]/g,'');
+  const stamp = agora.toISOString().slice(0,16).replace('T','_').replace(':','-');
   a.href     = url;
-  a.download = `sessao_pbl_${mes}.json`;
+  a.download = `sessao_pbl_${mes}_${stamp}.json`;
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -1562,8 +1572,9 @@ function carregarSessao(event) {
 
       // Upload zone feedback
       document.getElementById('uploadZone').classList.add('loaded');
-      document.getElementById('uploadZone').querySelector('h3').textContent = `Sessão carregada: ${sessao.mesRef}`;
-      setStatus(`Sessão "${sessao.mesRef}" carregada com sucesso.`, 'ok');
+      const dataInfo = sessao.salvoEmFormatado ? ` (salva em ${sessao.salvoEmFormatado})` : '';
+      document.getElementById('uploadZone').querySelector('h3').textContent = `Sessão carregada: ${sessao.mesRef}${dataInfo}`;
+      setStatus(`Sessão "${sessao.mesRef}" carregada com sucesso${dataInfo}.`, 'ok');
 
     } catch(err) {
       alert('Erro ao carregar sessão: ' + err.message);
