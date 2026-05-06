@@ -135,6 +135,8 @@ body{background:var(--bg);background-color:var(--bg-solid);color:var(--tx);font-
 .btn-remove:hover{border-color:var(--danger);color:var(--danger);background:var(--danger-bg)}
 .btn-preencher{background:none;border:1px solid var(--bo);border-radius:5px;color:var(--mu);cursor:pointer;font-size:11px;font-family:inherit;font-weight:500;padding:3px 8px;transition:all .15s}
 .btn-preencher:hover{border-color:var(--g);color:var(--g);background:var(--gl)}
+.btn-add-pessoa{background:none;border:1px dashed var(--bo);border-radius:6px;color:var(--mu);cursor:pointer;font-size:13px;font-family:inherit;font-weight:500;padding:7px 16px;transition:all .15s}
+.btn-add-pessoa:hover{border-color:var(--g);color:var(--g);border-style:solid}
 /* MODAL INDIVIDUAL */
 .modal-ind-backdrop{display:none;position:fixed;inset:0;background:var(--overlay);z-index:700;align-items:center;justify-content:center;padding:24px 16px}
 .modal-ind-backdrop.open{display:flex}
@@ -343,6 +345,9 @@ tr:not(.totals-row):hover td{opacity:.85;cursor:pointer}
 
     <!-- COMERCIAL -->
     <div id="tab-comercial">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+        <button class="btn-add-pessoa" onclick="abrirModalAddPessoa('comercial')">+ Adicionar pessoa</button>
+      </div>
       <div class="people-grid" id="cards-comercial"></div>
       <div id="removed-comercial" class="removed-section" style="display:none">
         <div class="removed-label">Removidos</div>
@@ -373,6 +378,9 @@ tr:not(.totals-row):hover td{opacity:.85;cursor:pointer}
 
     <!-- JURIDICO -->
     <div id="tab-juridico" style="display:none">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+        <button class="btn-add-pessoa" onclick="abrirModalAddPessoa('juridico')">+ Adicionar pessoa</button>
+      </div>
       <div class="people-grid" id="cards-juridico"></div>
       <div id="removed-juridico" class="removed-section" style="display:none">
         <div class="removed-label">Removidos</div>
@@ -437,6 +445,33 @@ tr:not(.totals-row):hover td{opacity:.85;cursor:pointer}
     <div class="mm-footer">
       <button class="btn-mm-cancel" onclick="closeModalManuais()">Cancelar</button>
       <button class="btn-mm-apply" onclick="aplicarManuais()">Aplicar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ADICIONAR PESSOA -->
+<div class="modal-ind-backdrop" id="modalAddBackdrop">
+  <div class="modal-ind" style="max-width:380px">
+    <div class="modal-ind-header">
+      <span class="modal-ind-title" id="modalAddTitle">Adicionar pessoa</span>
+      <button class="btn-close" onclick="document.getElementById('modalAddBackdrop').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-ind-body">
+      <div class="mm-field" style="margin-bottom:14px">
+        <label>Nome completo</label>
+        <input type="text" class="mm-input" id="add-nome" placeholder="Ex: Eduardo Zattar" style="width:100%">
+      </div>
+      <div class="mm-field" style="margin-bottom:14px">
+        <label>Sigla</label>
+        <input type="text" class="mm-input" id="add-sigla" placeholder="Ex: EZ" style="width:60px;text-transform:uppercase" maxlength="4">
+      </div>
+      <div style="font-size:11px;color:var(--mu);margin-top:8px">
+        O card será criado com créditos e volume zerados. Preencha os dados pelo botão <strong>✏️ Preencher</strong> no card.
+      </div>
+    </div>
+    <div class="modal-ind-footer">
+      <button class="btn-mm-cancel" onclick="document.getElementById('modalAddBackdrop').classList.remove('open')">Cancelar</button>
+      <button class="btn-mm-apply" onclick="confirmarAddPessoa()">Adicionar</button>
     </div>
   </div>
 </div>
@@ -1024,6 +1059,44 @@ function _recalcCardInternal(tipo, key) {
   if (el(`s-pvol-${tipo}-${sid(key)}`)) el(`s-pvol-${tipo}-${sid(key)}`).textContent = fmt(pVol);
   if (el(`s-pcamp-${tipo}-${sid(key)}`)) el(`s-pcamp-${tipo}-${sid(key)}`).textContent = fmt(pCamp + precVal);
   if (el(`s-tot-${tipo}-${sid(key)}`)) el(`s-tot-${tipo}-${sid(key)}`).textContent = fmt(total);
+}
+
+// ── ADICIONAR PESSOA MANUALMENTE ─────────────────────────────────────────
+let _addPessoaTipo = null;
+
+function abrirModalAddPessoa(tipo) {
+  _addPessoaTipo = tipo;
+  document.getElementById('modalAddTitle').textContent = `Adicionar pessoa — ${tipo === 'comercial' ? 'Comercial' : 'Jurídico'}`;
+  document.getElementById('add-nome').value   = '';
+  document.getElementById('add-sigla').value  = '';
+  document.getElementById('modalAddBackdrop').classList.add('open');
+  setTimeout(() => document.getElementById('add-nome').focus(), 100);
+}
+
+function confirmarAddPessoa() {
+  const nome  = document.getElementById('add-nome').value.trim();
+  const sigla = document.getElementById('add-sigla').value.trim().toUpperCase();
+
+  if (!nome) { alert('Informe o nome da pessoa.'); return; }
+  if (!sigla) { alert('Informe a sigla.'); return; }
+
+  // Gerar key única baseada no nome
+  const key = nome.toLowerCase().replace(/\s+/g,'_') + '_manual';
+
+  if (_addPessoaTipo === 'comercial') {
+    if (state.comercial[key]) { alert('Já existe uma pessoa com esse nome.'); return; }
+    state.comercial[key] = { nome, sigla: null, creditos: 0, adicionais: 0, volume: 0, _manual: true };
+  } else {
+    if (state.juridico[key]) { alert('Já existe uma pessoa com esse nome.'); return; }
+    state.juridico[key] = { nome, sigla, creditos: 0, adicionais: 0, volume: 0, linhas: 0, _manual: true };
+    // Atualizar totalCreditosEmpresa não muda pois créditos = 0
+  }
+
+  document.getElementById('modalAddBackdrop').classList.remove('open');
+
+  // Renderizar o card novo
+  renderTime(_addPessoaTipo);
+  recalcTotals(_addPessoaTipo);
 }
 
 // ── MODAL INDIVIDUAL POR CARD ─────────────────────────────────────────────
