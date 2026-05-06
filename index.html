@@ -983,9 +983,9 @@ function _recalcCardInternal(tipo, key) {
   if (el(`s-liq-${sid(key)}`))  el(`s-liq-${sid(key)}`).textContent  = fmt(liqVal);
   if (el(`row-ins-val-${sid(key)}`)) el(`row-ins-val-${sid(key)}`).textContent = fmt(insVal);
   if (el(`ins-sub-${sid(key)}`)) el(`ins-sub-${sid(key)}`).textContent = `${fmtN(insQt)} × R$ 0,50`;
-  if (el(`row-prec-val-${sid(key)}`)) el(`row-prec-val-${sid(key)}`).textContent = fmt(precVal);
-  if (el(`prec-sub-${sid(key)}`)) el(`prec-sub-${sid(key)}`).textContent = `${fmtN(precQt)} × R$ 20,00`;
-  if (el(`prec2-sub-${sid(key)}`)) el(`prec2-sub-${sid(key)}`).textContent = `${fmtN(precQt2)} × R$ 20,00`;
+  if (el(`row-prec-val-${sid(key)}`))  el(`row-prec-val-${sid(key)}`).textContent  = fmt(precQt * 20);
+  if (el(`prec-sub-${sid(key)}`))      el(`prec-sub-${sid(key)}`).textContent      = `${fmtN(precQt)} × R$ 20,00`;
+  if (el(`prec2-sub-${sid(key)}`))     el(`prec2-sub-${sid(key)}`).textContent     = `${fmtN(precQt2)} × R$ 20,00`;
   if (el(`row-prec2-val-${sid(key)}`)) el(`row-prec2-val-${sid(key)}`).textContent = fmt(precQt2 * 20);
   if (el(`row-camp-val-${sid(key)}`))  el(`row-camp-val-${sid(key)}`).textContent  = fmt(pCamp);
   if (el(`row-camp-val-${sid(key)}`))    el(`row-camp-val-${sid(key)}`).textContent    = fmt(getManual(key,'camp'));
