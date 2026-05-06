@@ -133,6 +133,16 @@ body{background:var(--bg);background-color:var(--bg-solid);color:var(--tx);font-
 .tag.financeiro{background:var(--tag-f-bg);color:var(--tag-f-tx)}
 .btn-remove{background:none;border:1px solid var(--bo);border-radius:5px;padding:3px 8px;font-size:11px;color:var(--mu);cursor:pointer;transition:all .15s;font-family:inherit}
 .btn-remove:hover{border-color:var(--danger);color:var(--danger);background:var(--danger-bg)}
+.btn-preencher{background:none;border:1px solid var(--bo);border-radius:5px;color:var(--mu);cursor:pointer;font-size:11px;font-family:inherit;font-weight:500;padding:3px 8px;transition:all .15s}
+.btn-preencher:hover{border-color:var(--g);color:var(--g);background:var(--gl)}
+/* MODAL INDIVIDUAL */
+.modal-ind-backdrop{display:none;position:fixed;inset:0;background:var(--overlay);z-index:700;align-items:center;justify-content:center;padding:24px 16px}
+.modal-ind-backdrop.open{display:flex}
+.modal-ind{background:var(--white);border:1px solid var(--bo);border-radius:12px;width:100%;max-width:440px;max-height:90vh;overflow-y:auto;box-shadow:var(--sh2);transition:background .3s}
+.modal-ind-header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--bo);position:sticky;top:0;background:var(--white);z-index:1}
+.modal-ind-title{font-size:14px;font-weight:700}
+.modal-ind-body{padding:16px 20px}
+.modal-ind-footer{padding:12px 20px;border-top:1px solid var(--bo);display:flex;justify-content:flex-end;gap:10px;position:sticky;bottom:0;background:var(--white)}
 .card-stats{display:flex}
 .stat{flex:1;text-align:center;padding:8px 4px}
 .stat:not(:last-child){border-right:1px solid var(--bo)}
@@ -427,6 +437,21 @@ tr:not(.totals-row):hover td{opacity:.85;cursor:pointer}
     <div class="mm-footer">
       <button class="btn-mm-cancel" onclick="closeModalManuais()">Cancelar</button>
       <button class="btn-mm-apply" onclick="aplicarManuais()">Aplicar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL INDIVIDUAL -->
+<div class="modal-ind-backdrop" id="modalIndBackdrop">
+  <div class="modal-ind" id="modalInd">
+    <div class="modal-ind-header">
+      <span class="modal-ind-title" id="modalIndTitle">Preencher</span>
+      <button class="btn-close" onclick="fecharModalInd(true)">✕</button>
+    </div>
+    <div class="modal-ind-body" id="modalIndBody"></div>
+    <div class="modal-ind-footer">
+      <button class="btn-mm-cancel" onclick="fecharModalInd(true)">Cancelar</button>
+      <button class="btn-mm-apply" onclick="aplicarModalInd()">Aplicar</button>
     </div>
   </div>
 </div>
@@ -737,6 +762,7 @@ function renderTime(tipo) {
         <div class="card-top-row">
           <span class="person-name">${nomeDisp}</span>
           <div class="card-actions">
+            <button class="btn-preencher" onclick="event.stopPropagation();abrirModalIndividual('${tipo}','${key}')">✏️ Preencher</button>
             <span class="tag ${tipo}">${tipo==='comercial'?'Comercial':'Jurídico'}</span>
             <button class="btn-remove" onclick="event.stopPropagation();remover('${tipo}','${key}')">✕</button>
           </div>
@@ -1000,7 +1026,97 @@ function _recalcCardInternal(tipo, key) {
   if (el(`s-tot-${tipo}-${sid(key)}`)) el(`s-tot-${tipo}-${sid(key)}`).textContent = fmt(total);
 }
 
-// ── MODAL DADOS MANUAIS ───────────────────────────────────────────────────
+// ── MODAL INDIVIDUAL POR CARD ─────────────────────────────────────────────
+let _modalIndTipo = null;
+let _modalIndKey  = null;
+let _modalIndDirty = false;
+
+function abrirModalIndividual(tipo, key) {
+  _modalIndTipo  = tipo;
+  _modalIndKey   = key;
+  _modalIndDirty = false;
+
+  const d = tipo === 'comercial' ? state.comercial[key] : state.juridico[key];
+  const m = state.manuais[key] || {};
+  const nomeDisp = d.sigla ? `${d.nome} (${d.sigla})` : d.nome;
+  const isJohn = tipo === 'juridico' && d.nome === 'Johnathan';
+  const isNic  = tipo === 'juridico' && d.nome.toLowerCase() === 'nicolli';
+  const execLabel = tipo === 'comercial' ? 'Campanha Execução (Meet)' : 'Campanha Execução (Inserções)';
+
+  document.getElementById('modalIndTitle').textContent = nomeDisp;
+
+  const field = (label, id, value, hint='') => `
+    <div class="mm-field">
+      <label>${label}</label>
+      <div class="mm-field-right">
+        <input type="number" min="0" step="0.01" class="mm-input ind-field" id="ind-${id}" value="${value||0}" placeholder="0,00" oninput="_modalIndDirty=true">
+        ${hint ? `<span class="mm-input-hint">${hint}</span>` : ''}
+      </div>
+    </div>`;
+
+  let html = '';
+
+  if (tipo === 'juridico') {
+    html += field('Processos Inseridos', 'ins', m.ins||0, '× R$ 0,50');
+    if (isNic) {
+      html += field('Precatório (qtd.)', 'prec', m.prec||0, '× R$ 20,00');
+      html += field('Precatório Adicional (qtd.)', 'prec2', m.prec2||0, '× R$ 20,00');
+    }
+  }
+
+  html += `<div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mu);margin:14px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--bo)">Campanhas</div>`;
+  html += field(`${execLabel} — 13/04 a 17/04`, 'camp',    m.camp||0);
+  html += field(`${execLabel} — 27/04 a 30/04`, 'campp2',  m.campp2||0);
+  html += field('Campanha Volume — 13/04 a 17/04',          'camp2',   m.camp2||0);
+  html += field('Campanha Volume — 27/04 a 30/04',          'camp2p2', m.camp2p2||0);
+  html += field('Campanha Dupla de Ouro — 13/04 a 17/04',   'camp3',   m.camp3||0);
+  html += field('Campanha Dupla de Ouro — 27/04 a 30/04',   'camp3p2', m.camp3p2||0);
+
+  document.getElementById('modalIndBody').innerHTML = html;
+  document.getElementById('modalIndBackdrop').classList.add('open');
+}
+
+function aplicarModalInd() {
+  const tipo = _modalIndTipo;
+  const key  = _modalIndKey;
+  const d    = tipo === 'comercial' ? state.comercial[key] : state.juridico[key];
+  const isNic = tipo === 'juridico' && d.nome.toLowerCase() === 'nicolli';
+
+  if (!state.manuais[key]) state.manuais[key] = {};
+  const m = state.manuais[key];
+
+  const get = id => parseFloat(document.getElementById(`ind-${id}`)?.value) || 0;
+
+  if (tipo === 'juridico') {
+    m.ins   = get('ins');
+    if (isNic) { m.prec = get('prec'); m.prec2 = get('prec2'); }
+  }
+  m.camp   = get('camp');
+  m.campp2 = get('campp2');
+  m.camp2  = get('camp2');
+  m.camp2p2= get('camp2p2');
+  m.camp3  = get('camp3');
+  m.camp3p2= get('camp3p2');
+
+  _recalcCardInternal(tipo, key);
+  recalcTotals(tipo);
+  _modalIndDirty = false;
+  document.getElementById('modalIndBackdrop').classList.remove('open');
+}
+
+function fecharModalInd(confirmar=false) {
+  if (confirmar && _modalIndDirty) {
+    if (!confirm('Deseja descartar as alterações?')) return;
+  }
+  _modalIndDirty = false;
+  document.getElementById('modalIndBackdrop').classList.remove('open');
+}
+
+// Fechar ao clicar fora
+document.addEventListener('click', e => {
+  const backdrop = document.getElementById('modalIndBackdrop');
+  if (backdrop && e.target === backdrop) fecharModalInd(true);
+});
 function abrirModalManuais() {
   const body = document.getElementById('mmBody');
   body.innerHTML = '';
