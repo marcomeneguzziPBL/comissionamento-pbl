@@ -1060,7 +1060,6 @@ function recalcLiquidados() {
     if (elS) elS.textContent = fmt(lv);
     _recalcCardInternal('juridico', key);
   });
-  state.manuais['obj_col_juridico'] = parseFloat(document.getElementById('mm-obj-col-juridico')?.value) || 0;
   recalcTotals('juridico');
 }
 
