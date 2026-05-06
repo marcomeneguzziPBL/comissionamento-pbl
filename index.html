@@ -2089,6 +2089,8 @@ async function registrarMes() {
     'Qtd. Precatório Adicional','Com. Precatório Adicional (R$)',
     // Prêmios
     'Prêmio Objetivo (R$)','Prêmio Obj. Coletivo (R$)','Camp. Exec. 13-17/04 (R$)','Camp. Exec. 27-30/04 (R$)','Camp. Volume 13-17/04 (R$)','Camp. Volume 27-30/04 (R$)','Camp. Dupla Ouro 13-17/04 (R$)','Camp. Dupla Ouro 27-30/04 (R$)','Prêmio Treinamento (R$)',
+    // Prêmios exclusivos Marco
+    'Prêmio Execução (R$)','Prêmio Resultado (R$)',
     // Total
     'Total Comissões (R$)','Total Prêmios (R$)','Total Geral (R$)'
   ];
@@ -2121,6 +2123,7 @@ async function registrarMes() {
         getManual(key,'camp2'), getManual(key,'camp2p2'),
         getManual(key,'camp3'), getManual(key,'camp3p2'),
         0,
+        0, 0,
         totCom, totPre, totCom + totPre
       ]);
     });
@@ -2166,24 +2169,31 @@ async function registrarMes() {
         getManual(key,'camp2'), getManual(key,'camp2p2'),
         getManual(key,'camp3'), getManual(key,'camp3p2'),
         d.nome==='Daniel' ? getManual(key,'trein') : 0,
+        0, 0,
         totCom, totPre, totCom + totPre
       ]);
     });
 
   // Financeiro
-  const exec = state.manuais['marco_fin_exec'] || 0;
-  const res  = state.manuais['marco_fin_res']  || 0;
+  const exec   = state.manuais['marco_fin_exec'] || 0;
+  const res    = state.manuais['marco_fin_res']  || 0;
+  const objFin = state.manuais['obj_col_financeiro'] || 0;
+  const totFin = exec + res + objFin;
   rows.push([
     mesRef, 'Financeiro/ADM', 'Marco Antônio',
-    0,
-    '—', exec,
-    '—', res,
-    '—', 0,
-    '—', '—', '—', 0,
-    '—', 0,
-    '—', 0,
-    0, state.manuais['obj_col_financeiro']||0, 0, 0, 0, 0, 0, 0, 0,
-    exec + res, state.manuais['obj_col_financeiro']||0, exec + res + (state.manuais['obj_col_financeiro']||0)
+    0,        // Volume
+    '—', 0,   // Qtd. Créditos, Com. Créditos
+    '—', 0,   // Qtd. Adicionais, Com. Adicionais
+    '—', 0,   // Qtd. Inseridos, Com. Inseridos
+    '—','—','—', 0,  // Liquidados
+    '—', 0,   // Precatório
+    '—', 0,   // Precatório Adicional
+    // Prêmios: Objetivo=exec, ObjColetivo=objFin, camps=0, Treinamento=res
+    0, objFin, 0, 0, 0, 0, 0, 0, 0,
+    // Prêmios exclusivos Marco
+    exec, res,
+    // Totais
+    0, totFin, totFin
   ]);
 
   try {
