@@ -63,6 +63,8 @@ body{background:var(--bg);background-color:var(--bg-solid);color:var(--tx);font-
 .btn-registrar:disabled{opacity:.5;cursor:not-allowed}
 .btn-pdf{background:var(--white);color:var(--g);border:1px solid var(--g);border-radius:6px;padding:7px 16px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s}
 .btn-pdf:hover{background:var(--gl)}
+.btn-session{background:var(--white);color:var(--mu);border:1px solid var(--bo);border-radius:6px;padding:7px 16px;font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:6px}
+.btn-session:hover{border-color:var(--g);color:var(--g)}
 
 /* MODAL MANUAIS */
 .modal-manuais-backdrop{display:none;position:fixed;inset:0;background:var(--overlay);z-index:600;align-items:flex-start;justify-content:center;padding:40px 16px;overflow-y:auto}
@@ -264,6 +266,12 @@ tr:not(.totals-row):hover td{opacity:.85;cursor:pointer}
     </div>
   </div>
   <div style="display:flex;gap:10px;align-items:center">
+    <label class="btn-session" title="Carregar sessão salva">
+      📂 Carregar sessão
+      <input type="file" id="sessionInput" accept=".json" style="display:none" onchange="carregarSessao(event)">
+    </label>
+    <button class="btn-session" id="btnSalvarSessao" onclick="salvarSessao()" style="display:none">💾 Salvar sessão</button>
+    <div class="header-divider"></div>
     <button class="btn-fill" id="btnFill" onclick="abrirModalManuais()" style="display:none">Dados manuais</button>
     <button class="btn-registrar" id="btnRegistrar" onclick="registrarMes()" style="display:none">Registrar mês</button>
     <button class="btn-pdf" id="btnPdf" onclick="exportarPDF()" style="display:none">Exportar PDF</button>
@@ -592,6 +600,7 @@ function processarPlanilha(data) {
   document.getElementById('btnFill').style.display='block';
   document.getElementById('btnRegistrar').style.display='block';
   document.getElementById('btnPdf').style.display='block';
+  document.getElementById('btnSalvarSessao').style.display='block';
   setStatus(`Planilha processada · ${Object.keys(comercial).length} comercial · ${Object.keys(juridico).length} jurídico`, 'ok');
 }
 
@@ -1047,24 +1056,13 @@ function abrirModalManuais() {
             <span class="mm-input-hint">× R$ 20,00</span>
           </div>
         </div>` : ''}
-        <div class="mm-field">
-          <label>Campanha Volume</label>
-          <div class="mm-field-right">
-            <input type="number" min="0" step="0.01" class="mm-input" id="mm-camp-jur-${sid(key)}" value="${m.camp||0}" placeholder="0,00">
-          </div>
-        </div>
-        <div class="mm-field">
-          <label>Campanha Execução (Inserções)</label>
-          <div class="mm-field-right">
-            <input type="number" min="0" step="0.01" class="mm-input" id="mm-camp2-jur-${sid(key)}" value="${m.camp2||0}" placeholder="0,00">
-          </div>
-        </div>
-        <div class="mm-field">
-          <label>Campanha Dupla de Ouro</label>
-          <div class="mm-field-right">
-            <input type="number" min="0" step="0.01" class="mm-input" id="mm-camp3-jur-${sid(key)}" value="${m.camp3||0}" placeholder="0,00">
-          </div>
-        </div>`;
+        <div class="mm-field"><label>Campanha Execução (Inserções) — 13/04 a 17/04</label><div class="mm-field-right"><input type="number" min="0" step="0.01" class="mm-input" id="mm-camp-jur-${sid(key)}" value="${m.camp||0}" placeholder="0,00"></div></div>
+        <div class="mm-field"><label>Campanha Execução (Inserções) — 27/04 a 30/04</label><div class="mm-field-right"><input type="number" min="0" step="0.01" class="mm-input" id="mm-camp-jur-p2-${sid(key)}" value="${m.campp2||0}" placeholder="0,00"></div></div>
+        <div class="mm-field"><label>Campanha Volume — 13/04 a 17/04</label><div class="mm-field-right"><input type="number" min="0" step="0.01" class="mm-input" id="mm-camp2-jur-${sid(key)}" value="${m.camp2||0}" placeholder="0,00"></div></div>
+        <div class="mm-field"><label>Campanha Volume — 27/04 a 30/04</label><div class="mm-field-right"><input type="number" min="0" step="0.01" class="mm-input" id="mm-camp2-jur-p2-${sid(key)}" value="${m.camp2p2||0}" placeholder="0,00"></div></div>
+        <div class="mm-field"><label>Campanha Dupla de Ouro — 13/04 a 17/04</label><div class="mm-field-right"><input type="number" min="0" step="0.01" class="mm-input" id="mm-camp3-jur-${sid(key)}" value="${m.camp3||0}" placeholder="0,00"></div></div>
+        <div class="mm-field"><label>Campanha Dupla de Ouro — 27/04 a 30/04</label><div class="mm-field-right"><input type="number" min="0" step="0.01" class="mm-input" id="mm-camp3-jur-p2-${sid(key)}" value="${m.camp3p2||0}" placeholder="0,00"></div></div>
+        `;
       sec.appendChild(p);
     });
     body.appendChild(sec);
@@ -1490,7 +1488,90 @@ function toggleTheme() {
   document.querySelectorAll('.logo-letter').forEach(el=>el.setAttribute('fill',color));
 }
 
-// ── EXPORTAR PDF ──────────────────────────────────────────────────────────
+// ── SESSÃO ────────────────────────────────────────────────────────────────
+function salvarSessao() {
+  const sessao = {
+    versao: '1.0',
+    mesRef: document.getElementById('mes-ref').textContent || '—',
+    liquidadosQt: getVal('#gc-liq-qt'),
+    manuais: state.manuais,
+    removedComercial: state.removedComercial,
+    removedJuridico: state.removedJuridico,
+    comercial: state.comercial,
+    juridico: state.juridico,
+    totalCreditosEmpresa: state.totalCreditosEmpresa,
+  };
+  const blob = new Blob([JSON.stringify(sessao, null, 2)], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  const mes  = sessao.mesRef.replace(/\s/g,'_');
+  a.href     = url;
+  a.download = `sessao_pbl_${mes}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function carregarSessao(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const sessao = JSON.parse(e.target.result);
+
+      // Restaurar state
+      state.comercial              = sessao.comercial || {};
+      state.juridico               = sessao.juridico  || {};
+      state.manuais                = sessao.manuais   || {};
+      state.removedComercial       = sessao.removedComercial || [];
+      state.removedJuridico        = sessao.removedJuridico  || [];
+      state.totalCreditosEmpresa   = sessao.totalCreditosEmpresa || 0;
+
+      // Restaurar mês de referência
+      if (sessao.mesRef) document.getElementById('mes-ref').textContent = sessao.mesRef;
+
+      // Restaurar cards globais
+      const totCredNorm = Object.values(state.comercial).reduce((s,d)=>s+d.creditos,0);
+      const totAdic     = Object.values(state.comercial).reduce((s,d)=>s+d.adicionais,0);
+      const totVol      = Object.values(state.comercial).reduce((s,d)=>s+d.volume,0);
+      document.getElementById('gc-creditos').textContent   = fmtN(totCredNorm);
+      document.getElementById('gc-adicionais').textContent = fmtN(totAdic);
+      document.getElementById('gc-volume').textContent     = fmt(totVol);
+
+      // Restaurar liquidados
+      if (sessao.liquidadosQt) {
+        const liqInput = document.getElementById('gc-liq-qt');
+        if (liqInput) { liqInput.value = sessao.liquidadosQt; recalcLiquidados(); }
+      }
+
+      // Renderizar tudo
+      renderAll();
+      renderFinanceiro();
+      document.getElementById('appContent').style.display = 'block';
+      document.getElementById('btnFill').style.display    = 'block';
+      document.getElementById('btnRegistrar').style.display = 'block';
+      document.getElementById('btnPdf').style.display     = 'block';
+      document.getElementById('btnSalvarSessao').style.display = 'block';
+
+      // Aplicar manuais salvos nos cards
+      Object.keys(state.juridico).forEach(key => _recalcCardInternal('juridico', key));
+      Object.keys(state.comercial).forEach(key => _recalcCardInternal('comercial', key));
+      recalcFinanceiro();
+      recalcTotals('juridico');
+      recalcTotals('comercial');
+
+      // Upload zone feedback
+      document.getElementById('uploadZone').classList.add('loaded');
+      document.getElementById('uploadZone').querySelector('h3').textContent = `Sessão carregada: ${sessao.mesRef}`;
+      setStatus(`Sessão "${sessao.mesRef}" carregada com sucesso.`, 'ok');
+
+    } catch(err) {
+      alert('Erro ao carregar sessão: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = ''; // reset para permitir recarregar o mesmo arquivo
+}
 function exportarPDF() {
   const mesRef = document.getElementById('mes-ref').textContent || '—';
   const win = window.open('', '_blank');
