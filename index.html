@@ -1978,7 +1978,8 @@ function exportarPDF() {
     const pc3     = getManual(key,'camp3');
     const pc3p2   = getManual(key,'camp3p2');
     const totCom  = credVal+adicVal+insVal+liqVal+precVal;
-    const totPre  = pVol+objCol+pc+pcp2+pc2+pc2p2+pc3+pc3p2;
+    const treinPDF= tipo==='juridico' && d.nome==='Daniel' ? getManual(key,'trein') : 0;
+    const totPre  = pVol+objCol+pc+pcp2+pc2+pc2p2+pc3+pc3p2+treinPDF;
     const totGeral= totCom+totPre;
     const nomeDisp= d.sigla ? `${d.nome} (${d.sigla})` : d.nome;
     const execLabel = tipo==='comercial' ? 'Camp. Execução (Meet)' : 'Camp. Execução (Inserções)';
@@ -2019,6 +2020,7 @@ function exportarPDF() {
           <div class="row"><span class="lbl">${execLabel} — 27/04 a 30/04</span><span class="val">${fmt(pcp2)}</span></div>
           <div class="row"><span class="lbl">Camp. Dupla de Ouro — 13/04 a 17/04</span><span class="val">${fmt(pc3)}</span></div>
           <div class="row"><span class="lbl">Camp. Dupla de Ouro — 27/04 a 30/04</span><span class="val">${fmt(pc3p2)}</span></div>
+          ${tipo==='juridico' && d.nome==='Daniel' ? `<div class="row"><span class="lbl">Prêmio Treinamento</span><span class="val">${fmt(getManual(key,'trein'))}</span></div>` : ''}
         </div>
       </div>
       <div class="totals">
@@ -2150,7 +2152,7 @@ async function registrarMes() {
       const nomeDisp = d.sigla ? `${d.nome} (${d.sigla})` : d.nome;
       const objColJ  = state.manuais['obj_col_juridico']||0;
       const totCom   = credVal + adicVal + insVal + liqVal + precVal;
-      const totPre   = pVol + objColJ + getManual(key,'camp') + getManual(key,'campp2') + getManual(key,'camp2') + getManual(key,'camp2p2') + getManual(key,'camp3') + getManual(key,'camp3p2');
+      const totPre   = pVol + objColJ + getManual(key,'camp') + getManual(key,'campp2') + getManual(key,'camp2') + getManual(key,'camp2p2') + getManual(key,'camp3') + getManual(key,'camp3p2') + (d.nome==='Daniel' ? getManual(key,'trein') : 0);
       rows.push([
         mesRef, 'Jurídico', nomeDisp,
         d.volume,
