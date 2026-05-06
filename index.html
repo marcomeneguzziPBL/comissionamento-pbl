@@ -200,6 +200,40 @@ tr:not(.totals-row):hover td{opacity:.85;cursor:pointer}
 
 /* EXPORT */
 .export-row{margin-top:18px;display:flex;gap:10px}
+/* DASHBOARD EXECUTIVO */
+.dash-section{margin-bottom:10px}
+.dash-title{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);margin-bottom:10px}
+.dash-grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.dash-grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+.dash-grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:16px}
+@media(max-width:900px){.dash-grid-4{grid-template-columns:repeat(2,1fr)}.dash-grid-3{grid-template-columns:repeat(2,1fr)}}
+.dash-card{background:var(--bg-solid);border:1px solid var(--bo);border-radius:10px;padding:14px 18px;transition:background .3s}
+.dash-card-label{font-size:11px;color:var(--mu);margin-bottom:4px}
+.dash-card-val{font-size:22px;font-weight:700;color:var(--g);letter-spacing:-.02em}
+.dash-card-sub{font-size:11px;color:var(--mu);margin-top:3px}
+.dash-card-team{border-radius:10px;padding:14px 18px;border:1px solid var(--bo);transition:background .3s}
+.dash-card-team.com{background:rgba(13,74,58,0.05)}
+.dash-card-team.jur{background:rgba(196,154,69,0.06)}
+.dash-card-team.fin{background:rgba(59,89,171,0.05)}
+.dash-team-name{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px}
+.dash-team-name.com{color:var(--g)}
+.dash-team-name.jur{color:var(--gold)}
+.dash-team-name.fin{color:#3b59ab}
+.dash-team-val{font-size:20px;font-weight:700;color:var(--tx);margin-bottom:6px}
+.dash-team-row{display:flex;justify-content:space-between;font-size:11px;color:var(--mu);margin-bottom:2px}
+.dash-bar-wrap{height:6px;background:var(--bo);border-radius:3px;margin-top:8px;overflow:hidden}
+.dash-bar{height:100%;border-radius:3px;transition:width .4s}
+.dash-highlight{display:flex;flex-direction:column;gap:4px}
+.dash-hl-row{display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:5px 0;border-bottom:1px solid var(--bo)}
+.dash-hl-row:last-child{border-bottom:none}
+.dash-hl-lbl{color:var(--mu)}
+.dash-hl-name{font-weight:600;color:var(--tx)}
+.dash-hl-val{font-weight:700;color:var(--g);font-size:13px}
+.dash-dist-bar{display:flex;height:10px;border-radius:5px;overflow:hidden;margin-top:8px}
+.dash-dist-seg{height:100%;transition:width .4s}
+.dash-dist-legend{display:flex;gap:16px;margin-top:8px;flex-wrap:wrap}
+.dash-dist-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0;margin-top:2px}
+.dash-dist-item{display:flex;align-items:flex-start;gap:5px;font-size:11px;color:var(--mu)}
 .btn-export{background:var(--g);color:#fff;border:none;border-radius:7px;padding:10px 22px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:background .15s}
 .btn-export:hover{background:var(--gd)}
 
@@ -243,6 +277,7 @@ tr:not(.totals-row):hover td{opacity:.85;cursor:pointer}
 .gc-input:focus{border-color:var(--g)}
 .gc-card-liq{border-left:3px solid var(--gold);background:var(--gold-tint)}
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
 
@@ -305,7 +340,7 @@ tr:not(.totals-row):hover td{opacity:.85;cursor:pointer}
 
   <div id="appContent" style="display:none">
 
-    <!-- CARDS GLOBAIS -->
+
     <div class="global-cards">
       <div class="global-card">
         <div class="gc-label">Total Créditos Normais</div>
@@ -800,6 +835,7 @@ function renderTime(tipo) {
           <span class="person-name">${nomeDisp}</span>
           <div class="card-actions">
             <button class="btn-preencher" onclick="event.stopPropagation();abrirModalIndividual('${tipo}','${key}')">✏️ Preencher</button>
+            <button class="btn-preencher" onclick="event.stopPropagation();exportarCardPNG(this)" title="Exportar como PNG">📷</button>
             <span class="tag ${tipo}">${tipo==='comercial'?'Comercial':'Jurídico'}</span>
             <button class="btn-remove" onclick="event.stopPropagation();remover('${tipo}','${key}')">✕</button>
           </div>
@@ -1072,6 +1108,7 @@ function _recalcCardInternal(tipo, key) {
   if (el(`s-pcamp-${tipo}-${sid(key)}`)) el(`s-pcamp-${tipo}-${sid(key)}`).textContent = fmt(pCamp + precVal);
   if (el(`s-tot-${tipo}-${sid(key)}`)) el(`s-tot-${tipo}-${sid(key)}`).textContent = fmt(total);
 }
+
 
 // ── ADICIONAR PESSOA MANUALMENTE ─────────────────────────────────────────
 let _addPessoaTipo = null;
@@ -1695,7 +1732,35 @@ function toggleTheme() {
   document.querySelectorAll('.logo-letter').forEach(el=>el.setAttribute('fill',color));
 }
 
-// ── SESSÃO ────────────────────────────────────────────────────────────────
+// ── EXPORTAR CARD COMO PNG ────────────────────────────────────────────────
+function exportarCardPNG(btn) {
+  const card = btn.closest('.person-card');
+  if (!card) return;
+
+  // Esconder botões de ação temporariamente
+  const actions = card.querySelector('.card-actions');
+  const hint    = card.querySelector('.hint');
+  if (actions) actions.style.visibility = 'hidden';
+  if (hint)    hint.style.visibility    = 'hidden';
+
+  const mesRef = (document.getElementById('mes-ref').textContent || 'pbl').replace(/\s/g,'_');
+  const nome   = card.querySelector('.person-name')?.textContent?.replace(/\s/g,'_') || 'card';
+
+  html2canvas(card, {
+    scale: 2,
+    useCORS: true,
+    backgroundColor: null,
+    logging: false,
+  }).then(canvas => {
+    const a = document.createElement('a');
+    a.download = `${nome}_${mesRef}.png`;
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+  }).finally(() => {
+    if (actions) actions.style.visibility = '';
+    if (hint)    hint.style.visibility    = '';
+  });
+}
 function salvarSessao() {
   const agora = new Date();
   const timestamp = agora.toISOString();
