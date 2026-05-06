@@ -1,0 +1,1845 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Comissionamento — PBL</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --g: #0D4A3A; --gd: #082e25; --gl: #dff0e9;
+  --gold: #C49A45; --goldd: #9c7a34;
+  --tx: #111; --mu: #546860; --bo: #c2d9d1;
+  --bg: linear-gradient(145deg, #f4f9f7 0%, #fdfaf4 100%);
+  --bg-solid: #f4f9f7;
+  --white: #fff;
+  --sh: 0 2px 8px rgba(13,74,58,0.10);
+  --sh2: 0 6px 24px rgba(13,74,58,0.16);
+  --danger: #c0392b; --danger-bg: #fdf0ef;
+  --tag-c-bg: #dff0e9; --tag-c-tx: #0D4A3A;
+  --tag-j-bg: #fdf3e0; --tag-j-tx: #9c7a34;
+  --tag-f-bg: #e8eaf6; --tag-f-tx: #3949ab;
+  --overlay: rgba(0,0,0,0.35);
+  --header-border: #C49A45;
+  --gold-tint: rgba(196,154,69,0.07);
+  --card-sh: 0 2px 10px rgba(13,74,58,0.10);
+  --card-sh-hover: 0 6px 24px rgba(13,74,58,0.16);
+}
+[data-theme="dark"] {
+  --g: #3a9c74; --gd: #2a7a58; --gl: #1a2e28;
+  --gold: #d4a84e; --goldd: #b08030;
+  --tx: #e0ede8; --mu: #7aaa9a; --bo: #2a4a40;
+  --bg: #0f1f1a; --bg-solid: #0f1f1a; --white: #162820;
+  --sh: 0 1px 4px rgba(0,0,0,0.3);
+  --sh2: 0 4px 20px rgba(0,0,0,0.45);
+  --danger: #e74c3c; --danger-bg: #2a1a1a;
+  --tag-c-bg: #1a3028; --tag-c-tx: #3a9c74;
+  --tag-j-bg: #2a2010; --tag-j-tx: #d4a84e;
+  --tag-f-bg: #1a1c30; --tag-f-tx: #7986cb;
+  --overlay: rgba(0,0,0,0.6);
+  --header-border: #2a4a40;
+  --gold-tint: rgba(212,168,78,0.05);
+  --card-sh: 0 1px 4px rgba(0,0,0,0.3);
+  --card-sh-hover: 0 4px 20px rgba(0,0,0,0.45);
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);background-color:var(--bg-solid);color:var(--tx);font-family:'Space Grotesk',sans-serif;min-height:100vh;transition:background .3s,color .3s;font-size:14px}
+
+/* HEADER */
+.header{background:var(--white);border-bottom:2px solid var(--header-border);padding:0 32px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200;box-shadow:var(--sh);transition:background .3s,border-color .3s;position:relative;overflow:hidden}
+.header::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--g) 0%,var(--gold) 100%);pointer-events:none}
+.header-left{display:flex;align-items:center;gap:20px}
+.header-divider{width:1px;height:24px;background:var(--bo)}
+.header-title{font-size:15px;font-weight:600;letter-spacing:-0.01em}
+.header-sub{font-size:11px;color:var(--mu);margin-top:1px}
+.btn-theme{background:none;border:1px solid var(--bo);border-radius:6px;padding:6px 10px;cursor:pointer;font-size:14px;color:var(--mu);transition:all .15s;font-family:inherit}
+.btn-theme:hover{border-color:var(--g);color:var(--g)}
+.btn-fill{background:var(--g);color:#fff;border:none;border-radius:6px;padding:7px 16px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:background .15s;letter-spacing:.01em}
+.btn-fill:hover{background:var(--gd)}
+.btn-registrar{background:var(--gold);color:#fff;border:none;border-radius:6px;padding:7px 16px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:background .15s;letter-spacing:.01em}
+.btn-registrar:hover{background:var(--goldd)}
+.btn-registrar:disabled{opacity:.5;cursor:not-allowed}
+.btn-pdf{background:var(--white);color:var(--g);border:1px solid var(--g);border-radius:6px;padding:7px 16px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s}
+.btn-pdf:hover{background:var(--gl)}
+
+/* MODAL MANUAIS */
+.modal-manuais-backdrop{display:none;position:fixed;inset:0;background:var(--overlay);z-index:600;align-items:flex-start;justify-content:center;padding:40px 16px;overflow-y:auto}
+.modal-manuais-backdrop.open{display:flex}
+.modal-manuais{background:var(--white);border:1px solid var(--bo);border-radius:12px;width:100%;max-width:560px;box-shadow:var(--sh2);transition:background .3s}
+.mm-header{display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid var(--bo)}
+.mm-title{font-size:16px;font-weight:700;letter-spacing:-0.01em}
+.mm-body{padding:0 24px 24px}
+.mm-team{margin-top:20px}
+.mm-team-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--bo)}
+.mm-person{margin-bottom:16px;padding:14px 16px;background:var(--bg-solid);border:1px solid var(--bo);border-radius:8px}
+.mm-person-name{font-size:13px;font-weight:700;margin-bottom:10px;color:var(--tx)}
+.mm-field{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:13px}
+.mm-field:last-child{margin-bottom:0}
+.mm-field label{color:var(--mu);font-size:12px}
+.mm-field-right{display:flex;align-items:center;gap:6px}
+.mm-input{border:1px solid var(--bo);border-radius:5px;padding:5px 10px;font-size:13px;font-weight:600;font-family:inherit;background:var(--white);color:var(--tx);width:100px;text-align:right;outline:none;transition:border-color .15s}
+.mm-input:focus{border-color:var(--g)}
+.mm-input-hint{font-size:11px;color:var(--mu)}
+.mm-footer{padding:16px 24px;border-top:1px solid var(--bo);display:flex;justify-content:flex-end;gap:10px}
+.btn-mm-apply{background:var(--g);color:#fff;border:none;border-radius:7px;padding:10px 24px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:background .15s}
+.btn-mm-apply:hover{background:var(--gd)}
+.btn-mm-cancel{background:none;border:1px solid var(--bo);border-radius:7px;padding:10px 20px;font-family:inherit;font-size:13px;color:var(--tx);cursor:pointer;transition:all .15s}
+.btn-mm-cancel:hover{border-color:var(--g);color:var(--g)}
+
+/* MAIN */
+.main{max-width:1100px;margin:0 auto;padding:32px 24px}
+@media(min-width:1280px){.main{max-width:1400px}}
+@media(min-width:1600px){.main{max-width:1600px}}
+
+/* UPLOAD */
+.upload-label{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);margin-bottom:10px}
+.upload-zone{border:1.5px dashed var(--bo);border-radius:8px;padding:32px;text-align:center;cursor:pointer;transition:all .2s;position:relative;background:var(--white);transition:background .3s,border-color .3s}
+.upload-zone:hover,.upload-zone.drag-over{border-color:var(--g);background:var(--gl)}
+.upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.upload-icon{font-size:26px;margin-bottom:8px}
+.upload-zone h3{font-size:14px;font-weight:600;margin-bottom:3px}
+.upload-zone p{font-size:12px;color:var(--mu)}
+.upload-zone.loaded{border-style:solid;border-color:var(--g)}
+.upload-zone.loaded h3{color:var(--g)}
+.status-bar{font-size:12px;color:var(--mu);margin-top:8px;min-height:18px}
+.status-bar.ok{color:var(--g);font-weight:500}
+.status-bar.error{color:var(--danger)}
+
+/* TABS */
+.tabs-wrap{margin:28px 0 20px}
+.tabs{display:flex;gap:4px;background:var(--white);border:1px solid var(--bo);border-radius:8px;padding:4px;width:fit-content;transition:background .3s,border-color .3s}
+.tab{padding:8px 20px;border-radius:6px;font-size:13px;font-weight:500;color:var(--mu);cursor:pointer;transition:all .15s;border:none;background:none;font-family:inherit}
+.tab.active{background:var(--g);color:#fff;font-weight:600}
+
+/* GRID */
+.people-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:16px;margin-bottom:28px}
+@media(min-width:1280px){.people-grid{grid-template-columns:repeat(auto-fill,minmax(400px,1fr))}}
+@media(min-width:1600px){.people-grid{grid-template-columns:repeat(auto-fill,minmax(420px,1fr))}}
+
+/* CARD */
+.person-card{background:var(--white);border:1px solid var(--bo);border-radius:10px;overflow:hidden;box-shadow:var(--card-sh);transition:box-shadow .2s,background .3s,border-color .3s;cursor:pointer}
+.person-card:hover{box-shadow:var(--card-sh-hover)}
+.card-top{padding:16px 18px 12px;border-bottom:1px solid var(--bo)}
+.card-top-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.person-name{font-size:15px;font-weight:700;letter-spacing:-0.01em}
+.card-actions{display:flex;gap:6px;align-items:center}
+.tag{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:4px}
+.tag.comercial{background:var(--tag-c-bg);color:var(--tag-c-tx)}
+.tag.juridico{background:var(--tag-j-bg);color:var(--tag-j-tx)}
+.tag.financeiro{background:var(--tag-f-bg);color:var(--tag-f-tx)}
+.btn-remove{background:none;border:1px solid var(--bo);border-radius:5px;padding:3px 8px;font-size:11px;color:var(--mu);cursor:pointer;transition:all .15s;font-family:inherit}
+.btn-remove:hover{border-color:var(--danger);color:var(--danger);background:var(--danger-bg)}
+.card-stats{display:flex}
+.stat{flex:1;text-align:center;padding:8px 4px}
+.stat:not(:last-child){border-right:1px solid var(--bo)}
+.stat-val{font-size:17px;font-weight:700;color:var(--g);line-height:1}
+.stat-label{font-size:10px;color:var(--mu);margin-top:3px}
+.card-body{padding:14px 18px}
+.row{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;font-size:13px}
+.row .lbl{color:var(--mu);font-size:13px}
+.row .val{font-weight:600;font-size:13px}
+.card-divider{height:1px;background:var(--bo);margin:10px 0}
+.manual-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}
+.manual-row label{font-size:13px;color:var(--mu)}
+.manual-row .row-right{display:flex;align-items:center;gap:8px}
+.manual-row .row-val{font-weight:600;font-size:13px;min-width:70px;text-align:right}
+.manual-input{border:none;border-bottom:1px solid var(--bo);border-radius:0;padding:2px 0;font-size:13px;font-weight:600;font-family:inherit;background:transparent;color:var(--tx);width:60px;text-align:right;transition:border-color .15s;outline:none}
+.manual-input:focus{border-bottom-color:var(--g)}
+.card-total{display:grid;grid-template-columns:1fr 1fr 1fr;background:var(--gl);border-top:1px solid var(--bo);transition:background .3s}
+.card-total-col{text-align:center;padding:10px 8px}
+.card-total-col:not(:last-child){border-right:1px solid var(--bo)}
+.total-lbl{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mu);margin-bottom:3px;display:block}
+.total-val{font-size:14px;font-weight:700;color:var(--g);display:block}
+.total-val.total-main{font-size:16px;color:var(--g)}
+.hint{font-size:10px;color:var(--mu);text-align:center;padding:6px 0 2px;opacity:.7}
+.card-group-label{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mu);margin:8px 0 6px;padding-bottom:4px;border-bottom:1px solid var(--bo)}
+
+/* SUMMARY TABLE */
+.summary-section{margin-top:4px}
+.summary-label{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);margin-bottom:10px}
+.table-wrap{background:var(--white);border:1px solid var(--bo);border-radius:10px;overflow:hidden;box-shadow:var(--sh);transition:background .3s,border-color .3s}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--mu);padding:10px 14px;text-align:right;white-space:nowrap;border-bottom:2px solid var(--bo)}
+th:first-child{text-align:left}
+th.th-com{background:rgba(13,74,58,0.05);color:var(--g)}
+th.th-com-first{border-left:1px solid var(--bo)}
+th.th-com-last{border-right:1px solid var(--bo)}
+th.th-pre{background:rgba(196,154,69,0.07);color:var(--gold)}
+th.th-pre-first{border-left:1px solid var(--bo)}
+th.th-pre-last{border-right:1px solid var(--bo)}
+td{padding:11px 14px;text-align:right;border-bottom:1px solid var(--bo);font-size:13px;white-space:nowrap;font-variant-numeric:tabular-nums}
+td:first-child{text-align:left;font-weight:600}
+tr:last-child td{border-bottom:none}
+td.td-com{background:rgba(13,74,58,0.02)}
+td.td-com-first{background:rgba(13,74,58,0.02);border-left:1px solid var(--bo)}
+td.td-com-last{background:rgba(13,74,58,0.02);border-right:1px solid var(--bo)}
+td.td-pre{background:rgba(196,154,69,0.04)}
+td.td-pre-first{background:rgba(196,154,69,0.04);border-left:1px solid var(--bo)}
+td.td-pre-last{background:rgba(196,154,69,0.04);border-right:1px solid var(--bo)}
+tr.totals-row td{font-weight:700;color:var(--g);background:var(--gl)}
+tr.totals-row td.td-com,tr.totals-row td.td-com-first,tr.totals-row td.td-com-last{background:rgba(13,74,58,0.06)}
+tr.totals-row td.td-pre,tr.totals-row td.td-pre-first,tr.totals-row td.td-pre-last{background:rgba(196,154,69,0.08);color:var(--goldd)}
+tr.totals-row td:first-child{font-size:11px;letter-spacing:.06em;text-transform:uppercase}
+tr:not(.totals-row):hover td{opacity:.85;cursor:pointer}
+
+/* EXPORT */
+.export-row{margin-top:18px;display:flex;gap:10px}
+.btn-export{background:var(--g);color:#fff;border:none;border-radius:7px;padding:10px 22px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:background .15s}
+.btn-export:hover{background:var(--gd)}
+
+/* REMOVED */
+.removed-section{margin-bottom:20px}
+.removed-label{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);margin-bottom:8px}
+.removed-chips{display:flex;flex-wrap:wrap;gap:8px}
+.removed-chip{display:flex;align-items:center;gap:6px;background:var(--white);border:1px solid var(--bo);border-radius:20px;padding:4px 12px;font-size:12px;color:var(--mu);transition:background .3s}
+.btn-restore{background:none;border:none;cursor:pointer;color:var(--g);font-size:13px;padding:0;line-height:1;font-weight:700}
+
+/* MODAL BACKDROP */
+.modal-backdrop{display:none;position:fixed;inset:0;background:var(--overlay);z-index:500;align-items:center;justify-content:center}
+.modal-backdrop.open{display:flex}
+.modal{background:var(--white);border:1px solid var(--bo);border-radius:12px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;box-shadow:var(--sh2);padding:28px;transition:background .3s}
+.modal-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px}
+.modal-name{font-size:20px;font-weight:700;letter-spacing:-0.02em}
+.modal-tag{margin-top:4px}
+.btn-close{background:none;border:1px solid var(--bo);border-radius:6px;padding:4px 10px;cursor:pointer;font-size:16px;color:var(--mu);font-family:inherit;transition:all .15s}
+.btn-close:hover{border-color:var(--danger);color:var(--danger)}
+.modal-section{margin-bottom:18px}
+.modal-section-title{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--bo)}
+.breakdown-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:13px;border-bottom:1px dashed var(--bo)}
+.breakdown-row:last-child{border-bottom:none}
+.breakdown-row .blbl{color:var(--mu)}
+.breakdown-row .bval{font-weight:600}
+.breakdown-row .bval.gold{color:var(--gold)}
+.breakdown-row .bval.green{color:var(--g)}
+.breakdown-formula{font-size:11px;color:var(--mu);margin-top:2px}
+.modal-total{display:flex;justify-content:space-between;align-items:center;padding:14px 0 0;margin-top:8px;border-top:2px solid var(--g)}
+.modal-total .lbl{font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.modal-total .val{font-size:22px;font-weight:700;color:var(--g)}
+
+/* GLOBAL CARDS */
+.global-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:24px}
+.global-card{background:var(--white);border:1px solid var(--bo);border-radius:10px;padding:16px 18px;box-shadow:var(--card-sh);transition:background .3s,border-color .3s}
+.gc-label{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--mu);margin-bottom:6px}
+.gc-val{font-size:22px;font-weight:700;color:var(--g);line-height:1;margin-bottom:2px}
+.gc-sub{font-size:11px;color:var(--mu)}
+.gc-input-row{display:flex;align-items:center;gap:8px;margin-top:6px}
+.gc-input{border:1px solid var(--bo);border-radius:5px;padding:5px 10px;font-size:15px;font-weight:700;font-family:inherit;background:var(--bg-solid);color:var(--tx);width:100%;text-align:right;transition:border-color .15s,background .3s,color .3s;outline:none}
+.gc-input:focus{border-color:var(--g)}
+.gc-card-liq{border-left:3px solid var(--gold);background:var(--gold-tint)}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-left">
+    <svg width="80" height="20" viewBox="0 0 147 36" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+      <defs>
+        <polygon id="p1" points="0 0.4 39.95 0.4 39.95 35.38 0 35.38"/>
+        <polygon id="p3" points="0.37 0.39 39.59 0.39 39.59 22.29 0.37 22.29"/>
+        <polygon id="p5" points="0.22 0.24 28.41 0.24 28.41 34.34 0.22 34.34"/>
+      </defs>
+      <g fill="none" fill-rule="evenodd">
+        <mask id="m1" fill="white"><use xlink:href="#p1"/></mask>
+        <path fill="#C18D4A" mask="url(#m1)" d="M15.43,11.56C12.85,14.23,13.94,18.47,17.49,19.42C19.12,19.85,20.65,19.47,21.89,18.25C23.29,16.86,24.68,15.45,26.07,14.05C27.04,13.08,27.7,13.08,28.68,14.06C31.34,16.73,34.01,19.4,36.65,22.08C37.51,22.95,38.43,23.64,39.66,23.79C39.74,23.8,39.81,23.87,39.95,23.96C39.76,24.17,39.62,24.34,39.45,24.51C36.22,27.76,32.1,31.01,29.76,34.25C28.28,35.74,26.49,35.76,25.03,34.29C17.05,26.27,9.07,18.25,1.1,10.23C-0.38,8.74,-0.36,6.95,1.12,5.46C2.44,4.11,3.77,2.78,5.11,1.45C6.53,0.05,8.34,0.05,9.75,1.46C11.66,3.37,13.55,5.29,15.47,7.19C16.16,7.88,16.89,8.52,17.71,9.28C16.98,10.01,16.19,10.77,15.43,11.56Z"/>
+        <g transform="translate(15,0)">
+          <mask id="m3" fill="white"><use xlink:href="#p3"/></mask>
+          <path fill="#C18D4A" mask="url(#m3)" d="M25.22,22.28C24.19,22.33,23.43,21.87,22.76,21.19C20.09,18.49,17.36,15.85,14.76,13.1C13.27,11.52,11.27,11.33,9.67,13.12C8.43,14.51,7.08,15.8,5.74,17.09C3.93,18.84,1.11,18.08,0.49,15.69C0.21,14.62,0.43,13.61,1.21,12.82C4.17,9.8,7.15,6.79,10.16,3.82C11.37,2.63,13.21,2.74,14.47,3.98C15.86,5.35,17.22,6.75,18.59,8.13C20.06,9.6,21.72,9.6,23.19,8.13C25.36,5.96,27.52,3.78,29.69,1.61C31.31,-0.02,33.03,-0.01,34.66,1.62C35.94,2.92,37.23,4.2,38.51,5.5C39.95,6.96,39.95,8.76,38.5,10.22C34.86,13.9,31.21,17.56,27.56,21.24C26.9,21.9,26.15,22.33,25.22,22.28Z"/>
+        </g>
+        <g transform="translate(59,1)">
+          <path class="logo-letter" fill="#0D4A3A" d="M10.12,2.39C10.12,2,10.25,1.87,10.63,1.87L13.28,1.87C15.66,1.87,17.51,2.47,18.94,3.71C20.58,5.14,21.25,6.64,21.25,8.91C21.25,11.61,20.59,13.45,19.23,14.55C17.89,15.63,16.53,15.9,14.23,16.35C12.53,16.71,11.05,17.52,10.07,18.6L10.12,2.39ZM23.39,2.77C21.22,1.26,18.68,0.62,14.61,0.56L0.82,0.56L0.82,1.81L1.03,1.81C2.11,1.81,2.65,1.86,3.25,2.03C3.7,2.12,4.11,2.38,4.46,2.8C4.72,3.12,4.92,3.6,5.02,4.15C5.11,4.62,5.19,5.41,5.13,6.57L5.13,28.55C5.13,29.59,5.07,30.42,4.97,31.01C4.82,31.63,4.61,32.05,4.31,32.41C4.03,32.69,3.59,32.91,2.98,33.08C2.36,33.19,1.58,33.3,0.52,33.36L0.33,33.37L0.33,34.61L16.03,34.61L16.03,33.36L15.82,33.36C14.37,33.36,13.42,33.29,12.7,33.14C12.04,33.04,11.44,32.8,11,32.47C10.65,32.12,10.39,31.6,10.23,30.97C10.12,30.31,10.06,29.44,10.06,28.38L10.06,22.3C10.06,20.87,11.46,19.42,13.63,18.59C15.14,18.01,16.7,17.77,18.21,17.55C18.71,17.47,19.2,17.4,19.68,17.31C21.46,16.91,22.9,16.27,23.95,15.43C25.8,13.96,26.73,11.78,26.73,8.97C26.73,6.28,25.64,4.25,23.39,2.77Z"/>
+          <path class="logo-letter" fill="#0D4A3A" d="M38.71,17.19C38.91,17.18,39.28,17.17,39.93,17.21C41.16,17.26,45.57,17.81,48.13,19.03C50.73,20.28,52.05,22.55,52.05,25.76C52.05,29.98,48.75,33.41,44.69,33.41C41.72,33.41,38.66,33.41,38.66,27.54L38.71,17.19ZM46.08,14.92C44.54,15.82,43.46,15.73,42.59,15.65C42.46,15.64,42.34,15.63,42.23,15.62C41.7,15.56,39.97,15.36,38.71,15.34L38.71,5.01C38.71,3,40.23,1.7,42.59,1.7C45.45,1.7,46.7,2.66,47.63,3.7C48.74,4.88,49.23,6.61,49.23,9.3C49.23,12.91,46.4,14.72,46.08,14.92ZM53.8,18.61C52.41,17.62,51.06,17.21,50.17,16.93L49.92,16.85C49.39,16.73,48.82,16.62,48.25,16.52C50.03,15.84,51.79,14.8,52.73,13.85C53.69,12.83,54.83,11.12,54.83,8.8C54.77,6.16,53.64,4.12,51.48,2.71C49.21,1.24,46.39,0.56,42.59,0.56L29.47,0.56L29.47,1.8L29.66,1.81C30.7,1.88,31.47,2.01,31.83,2.08C32.45,2.25,32.82,2.46,33.06,2.81C33.32,3.07,33.49,3.49,33.61,4.15C33.72,4.77,33.78,6.46,33.78,7.41L33.72,27.76C33.72,28.96,33.64,29.94,33.5,30.46C33.36,31.33,33.11,31.99,32.79,32.36C32.46,32.69,31.98,32.94,31.39,33.09C30.76,33.25,29.85,33.3,28.73,33.36L28.53,33.37L28.53,34.61L44.3,34.61C45.5,34.61,46.63,34.61,47.52,34.55C49.08,34.46,50.79,34.23,52.68,33.24C54.23,32.37,55.34,31.37,56.18,30.11C57.05,28.69,57.48,27.25,57.48,25.7C57.48,22.65,56.31,20.39,53.8,18.61Z"/>
+          <g transform="translate(59.34,0.26)">
+            <mask id="m5" fill="white"><use xlink:href="#p5"/></mask>
+            <path class="logo-letter" fill="#0D4A3A" mask="url(#m5)" d="M27.18,26.11L27.15,26.3C26.93,27.81,26.05,29.43,25.49,30.1C23,33.04,20.6,33.03,17.58,33.04L17.42,33.04C14.28,33.04,11.83,32.04,11.16,31.37C10.14,30.39,9.95,29.15,9.95,27.05C9.9,24.85,10.01,6.77,10.01,6.58C10.01,5.49,10.06,4.67,10.17,4C10.29,3.26,10.47,2.79,10.73,2.48C10.99,2.17,11.4,1.91,11.88,1.77C12.5,1.65,13.2,1.55,14.11,1.55L14.31,1.55L14.31,0.3L0.77,0.24L0.77,1.48L0.96,1.49C2,1.56,2.77,1.69,3.13,1.76C3.75,1.94,4.11,2.14,4.36,2.49C4.62,2.76,4.79,3.17,4.91,3.83C5.02,4.5,5.07,5.29,5.07,6.3L5.02,28.28C5.02,29.38,4.95,30.14,4.8,30.7C4.7,31.32,4.49,31.79,4.19,32.1C3.92,32.37,3.48,32.59,2.85,32.77C2.19,32.93,1.39,32.99,0.41,33.04L0.22,33.05L0.22,34.34L27.71,34.34L28.41,26.19L27.18,26.11Z"/>
+          </g>
+        </g>
+      </g>
+    </svg>
+    <div class="header-divider"></div>
+    <div>
+      <div class="header-title">Comissionamento</div>
+      <div class="header-sub" id="mes-ref">—</div>
+    </div>
+  </div>
+  <div style="display:flex;gap:10px;align-items:center">
+    <button class="btn-fill" id="btnFill" onclick="abrirModalManuais()" style="display:none">Dados manuais</button>
+    <button class="btn-registrar" id="btnRegistrar" onclick="registrarMes()" style="display:none">Registrar mês</button>
+    <button class="btn-pdf" id="btnPdf" onclick="exportarPDF()" style="display:none">Exportar PDF</button>
+    <button class="btn-theme" id="btnTheme" onclick="toggleTheme()">🌙</button>
+  </div>
+</header>
+
+<main class="main">
+  <div style="margin-bottom:24px">
+    <div class="upload-label">Planilha mensal</div>
+    <div class="upload-zone" id="uploadZone">
+      <input type="file" id="fileInput" accept=".xlsx,.xls">
+      <div class="upload-icon">📂</div>
+      <h3>Arraste ou clique para subir a planilha mensal</h3>
+      <p>Aba: Principal · C (Comercial) · D (Jurídico, siglas) · I (Créditos) · P (Valor) · R (Contrato)</p>
+    </div>
+    <div class="status-bar" id="statusBar"></div>
+  </div>
+
+  <div id="appContent" style="display:none">
+
+    <!-- CARDS GLOBAIS -->
+    <div class="global-cards">
+      <div class="global-card">
+        <div class="gc-label">Total Créditos Normais</div>
+        <div class="gc-val" id="gc-creditos">—</div>
+        <div class="gc-sub">soma coluna C</div>
+      </div>
+      <div class="global-card">
+        <div class="gc-label">Total Adicionais</div>
+        <div class="gc-val" id="gc-adicionais">—</div>
+        <div class="gc-sub">+2 por compra ≥ R$ 20k</div>
+      </div>
+      <div class="global-card">
+        <div class="gc-label">Volume Total</div>
+        <div class="gc-val" id="gc-volume">—</div>
+        <div class="gc-sub">em reais (R$)</div>
+      </div>
+      <div class="global-card gc-card-liq">
+        <div class="gc-label">Créditos Liquidados</div>
+        <input type="number" min="0" step="1" class="gc-input" id="gc-liq-qt"
+          placeholder="0" style="margin-top:8px" oninput="recalcLiquidados()" onchange="recalcLiquidados()">
+        <div class="gc-sub" style="margin-top:4px">preencha a quantidade</div>
+      </div>
+      <div class="global-card gc-card-liq">
+        <div class="gc-label">Valor Total Liquidados</div>
+        <div class="gc-val" id="gc-liq-val">R$ 0,00</div>
+        <div class="gc-sub">qtd × R$ 11,25</div>
+      </div>
+    </div>
+
+    <div class="tabs-wrap">
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('comercial')">Comercial</button>
+        <button class="tab" onclick="switchTab('juridico')">Jurídico</button>
+        <button class="tab" onclick="switchTab('financeiro')">Financeiro / ADM</button>
+      </div>
+    </div>
+
+    <!-- COMERCIAL -->
+    <div id="tab-comercial">
+      <div class="people-grid" id="cards-comercial"></div>
+      <div id="removed-comercial" class="removed-section" style="display:none">
+        <div class="removed-label">Removidos</div>
+        <div class="removed-chips" id="chips-comercial"></div>
+      </div>
+      <div class="summary-section">
+        <div class="summary-label">Resumo Comercial</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>Nome</th>
+              <th>Volume</th>
+              <th class="th-com th-com-first">Créditos</th>
+              <th class="th-com th-com-last">Adicionais</th>
+              <th class="th-pre th-pre-first">Objetivo</th>
+              <th class="th-pre">Obj. Coletivo</th>
+              <th class="th-pre">Campanha Volume</th>
+              <th class="th-pre">Campanha Execução</th>
+              <th class="th-pre th-pre-last">Dupla de Ouro</th>
+              <th>Total</th>
+            </tr></thead>
+            <tbody id="tbody-comercial"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- JURIDICO -->
+    <div id="tab-juridico" style="display:none">
+      <div class="people-grid" id="cards-juridico"></div>
+      <div id="removed-juridico" class="removed-section" style="display:none">
+        <div class="removed-label">Removidos</div>
+        <div class="removed-chips" id="chips-juridico"></div>
+      </div>
+      <div class="summary-section">
+        <div class="summary-label">Resumo Jurídico</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>Nome</th>
+              <th>Volume</th>
+              <th class="th-com th-com-first">Créditos</th>
+              <th class="th-com">Adicionais</th>
+              <th class="th-com">Inseridos</th>
+              <th class="th-com th-com-last">Liquidados</th>
+              <th class="th-pre th-pre-first">Objetivo</th>
+              <th class="th-pre">Obj. Coletivo</th>
+              <th class="th-pre">Campanha Volume</th>
+              <th class="th-pre">Campanha Execução</th>
+              <th class="th-pre th-pre-last">Dupla de Ouro</th>
+              <th>Total</th>
+            </tr></thead>
+            <tbody id="tbody-juridico"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- FINANCEIRO / ADM -->
+    <div id="tab-financeiro" style="display:none">
+      <div class="people-grid" id="cards-financeiro"></div>
+      <div class="summary-section">
+        <div class="summary-label">Resumo Financeiro / ADM</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>Nome</th>
+              <th class="th-pre th-pre-first">Prêmio Execução</th>
+              <th class="th-pre">Prêmio Resultado</th>
+              <th class="th-pre th-pre-last">Obj. Coletivo</th>
+              <th>Total</th>
+            </tr></thead>
+            <tbody id="tbody-financeiro"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</main>
+
+<!-- MODAL DADOS MANUAIS -->
+<div class="modal-manuais-backdrop" id="modalManuaisBackdrop" onclick="fecharModalManuais(event)">
+  <div class="modal-manuais">
+    <div class="mm-header">
+      <span class="mm-title">Dados manuais</span>
+      <button class="btn-close" onclick="closeModalManuais()">✕</button>
+    </div>
+    <div class="mm-body" id="mmBody"></div>
+    <div class="mm-footer">
+      <button class="btn-mm-cancel" onclick="closeModalManuais()">Cancelar</button>
+      <button class="btn-mm-apply" onclick="aplicarManuais()">Aplicar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL BREAKDOWN -->
+<div class="modal-backdrop" id="modalBackdrop" onclick="fecharModal(event)">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-name" id="modal-name"></div>
+        <div class="modal-tag" id="modal-tag"></div>
+      </div>
+      <button class="btn-close" onclick="closeModal()">✕</button>
+    </div>
+    <div id="modal-body"></div>
+    <div class="modal-total">
+      <span class="lbl">Total</span>
+      <span class="val" id="modal-total"></span>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── MAPA SIGLA → NOME ─────────────────────────────────────────────────────
+const JURIDICO_MAP = {
+  "D":  "Daniel",
+  "DL": "Débora",
+  "EZ": "Eduardo",
+  "F":  "Fernanda",
+  "JC": "Johnathan",
+  "LF": "Luiz F.",
+  "L":  "Luiz H.",
+  "NE": "Nataly",
+  "NS": "Nicolli",
+  "TZ": "Tarciane",
+  "TP": "Tatiana",
+};
+
+// ── CONFIG ────────────────────────────────────────────────────────────────
+const CFG = {
+  CREDITO_VAL: 20,
+  JOHNATHAN_VAL: 60,        // R$60 por linha/processo, ignora coluna C
+  ADICIONAL_CREDITOS: 2,
+  ADICIONAL_THRESHOLD: 20000,
+  INSERCAO_VAL: 0.50,
+  LIQ_VAL_UNIT: 11.25,      // valor por crédito liquidado
+  PREMIO_BASE_VOL: 400000,
+  PREMIO_BASE_VAL: 400,
+  PREMIO_INC_VOL: 100000,
+  PREMIO_INC_VAL: 100,
+};
+
+// ── STATE ─────────────────────────────────────────────────────────────────
+let state = {
+  comercial: {},
+  juridico: {},
+  removedComercial: [],
+  removedJuridico: [],
+  totalCreditosEmpresa: 0,
+  manuais: {}, // { key: { ins, camp, prec } }
+};
+
+// ── UTILS ─────────────────────────────────────────────────────────────────
+const fmt  = v => Number(v).toLocaleString('pt-BR', { style:'currency', currency:'BRL' });
+const fmtN = v => Number(v).toLocaleString('pt-BR');
+const cap  = s => s.split(' ').map(w => w.charAt(0).toUpperCase()+w.slice(1)).join(' ');
+const sid  = k => k.replace(/[^a-z0-9]/g, '_');
+
+function getManual(key, field) {
+  return (state.manuais[key] && state.manuais[key][field]) || 0;
+}
+
+function premioVolume(vol) {
+  if (vol < CFG.PREMIO_BASE_VOL) return 0;
+  const fatias = Math.floor((vol - CFG.PREMIO_BASE_VOL) / CFG.PREMIO_INC_VOL);
+  return CFG.PREMIO_BASE_VAL + fatias * CFG.PREMIO_INC_VAL;
+}
+
+function getVal(selector) {
+  const el = document.querySelector(selector);
+  return parseFloat(el?.value) || 0;
+}
+
+// ── PARSE ─────────────────────────────────────────────────────────────────
+function processarPlanilha(data) {
+  const wb = XLSX.read(data, { type:'array', cellDates:true });
+  const sheetName = wb.SheetNames.find(n => ['principal','planilha1'].includes(n.toLowerCase().trim()));
+  if (!sheetName) { setStatus('Aba "Principal" não encontrada.','error'); return; }
+
+  const ws = wb.Sheets[sheetName];
+  const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:null });
+
+  let hRow=-1, colC, colD, colI, colP, colR;
+  for (let i=0; i<Math.min(6,rows.length); i++) {
+    const r = rows[i].map(c => c ? String(c).trim().toUpperCase() : '');
+    if (r.includes('COMERCIAL')) {
+      hRow=i; colC=r.indexOf('COMERCIAL');
+      colD=r.includes('JURÍDICO') ? r.indexOf('JURÍDICO') : r.indexOf('JURIDICO');
+      colI=r.indexOf('C'); colP=r.indexOf('VALOR'); colR=r.indexOf('CONTRATO');
+      break;
+    }
+  }
+  if (hRow===-1) { setStatus('Cabeçalho não encontrado.','error'); return; }
+
+  const comercial={}, juridico={};
+  let mesRef=null;
+  let totalCreditosEmpresa=0; // soma créditos normais de todas as linhas PAGO
+
+  for (let i=hRow+1; i<rows.length; i++) {
+    const row=rows[i];
+    if (!row||row.every(c=>c===null)) continue;
+    const contrato = row[colR] ? String(row[colR]).trim().toUpperCase() : '';
+    if (contrato!=='PAGO') continue;
+
+    const valor    = parseFloat(row[colP])||0;
+    const creditos = parseFloat(row[colI])||0;
+    const adicional = valor>=CFG.ADICIONAL_THRESHOLD ? CFG.ADICIONAL_CREDITOS : 0;
+
+    totalCreditosEmpresa += creditos;
+
+    if (!mesRef && row[1]) {
+      const d = row[1] instanceof Date ? row[1] : new Date(row[1]);
+      if (!isNaN(d)) mesRef = d.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+    }
+
+    // Comercial
+    const nC = row[colC] ? String(row[colC]).trim() : '';
+    if (nC) {
+      const key = nC.toLowerCase();
+      if (!comercial[key]) comercial[key]={nome:cap(nC),creditos:0,adicionais:0,volume:0,linhas:0};
+      comercial[key].creditos  += creditos;
+      comercial[key].adicionais+= adicional;
+      comercial[key].volume    += valor;
+      comercial[key].linhas    += 1;
+    }
+
+    // Jurídico (sigla → nome)
+    if (colD!==-1) {
+      const sigla = row[colD] ? String(row[colD]).trim().toUpperCase() : '';
+      const nomeJur = JURIDICO_MAP[sigla];
+      if (nomeJur) {
+        const key = nomeJur.toLowerCase();
+        if (!juridico[key]) juridico[key]={nome:nomeJur,sigla,creditos:0,adicionais:0,volume:0,linhas:0};
+        juridico[key].creditos  += creditos;
+        juridico[key].adicionais+= adicional;
+        juridico[key].volume    += valor;
+        juridico[key].linhas    += 1; // para Johnathan: R$60 por linha
+      }
+    }
+  }
+
+  state.comercial = comercial;
+  state.juridico  = juridico;
+  state.removedComercial=[];
+  state.removedJuridico=[];
+  state.totalCreditosEmpresa = totalCreditosEmpresa;
+
+  if (mesRef) document.getElementById('mes-ref').textContent = mesRef;
+
+  // Atualiza cards globais
+  const totCredNorm = Object.values(comercial).reduce((s,d)=>s+d.creditos,0);
+  const totAdic     = Object.values(comercial).reduce((s,d)=>s+d.adicionais,0);
+  const totVol      = Object.values(comercial).reduce((s,d)=>s+d.volume,0);
+  document.getElementById('gc-creditos').textContent  = fmtN(totCredNorm);
+  document.getElementById('gc-adicionais').textContent= fmtN(totAdic);
+  document.getElementById('gc-volume').textContent    = fmt(totVol);
+
+  renderAll();
+  renderFinanceiro();
+  document.getElementById('appContent').style.display='block';
+  document.getElementById('btnFill').style.display='block';
+  document.getElementById('btnRegistrar').style.display='block';
+  document.getElementById('btnPdf').style.display='block';
+  setStatus(`Planilha processada · ${Object.keys(comercial).length} comercial · ${Object.keys(juridico).length} jurídico`, 'ok');
+}
+
+// ── RENDER COMERCIAL / JURIDICO ───────────────────────────────────────────
+function liqQt_hint(val) {
+  const liqQt = getVal('#gc-liq-qt');
+  if (!liqQt) return `<span style="font-size:11px;color:var(--mu);font-style:italic">Preencha os créditos liquidados</span>`;
+  return fmt(val);
+}
+
+function renderAll() {
+  renderTime('comercial');
+  renderTime('juridico');
+}
+
+// Calcula comissão base de uma pessoa (sem inserções, liquidados, prêmios)
+function faixaMultiplicador(volume) {
+  if (volume <= 100000)  return 5;
+  if (volume <= 250000)  return 10;
+  if (volume <= 400000)  return 15;
+  return 20;
+}
+
+const FAIXA_NOMES = ['fernanda', 'luiz h.'];
+
+function comissaoBase(tipo, d) {
+  if (tipo === 'juridico' && d.nome === 'Johnathan') {
+    return d.linhas * CFG.JOHNATHAN_VAL;
+  }
+  if (tipo === 'juridico' && FAIXA_NOMES.includes(d.nome.toLowerCase())) {
+    const mult = faixaMultiplicador(d.volume);
+    return (d.creditos + d.adicionais) * mult;
+  }
+  return (d.creditos + d.adicionais) * CFG.CREDITO_VAL;
+}
+
+// Comissão liquidados para pessoa do jurídico
+function comissaoLiquidados(key) {
+  const d = state.juridico[key];
+  if (!d || d.nome === 'Johnathan') return 0; // Johnathan não participa
+  const liqQt = getVal('#gc-liq-qt');
+  const liqTotal = liqQt * CFG.LIQ_VAL_UNIT;
+  const totalEmpresa = state.totalCreditosEmpresa;
+  if (totalEmpresa === 0) return 0;
+  const pct = d.creditos / totalEmpresa;
+  return pct * liqTotal;
+}
+
+function renderTime(tipo) {
+  const data    = tipo==='comercial' ? state.comercial : state.juridico;
+  const removed = tipo==='comercial' ? state.removedComercial : state.removedJuridico;
+  const cardsEl = document.getElementById(`cards-${tipo}`);
+  const tbodyEl = document.getElementById(`tbody-${tipo}`);
+  const chipsEl = document.getElementById(`chips-${tipo}`);
+  const removedSec = document.getElementById(`removed-${tipo}`);
+
+  cardsEl.innerHTML=''; tbodyEl.innerHTML=''; chipsEl.innerHTML='';
+
+  const nomes = Object.keys(data)
+    .filter(n=>!removed.includes(n))
+    .sort((a,b)=>data[b].volume - data[a].volume);
+
+  let totCom=0,totLiq=0,totPvol=0,totTotal=0,totCred=0,totAdic=0,totIns=0,totVol=0;
+
+  nomes.forEach((key,idx)=>{
+    const d=data[key];
+    const nomeDisp = d.sigla ? `${d.nome} (${d.sigla})` : d.nome;
+    const isJohnathan = tipo==='juridico' && d.nome==='Johnathan';
+    const isFaixa     = tipo==='juridico' && FAIXA_NOMES.includes(d.nome.toLowerCase());
+    const mult        = isFaixa ? faixaMultiplicador(d.volume) : CFG.CREDITO_VAL;
+    const comNormal  = isJohnathan ? 0 : d.creditos * mult;
+    const comAdic    = isJohnathan ? 0 : d.adicionais * mult;
+    const comJohn    = isJohnathan ? d.linhas * CFG.JOHNATHAN_VAL : 0;
+    const comissao   = comissaoBase(tipo, d);
+    const liqVal     = tipo==='juridico' && !isJohnathan ? comissaoLiquidados(key) : 0;
+    const pVol       = premioVolume(d.volume);
+    const isNicolli  = d.nome.toLowerCase()==='nicolli';
+
+    // Subtítulo de liquidados
+    const liqQt      = getVal('#gc-liq-qt');
+    const liqTotal   = liqQt * CFG.LIQ_VAL_UNIT;
+    const totalEmp   = state.totalCreditosEmpresa;
+    const pct        = totalEmp > 0 ? (d.creditos / totalEmp * 100).toFixed(2) : '0.00';
+    const liqSubtitle= liqQt > 0
+      ? `${pct}% × ${fmt(liqTotal)} (total liquidados)`
+      : `Preencha os créditos liquidados`;
+
+    const card=document.createElement('div');
+    card.className='person-card';
+    card.dataset.key=key; card.dataset.tipo=tipo;
+    card.style.animationDelay=`${idx*0.04}s`;
+
+    // Bloco de comissões
+    let comissoesHTML = '';
+    if (isJohnathan) {
+      comissoesHTML = `
+        <div class="card-group-label">Comissões</div>
+        <div class="row"><span class="lbl">Créditos Comprados<br><span style="font-size:11px;color:var(--mu)">${fmtN(d.linhas)} proc. × R$ 60,00</span></span><span class="val">${fmt(comJohn)}</span></div>
+        <div class="row"><span class="lbl">Processos Inseridos<br><span style="font-size:11px;color:var(--mu)" id="ins-sub-${sid(key)}">0 × R$ 0,50</span></span><span class="val" id="row-ins-val-${sid(key)}">R$ 0,00</span></div>`;
+    } else {
+      const multLabel = `R$ ${mult},00`;
+      const faixaInfo = isFaixa ? ` <span style="font-size:10px;color:var(--gold)">(faixa ativa)</span>` : '';
+      comissoesHTML = `
+        <div class="card-group-label">Comissões</div>
+        <div class="row"><span class="lbl">Créditos Comprados<br><span style="font-size:11px;color:var(--mu)">${fmtN(d.creditos)} × ${multLabel}${faixaInfo}</span></span><span class="val">${fmt(comNormal)}</span></div>
+        <div class="row"><span class="lbl">Créditos Adicionais<br><span style="font-size:11px;color:var(--mu)">${fmtN(d.adicionais)} × ${multLabel}</span></span><span class="val">${fmt(comAdic)}</span></div>
+        ${tipo==='juridico' ? `
+        <div class="row"><span class="lbl">Processos Inseridos<br><span style="font-size:11px;color:var(--mu)" id="ins-sub-${sid(key)}">0 × R$ 0,50</span></span><span class="val" id="row-ins-val-${sid(key)}">R$ 0,00</span></div>
+        <div class="row"><span class="lbl">Processos Liquidados<br><span style="font-size:11px;color:var(--mu)" id="liq-subtitle-${sid(key)}">${liqSubtitle}</span></span><span class="val" id="row-liq-${sid(key)}">${liqQt > 0 ? fmt(liqVal) : '—'}</span></div>
+        ${isNicolli ? `
+        <div class="row"><span class="lbl">Precatório<br><span style="font-size:11px;color:var(--mu)" id="prec-sub-${sid(key)}">0 × R$ 20,00</span></span><span class="val" id="row-prec-val-${sid(key)}">R$ 0,00</span></div>
+        <div class="row"><span class="lbl">Precatório Adicional<br><span style="font-size:11px;color:var(--mu)" id="prec2-sub-${sid(key)}">0 × R$ 20,00</span></span><span class="val" id="row-prec2-val-${sid(key)}">R$ 0,00</span></div>
+        ` : ''}
+        ` : ''}`;
+    }
+
+    // Bloco de prêmios
+    let premiosHTML = `
+        <div class="card-divider"></div>
+        <div class="card-group-label">Prêmios</div>
+        <div class="row"><span class="lbl">Objetivo</span><span class="val">${fmt(pVol)}</span></div>
+        <div class="row"><span class="lbl">Objetivo Coletivo</span><span class="val" id="row-objcol-val-${sid(key)}">R$ 0,00</span></div>
+        <div class="row"><span class="lbl">${tipo==='comercial'?'Campanha Execução (Meet)':'Campanha Execução (Inserções)'} — 13/04 a 17/04</span><span class="val" id="row-camp-val-${sid(key)}">R$ 0,00</span></div>
+        <div class="row"><span class="lbl">${tipo==='comercial'?'Campanha Execução (Meet)':'Campanha Execução (Inserções)'} — 27/04 a 30/04</span><span class="val" id="row-campp2-val-${sid(key)}">R$ 0,00</span></div>
+        <div class="row"><span class="lbl">Campanha Volume — 13/04 a 17/04</span><span class="val" id="row-camp2-val-${sid(key)}">R$ 0,00</span></div>
+        <div class="row"><span class="lbl">Campanha Volume — 27/04 a 30/04</span><span class="val" id="row-camp2p2-val-${sid(key)}">R$ 0,00</span></div>
+        <div class="row"><span class="lbl">Campanha Dupla de Ouro — 13/04 a 17/04</span><span class="val" id="row-camp3-val-${sid(key)}">R$ 0,00</span></div>
+        <div class="row"><span class="lbl">Campanha Dupla de Ouro — 27/04 a 30/04</span><span class="val" id="row-camp3p2-val-${sid(key)}">R$ 0,00</span></div>`;
+
+    if (isNicolli) { /* precatório já está no bloco de comissões */ }
+
+    card.innerHTML=`
+      <div class="card-top">
+        <div class="card-top-row">
+          <span class="person-name">${nomeDisp}</span>
+          <div class="card-actions">
+            <span class="tag ${tipo}">${tipo==='comercial'?'Comercial':'Jurídico'}</span>
+            <button class="btn-remove" onclick="event.stopPropagation();remover('${tipo}','${key}')">✕</button>
+          </div>
+        </div>
+        <div class="card-stats">
+          ${isJohnathan
+            ? `<div class="stat"><div class="stat-val">${fmtN(d.linhas)}</div><div class="stat-label">Processos</div></div>
+               <div class="stat"><div class="stat-val">${fmt(d.volume).replace('R$\u00a0','').split(',')[0]}</div><div class="stat-label">Volume</div></div>`
+            : `<div class="stat"><div class="stat-val">${fmtN(d.creditos)}</div><div class="stat-label">Créditos</div></div>
+               <div class="stat"><div class="stat-val">${fmtN(d.adicionais)}</div><div class="stat-label">Adicionais</div></div>
+               <div class="stat"><div class="stat-val">${fmt(d.volume).replace('R$\u00a0','').split(',')[0]}</div><div class="stat-label">Volume</div></div>`
+          }
+        </div>
+      </div>
+      <div class="card-body" onclick="abrirModal('${tipo}','${key}')">
+        ${comissoesHTML}
+        ${premiosHTML}
+        <p class="hint">Clique para ver o detalhamento</p>
+      </div>
+      <div class="card-total">
+        <div class="card-total-col">
+          <span class="total-lbl">Comissões</span>
+          <span class="total-val" id="subtot-com-${tipo}-${sid(key)}">${fmt(comissao+liqVal)}</span>
+        </div>
+        <div class="card-total-col">
+          <span class="total-lbl">Prêmios</span>
+          <span class="total-val" id="subtot-pre-${tipo}-${sid(key)}">${fmt(pVol)}</span>
+        </div>
+        <div class="card-total-col">
+          <span class="total-lbl">Total</span>
+          <span class="total-val total-main" id="total-${tipo}-${sid(key)}">${fmt(comissao+liqVal+pVol)}</span>
+        </div>
+      </div>`;
+    cardsEl.appendChild(card);
+
+    card.querySelectorAll('input').forEach(inp=>{
+      inp.addEventListener('click', e=>e.stopPropagation());
+    });
+
+    // SUMMARY ROW
+    const tr=document.createElement('tr');
+    tr.dataset.key=key; tr.dataset.tipo=tipo;
+    tr.onclick=()=>abrirModal(tipo,key);
+
+    if (tipo==='juridico') {
+      const insQt = getManual(key,'ins');
+      const insVal = insQt * CFG.INSERCAO_VAL;
+      const precVal = getManual(key,'prec') * 20;
+      const campVal = getManual(key,'camp');
+      const rowTotal = comissao + insVal + liqVal + pVol + (state.manuais[`obj_col_${tipo}`]||0) + campVal + getManual(key,'camp2') + getManual(key,'camp3') + precVal;
+      tr.innerHTML=`
+        <td>${nomeDisp}</td>
+        <td>${fmt(d.volume)}</td>
+        <td class="td-com-first" id="s-cred-${sid(key)}">${fmt(isJohnathan ? comissao : d.creditos * mult)}</td>
+        <td class="td-com" id="s-adic-${sid(key)}">${isJohnathan ? '—' : fmt(d.adicionais * mult)}</td>
+        <td class="td-com" id="s-ins-${sid(key)}">${fmt(insVal)}</td>
+        <td class="td-com-last" id="s-liq-${sid(key)}">${fmt(liqVal)}</td>
+        <td class="td-pre-first" id="s-pvol-${tipo}-${sid(key)}">${fmt(pVol)}</td>
+        <td class="td-pre" id="s-objcol-${tipo}-${sid(key)}">${fmt(state.manuais['obj_col_'+tipo]||0)}</td>
+        <td class="td-pre" id="s-pcamp-${tipo}-${sid(key)}">${fmt(campVal+precVal)}</td>
+        <td class="td-pre" id="s-pcamp2-${tipo}-${sid(key)}">${fmt(getManual(key,'camp2'))}</td>
+        <td class="td-pre-last" id="s-pcamp3-${tipo}-${sid(key)}">${fmt(getManual(key,'camp3'))}</td>
+        <td id="s-tot-${tipo}-${sid(key)}">${fmt(rowTotal)}</td>`;
+    } else {
+      const campVal = getManual(key,'camp');
+      const rowTotal = comissao + pVol + (state.manuais[`obj_col_${tipo}`]||0) + campVal + getManual(key,'camp2') + getManual(key,'camp3');
+      tr.innerHTML=`
+        <td>${nomeDisp}</td>
+        <td>${fmt(d.volume)}</td>
+        <td class="td-com-first">${fmt(d.creditos * CFG.CREDITO_VAL)}</td>
+        <td class="td-com-last">${fmt(d.adicionais * CFG.CREDITO_VAL)}</td>
+        <td class="td-pre-first" id="s-pvol-${tipo}-${sid(key)}">${fmt(pVol)}</td>
+        <td class="td-pre" id="s-objcol-${tipo}-${sid(key)}">${fmt(state.manuais['obj_col_'+tipo]||0)}</td>
+        <td class="td-pre" id="s-pcamp-${tipo}-${sid(key)}">${fmt(campVal)}</td>
+        <td class="td-pre" id="s-pcamp2-${tipo}-${sid(key)}">${fmt(getManual(key,'camp2'))}</td>
+        <td class="td-pre-last" id="s-pcamp3-${tipo}-${sid(key)}">${fmt(getManual(key,'camp3'))}</td>
+        <td id="s-tot-${tipo}-${sid(key)}">${fmt(rowTotal)}</td>`;
+    }
+    tbodyEl.appendChild(tr);
+
+    totCom+=comissao; totLiq+=liqVal; totPvol+=pVol; totTotal+=comissao+liqVal+pVol;
+    totCred += isJohnathan ? comissao : d.creditos * mult;
+    totAdic += isJohnathan ? 0 : d.adicionais * mult;
+    totIns  += getManual(key,'ins') * CFG.INSERCAO_VAL;
+    totVol  += d.volume;
+  });
+
+  // Totals row
+  const trT=document.createElement('tr');
+  trT.className='totals-row';
+  if (tipo==='juridico') {
+    trT.innerHTML=`<td>Total</td><td>${fmt(totVol)}</td>
+      <td class="td-com-first" id="st-cred-${tipo}">${fmt(totCred)}</td>
+      <td class="td-com" id="st-adic-${tipo}">${fmt(totAdic)}</td>
+      <td class="td-com" id="st-ins-${tipo}">${fmt(totIns)}</td>
+      <td class="td-com-last" id="st-liq-${tipo}">${fmt(totLiq)}</td>
+      <td class="td-pre-first" id="st-pvol-${tipo}">${fmt(totPvol)}</td>
+      <td class="td-pre" id="st-objcol-${tipo}">${fmt(0)}</td>
+      <td class="td-pre" id="st-pcamp-${tipo}">${fmt(0)}</td>
+      <td class="td-pre" id="st-pcamp2-${tipo}">${fmt(0)}</td>
+      <td class="td-pre-last" id="st-pcamp3-${tipo}">${fmt(0)}</td>
+      <td id="st-tot-${tipo}">${fmt(totTotal)}</td>`;
+  } else {
+    trT.innerHTML=`<td>Total</td><td>${fmt(totVol)}</td>
+      <td class="td-com-first" id="st-cred-${tipo}">${fmt(totCred)}</td>
+      <td class="td-com-last" id="st-adic-${tipo}">${fmt(totAdic)}</td>
+      <td class="td-pre-first" id="st-pvol-${tipo}">${fmt(totPvol)}</td>
+      <td class="td-pre" id="st-objcol-${tipo}">${fmt(0)}</td>
+      <td class="td-pre" id="st-pcamp-${tipo}">${fmt(0)}</td>
+      <td class="td-pre" id="st-pcamp2-${tipo}">${fmt(0)}</td>
+      <td class="td-pre-last" id="st-pcamp3-${tipo}">${fmt(0)}</td>
+      <td id="st-tot-${tipo}">${fmt(totTotal)}</td>`;
+  }
+  tbodyEl.appendChild(trT);
+
+  removed.forEach(key=>{
+    const d=tipo==='comercial'?state.comercial[key]:state.juridico[key];
+    const chip=document.createElement('div');
+    chip.className='removed-chip';
+    chip.innerHTML=`${d?.nome||key} <button class="btn-restore" onclick="restaurar('${tipo}','${key}')">↩</button>`;
+    chipsEl.appendChild(chip);
+  });
+  removedSec.style.display=removed.length>0?'block':'none';
+}
+
+// ── FINANCEIRO ────────────────────────────────────────────────────────────
+function renderFinanceiro() {
+  const cardsEl=document.getElementById('cards-financeiro');
+  const tbodyEl=document.getElementById('tbody-financeiro');
+  cardsEl.innerHTML=''; tbodyEl.innerHTML='';
+
+  const card=document.createElement('div');
+  card.className='person-card';
+  card.innerHTML=`
+    <div class="card-top">
+      <div class="card-top-row">
+        <span class="person-name">Marco Antônio</span>
+        <span class="tag financeiro">Financeiro/ADM</span>
+      </div>
+    </div>
+    <div class="card-body" onclick="abrirModalFinanceiro()">
+      <div class="card-group-label">Prêmios</div>
+      <div class="row"><span class="lbl">Prêmio Execução</span><span class="val" id="fin-exec-val">R$ 0,00</span></div>
+      <div class="row"><span class="lbl">Prêmio Resultado</span><span class="val" id="fin-res-val">R$ 0,00</span></div>
+      <div class="row"><span class="lbl">Objetivo Coletivo</span><span class="val" id="fin-objcol-val">R$ 0,00</span></div>
+      <p class="hint">Clique para ver o detalhamento</p>
+    </div>
+    <div class="card-total">
+      <div class="card-total-col" style="grid-column:1/-1">
+        <span class="total-lbl">Total</span>
+        <span class="total-val total-main" id="total-fin">R$ 0,00</span>
+      </div>
+    </div>`;
+  cardsEl.appendChild(card);
+  card.querySelector('.card-body').querySelectorAll('input').forEach(i=>i.addEventListener('click',e=>e.stopPropagation()));
+
+  const tr=document.createElement('tr');
+  tr.onclick=()=>abrirModalFinanceiro();
+  tr.style.cursor='pointer';
+  tr.innerHTML=`
+    <td>Marco Antônio</td>
+    <td class="td-pre-first" id="s-fin-exec">R$ 0,00</td>
+    <td class="td-pre" id="s-fin-res">R$ 0,00</td>
+    <td class="td-pre-last" id="s-fin-objcol">R$ 0,00</td>
+    <td id="s-fin-tot">R$ 0,00</td>`;
+  tbodyEl.appendChild(tr);
+}
+
+function recalcFinanceiro() {
+  const exec   = state.manuais['marco_fin_exec']||0;
+  const res    = state.manuais['marco_fin_res']||0;
+  const objCol = state.manuais['obj_col_financeiro']||0;
+  const premios = exec + res + objCol;
+  const tot     = premios;
+  const el = id => document.getElementById(id);
+  if(el('total-fin'))    el('total-fin').textContent    = fmt(tot);
+  if(el('fin-com-val'))  el('fin-com-val').textContent  = fmt(0);
+  if(el('fin-pre-val'))  el('fin-pre-val').textContent  = fmt(premios);
+  if(el('fin-exec-val')) el('fin-exec-val').textContent = fmt(exec);
+  if(el('fin-res-val'))  el('fin-res-val').textContent  = fmt(res);
+  if(el('fin-objcol-val'))el('fin-objcol-val').textContent = fmt(objCol);
+  if(el('s-fin-exec'))   el('s-fin-exec').textContent   = fmt(exec);
+  if(el('s-fin-res'))    el('s-fin-res').textContent    = fmt(res);
+  if(el('s-fin-objcol')) el('s-fin-objcol').textContent = fmt(objCol);
+  if(el('s-fin-tot'))    el('s-fin-tot').textContent    = fmt(tot);
+}
+
+// ── LIQUIDADOS ────────────────────────────────────────────────────────────
+function recalcLiquidados() {
+  const liqQt  = getVal('#gc-liq-qt');
+  const liqVal = liqQt * CFG.LIQ_VAL_UNIT;
+  document.getElementById('gc-liq-val').textContent = fmt(liqVal);
+
+  const removed = state.removedJuridico;
+  Object.keys(state.juridico).filter(k=>!removed.includes(k)).forEach(key=>{
+    const d = state.juridico[key];
+    if (d.nome === 'Johnathan') return;
+    const lv = comissaoLiquidados(key);
+    const liqQtVal = getVal('#gc-liq-qt');
+    const liqTotalVal = liqQtVal * CFG.LIQ_VAL_UNIT;
+    const totalEmp = state.totalCreditosEmpresa;
+    const pct = totalEmp > 0 ? (d.creditos / totalEmp * 100).toFixed(2) : '0.00';
+    const subtitle = liqQtVal > 0
+      ? `${pct}% × ${fmt(liqTotalVal)} (total liquidados)`
+      : `Preencha os créditos liquidados`;
+
+    const elR = document.getElementById(`row-liq-${sid(key)}`);
+    if (elR) elR.textContent = liqQtVal > 0 ? fmt(lv) : '—';
+    const elSub = document.getElementById(`liq-subtitle-${sid(key)}`);
+    if (elSub) elSub.textContent = subtitle;
+    const elS = document.getElementById(`s-liq-${sid(key)}`);
+    if (elS) elS.textContent = fmt(lv);
+    _recalcCardInternal('juridico', key);
+  });
+  state.manuais['obj_col_juridico'] = parseFloat(document.getElementById('mm-obj-col-juridico')?.value) || 0;
+  recalcTotals('juridico');
+}
+
+// Versão interna que não dispara recalcLiquidados
+function _recalcCardInternal(tipo, key) {
+  const d = tipo==='comercial' ? state.comercial[key] : state.juridico[key];
+  if (!d) return;
+  const isJohnathan = tipo==='juridico' && d.nome==='Johnathan';
+  const comissao = comissaoBase(tipo, d);
+  const insQt    = tipo==='juridico' ? getManual(key,'ins') : 0;
+  const insVal   = insQt * CFG.INSERCAO_VAL;
+  const liqVal   = (tipo==='juridico' && !isJohnathan) ? comissaoLiquidados(key) : 0;
+  const pVol     = premioVolume(d.volume);
+  const pCamp    = getManual(key,'camp')  + getManual(key,'campp2');
+  const pCamp2   = getManual(key,'camp2') + getManual(key,'camp2p2');
+  const pCamp3   = getManual(key,'camp3') + getManual(key,'camp3p2');
+  const objCol   = state.manuais[`obj_col_${tipo}`] || 0;
+  const precQt   = getManual(key,'prec');
+  const precQt2  = getManual(key,'prec2');
+  const precVal  = (precQt + precQt2) * 20;
+  const total    = comissao + insVal + liqVal + pVol + objCol + pCamp + pCamp2 + pCamp3 + precVal;
+
+  const el = id => document.getElementById(id);
+  if (el(`total-${tipo}-${sid(key)}`)) el(`total-${tipo}-${sid(key)}`).textContent = fmt(total);
+  if (el(`subtot-com-${tipo}-${sid(key)}`)) el(`subtot-com-${tipo}-${sid(key)}`).textContent = fmt(comissao + insVal + liqVal + precVal);
+  if (el(`subtot-pre-${tipo}-${sid(key)}`)) el(`subtot-pre-${tipo}-${sid(key)}`).textContent = fmt(pVol + objCol + pCamp + pCamp2 + pCamp3);
+  if (el(`row-objcol-val-${sid(key)}`)) el(`row-objcol-val-${sid(key)}`).textContent = fmt(objCol);
+  if (el(`s-ins-${sid(key)}`))  el(`s-ins-${sid(key)}`).textContent  = fmtN(insQt);
+  if (el(`s-liq-${sid(key)}`))  el(`s-liq-${sid(key)}`).textContent  = fmt(liqVal);
+  if (el(`row-ins-val-${sid(key)}`)) el(`row-ins-val-${sid(key)}`).textContent = fmt(insVal);
+  if (el(`ins-sub-${sid(key)}`)) el(`ins-sub-${sid(key)}`).textContent = `${fmtN(insQt)} × R$ 0,50`;
+  if (el(`row-prec-val-${sid(key)}`)) el(`row-prec-val-${sid(key)}`).textContent = fmt(precVal);
+  if (el(`prec-sub-${sid(key)}`)) el(`prec-sub-${sid(key)}`).textContent = `${fmtN(precQt)} × R$ 20,00`;
+  if (el(`prec2-sub-${sid(key)}`)) el(`prec2-sub-${sid(key)}`).textContent = `${fmtN(precQt2)} × R$ 20,00`;
+  if (el(`row-prec2-val-${sid(key)}`)) el(`row-prec2-val-${sid(key)}`).textContent = fmt(precQt2 * 20);
+  if (el(`row-camp-val-${sid(key)}`))  el(`row-camp-val-${sid(key)}`).textContent  = fmt(pCamp);
+  if (el(`row-camp-val-${sid(key)}`))    el(`row-camp-val-${sid(key)}`).textContent    = fmt(getManual(key,'camp'));
+  if (el(`row-campp2-val-${sid(key)}`))  el(`row-campp2-val-${sid(key)}`).textContent  = fmt(getManual(key,'campp2'));
+  if (el(`row-camp2-val-${sid(key)}`))   el(`row-camp2-val-${sid(key)}`).textContent   = fmt(getManual(key,'camp2'));
+  if (el(`row-camp2p2-val-${sid(key)}`)) el(`row-camp2p2-val-${sid(key)}`).textContent = fmt(getManual(key,'camp2p2'));
+  if (el(`row-camp3-val-${sid(key)}`))   el(`row-camp3-val-${sid(key)}`).textContent   = fmt(getManual(key,'camp3'));
+  if (el(`row-camp3p2-val-${sid(key)}`)) el(`row-camp3p2-val-${sid(key)}`).textContent = fmt(getManual(key,'camp3p2'));
+  if (el(`s-com-${tipo}-${sid(key)}`)) el(`s-com-${tipo}-${sid(key)}`).textContent = fmt(comissao + insVal);
+  if (el(`s-pvol-${tipo}-${sid(key)}`)) el(`s-pvol-${tipo}-${sid(key)}`).textContent = fmt(pVol);
+  if (el(`s-pcamp-${tipo}-${sid(key)}`)) el(`s-pcamp-${tipo}-${sid(key)}`).textContent = fmt(pCamp + precVal);
+  if (el(`s-tot-${tipo}-${sid(key)}`)) el(`s-tot-${tipo}-${sid(key)}`).textContent = fmt(total);
+}
+
+// ── MODAL DADOS MANUAIS ───────────────────────────────────────────────────
+function abrirModalManuais() {
+  const body = document.getElementById('mmBody');
+  body.innerHTML = '';
+
+  // Jurídico — inseridos, liquidados, precatório (Nicolli), campanha
+  const jurRem = state.removedJuridico;
+  const jurNomes = Object.keys(state.juridico)
+    .filter(k => !jurRem.includes(k))
+    .sort((a,b) => state.juridico[b].volume - state.juridico[a].volume);
+
+  if (jurNomes.length) {
+    const sec = document.createElement('div');
+    sec.className = 'mm-team';
+    sec.innerHTML = `<div class="mm-team-label">Jurídico</div>
+    <div class="mm-person">
+      <div class="mm-person-name" style="font-size:12px;font-weight:600;color:var(--mu)">Prêmio coletivo do time</div>
+      <div class="mm-field">
+        <label>Prêmio Objetivo Coletivo</label>
+        <input type="number" min="0" step="0.01" class="mm-input" id="mm-obj-col-juridico" value="${state.manuais['obj_col_juridico']||0}" placeholder="0,00">
+      </div>
+    </div>`;
+    jurNomes.forEach(key => {
+      const d = state.juridico[key];
+      const isJohn = d.nome === 'Johnathan';
+      const isNic  = d.nome.toLowerCase() === 'nicolli';
+      const m = state.manuais[key] || {};
+      const nomeDisp = d.sigla ? `${d.nome} (${d.sigla})` : d.nome;
+      const p = document.createElement('div');
+      p.className = 'mm-person';
+      p.innerHTML = `
+        <div class="mm-person-name">${nomeDisp}</div>
+        <div class="mm-field">
+          <label>Processos Inseridos</label>
+          <div class="mm-field-right">
+            <input type="number" min="0" step="1" class="mm-input" id="mm-ins-${sid(key)}" value="${m.ins||0}" placeholder="0">
+            <span class="mm-input-hint">× R$ 0,50</span>
+          </div>
+        </div>
+        ${!isJohn ? `
+        ` : ''}
+        ${isNic ? `
+        <div class="mm-field">
+          <label>Precatório (qtd.)</label>
+          <div class="mm-field-right">
+            <input type="number" min="0" step="1" class="mm-input" id="mm-prec-${sid(key)}" value="${m.prec||0}" placeholder="0">
+            <span class="mm-input-hint">× R$ 20,00</span>
+          </div>
+        </div>
+        <div class="mm-field">
+          <label>Precatório Adicional (qtd.)</label>
+          <div class="mm-field-right">
+            <input type="number" min="0" step="1" class="mm-input" id="mm-prec2-${sid(key)}" value="${m.prec2||0}" placeholder="0">
+            <span class="mm-input-hint">× R$ 20,00</span>
+          </div>
+        </div>` : ''}
+        <div class="mm-field">
+          <label>Campanha Volume</label>
+          <div class="mm-field-right">
+            <input type="number" min="0" step="0.01" class="mm-input" id="mm-camp-jur-${sid(key)}" value="${m.camp||0}" placeholder="0,00">
+          </div>
+        </div>
+        <div class="mm-field">
+          <label>Campanha Execução (Inserções)</label>
+          <div class="mm-field-right">
+            <input type="number" min="0" step="0.01" class="mm-input" id="mm-camp2-jur-${sid(key)}" value="${m.camp2||0}" placeholder="0,00">
+          </div>
+        </div>
+        <div class="mm-field">
+          <label>Campanha Dupla de Ouro</label>
+          <div class="mm-field-right">
+            <input type="number" min="0" step="0.01" class="mm-input" id="mm-camp3-jur-${sid(key)}" value="${m.camp3||0}" placeholder="0,00">
+          </div>
+        </div>`;
+      sec.appendChild(p);
+    });
+    body.appendChild(sec);
+  }
+
+  // Comercial — apenas campanha
+  const comRem = state.removedComercial;
+  const comNomes = Object.keys(state.comercial)
+    .filter(k => !comRem.includes(k))
+    .sort((a,b) => state.comercial[b].volume - state.comercial[a].volume);
+
+  if (comNomes.length) {
+    const sec = document.createElement('div');
+    sec.className = 'mm-team';
+    sec.innerHTML = `<div class="mm-team-label">Comercial</div>
+    <div class="mm-person">
+      <div class="mm-person-name" style="font-size:12px;font-weight:600;color:var(--mu)">Prêmio coletivo do time</div>
+      <div class="mm-field">
+        <label>Prêmio Objetivo Coletivo</label>
+        <input type="number" min="0" step="0.01" class="mm-input" id="mm-obj-col-comercial" value="${state.manuais['obj_col_comercial']||0}" placeholder="0,00">
+      </div>
+    </div>`;
+    comNomes.forEach(key => {
+      const d = state.comercial[key];
+      const m = state.manuais[key] || {};
+      const p = document.createElement('div');
+      p.className = 'mm-person';
+      p.innerHTML = `
+        <div class="mm-person-name">${d.nome}</div>
+        <div class="mm-field"><label>Campanha Execução (Meet) — 13/04 a 17/04</label><div class="mm-field-right"><input type="number" min="0" step="0.01" class="mm-input" id="mm-camp-com-${sid(key)}" value="${m.camp||0}" placeholder="0,00"></div></div>
+        <div class="mm-field"><label>Campanha Execução (Meet) — 27/04 a 30/04</label><div class="mm-field-right"><input type="number" min="0" step="0.01" class="mm-input" id="mm-camp-com-p2-${sid(key)}" value="${m.campp2||0}" placeholder="0,00"></div></div>
+        <div class="mm-field"><label>Campanha Volume — 13/04 a 17/04</label><div class="mm-field-right"><input type="number" min="0" step="0.01" class="mm-input" id="mm-camp2-com-${sid(key)}" value="${m.camp2||0}" placeholder="0,00"></div></div>
+        <div class="mm-field"><label>Campanha Volume — 27/04 a 30/04</label><div class="mm-field-right"><input type="number" min="0" step="0.01" class="mm-input" id="mm-camp2-com-p2-${sid(key)}" value="${m.camp2p2||0}" placeholder="0,00"></div></div>
+        <div class="mm-field"><label>Campanha Dupla de Ouro — 13/04 a 17/04</label><div class="mm-field-right"><input type="number" min="0" step="0.01" class="mm-input" id="mm-camp3-com-${sid(key)}" value="${m.camp3||0}" placeholder="0,00"></div></div>
+        <div class="mm-field"><label>Campanha Dupla de Ouro — 27/04 a 30/04</label><div class="mm-field-right"><input type="number" min="0" step="0.01" class="mm-input" id="mm-camp3-com-p2-${sid(key)}" value="${m.camp3p2||0}" placeholder="0,00"></div></div>`;
+      sec.appendChild(p);
+    });
+    body.appendChild(sec);
+  }
+
+  // Financeiro
+  const finExec = state.manuais['marco_fin_exec'] || 0;
+  const finRes  = state.manuais['marco_fin_res']  || 0;
+  const secFin = document.createElement('div');
+  secFin.className = 'mm-team';
+  secFin.innerHTML = `
+    <div class="mm-team-label">Financeiro / ADM</div>
+    <div class="mm-person">
+      <div class="mm-person-name" style="font-size:12px;font-weight:600;color:var(--mu)">Prêmio coletivo do time</div>
+      <div class="mm-field">
+        <label>Prêmio Objetivo Coletivo</label>
+        <input type="number" min="0" step="0.01" class="mm-input" id="mm-obj-col-financeiro" value="${state.manuais['obj_col_financeiro']||0}" placeholder="0,00">
+      </div>
+    </div>
+    <div class="mm-person">
+      <div class="mm-person-name">Marco Antônio</div>
+      <div class="mm-field">
+        <label>Prêmio Execução</label>
+        <input type="number" min="0" step="0.01" class="mm-input" id="mm-fin-exec" value="${finExec}" placeholder="0,00">
+      </div>
+      <div class="mm-field">
+        <label>Prêmio Resultado</label>
+        <input type="number" min="0" step="0.01" class="mm-input" id="mm-fin-res" value="${finRes}" placeholder="0,00">
+      </div>
+    </div>`;
+  body.appendChild(secFin);
+
+  document.getElementById('modalManuaisBackdrop').classList.add('open');
+}
+
+function aplicarManuais() {
+  // Salvar obj_col antes de recalcular os cards
+  state.manuais['obj_col_juridico']  = parseFloat(document.getElementById('mm-obj-col-juridico')?.value)  || 0;
+  state.manuais['obj_col_comercial'] = parseFloat(document.getElementById('mm-obj-col-comercial')?.value) || 0;
+  state.manuais['obj_col_financeiro']= parseFloat(document.getElementById('mm-obj-col-financeiro')?.value)|| 0;
+
+  // Jurídico
+  const jurRem = state.removedJuridico;
+  Object.keys(state.juridico).filter(k=>!jurRem.includes(k)).forEach(key => {
+    const d = state.juridico[key];
+    const isNic = d.nome.toLowerCase() === 'nicolli';
+    if (!state.manuais[key]) state.manuais[key] = {};
+    state.manuais[key].ins  = parseFloat(document.getElementById(`mm-ins-${sid(key)}`)?.value) || 0;
+    state.manuais[key].camp   = parseFloat(document.getElementById(`mm-camp-jur-${sid(key)}`)?.value)    || 0;
+    state.manuais[key].campp2 = parseFloat(document.getElementById(`mm-camp-jur-p2-${sid(key)}`)?.value)  || 0;
+    state.manuais[key].camp2  = parseFloat(document.getElementById(`mm-camp2-jur-${sid(key)}`)?.value)   || 0;
+    state.manuais[key].camp2p2= parseFloat(document.getElementById(`mm-camp2-jur-p2-${sid(key)}`)?.value)|| 0;
+    state.manuais[key].camp3  = parseFloat(document.getElementById(`mm-camp3-jur-${sid(key)}`)?.value)   || 0;
+    state.manuais[key].camp3p2= parseFloat(document.getElementById(`mm-camp3-jur-p2-${sid(key)}`)?.value)|| 0;
+    state.manuais[key].prec = isNic ? (parseFloat(document.getElementById(`mm-prec-${sid(key)}`)?.value) || 0) : 0;
+    state.manuais[key].prec2 = isNic ? (parseFloat(document.getElementById(`mm-prec2-${sid(key)}`)?.value) || 0) : 0;
+    _recalcCardInternal('juridico', key);
+  });
+  recalcTotals('juridico');
+
+  // Comercial
+  const comRem = state.removedComercial;
+  Object.keys(state.comercial).filter(k=>!comRem.includes(k)).forEach(key => {
+    if (!state.manuais[key]) state.manuais[key] = {};
+    state.manuais[key].camp   = parseFloat(document.getElementById(`mm-camp-com-${sid(key)}`)?.value)    || 0;
+    state.manuais[key].campp2 = parseFloat(document.getElementById(`mm-camp-com-p2-${sid(key)}`)?.value)  || 0;
+    state.manuais[key].camp2  = parseFloat(document.getElementById(`mm-camp2-com-${sid(key)}`)?.value)   || 0;
+    state.manuais[key].camp2p2= parseFloat(document.getElementById(`mm-camp2-com-p2-${sid(key)}`)?.value)|| 0;
+    state.manuais[key].camp3  = parseFloat(document.getElementById(`mm-camp3-com-${sid(key)}`)?.value)   || 0;
+    state.manuais[key].camp3p2= parseFloat(document.getElementById(`mm-camp3-com-p2-${sid(key)}`)?.value)|| 0;
+    _recalcCardInternal('comercial', key);
+  });
+  recalcTotals('comercial');
+
+  // Financeiro
+  state.manuais['marco_fin_exec'] = parseFloat(document.getElementById('mm-fin-exec')?.value) || 0;
+  state.manuais['marco_fin_res']  = parseFloat(document.getElementById('mm-fin-res')?.value)  || 0;
+  recalcFinanceiro();
+
+  closeModalManuais();
+}
+
+function fecharModalManuais(e) {
+  if (e.target === document.getElementById('modalManuaisBackdrop')) closeModalManuais();
+}
+function closeModalManuais() {
+  document.getElementById('modalManuaisBackdrop').classList.remove('open');
+}
+
+// ── RECALC CARD ───────────────────────────────────────────────────────────
+function recalcCard(tipo, key) {
+  _recalcCardInternal(tipo, key);
+  recalcTotals(tipo);
+}
+
+function recalcTotals(tipo) {
+  const data    = tipo==='comercial' ? state.comercial : state.juridico;
+  const removed = tipo==='comercial' ? state.removedComercial : state.removedJuridico;
+  const nomes   = Object.keys(data).filter(k=>!removed.includes(k));
+  const objCol  = state.manuais[`obj_col_${tipo}`] || 0;
+
+  let tCred=0, tAdic=0, tIns=0, tLiq=0, tPv=0, tOc=0, tPc=0, tPc2=0, tPc3=0, tT=0;
+
+  nomes.forEach(key=>{
+    const d    = data[key];
+    const isJ  = tipo==='juridico' && d.nome==='Johnathan';
+    const isFx = tipo==='juridico' && FAIXA_NOMES.includes(d.nome.toLowerCase());
+    const mult = isFx ? faixaMultiplicador(d.volume) : CFG.CREDITO_VAL;
+
+    const credVal = isJ ? comissaoBase(tipo,d) : d.creditos * mult;
+    const adicVal = isJ ? 0 : d.adicionais * mult;
+    const insQt   = (tipo==='juridico' && !isJ) ? getManual(key,'ins') : 0;
+    const insVal  = insQt * CFG.INSERCAO_VAL;
+    const liq     = tipo==='juridico' ? comissaoLiquidados(key) : 0;
+    const pv      = premioVolume(d.volume);
+    const pc      = getManual(key,'camp');
+    const pc2     = getManual(key,'camp2');
+    const pc3     = getManual(key,'camp3');
+    const pr      = (getManual(key,'prec') + getManual(key,'prec2')) * 20;
+    const tot     = credVal + adicVal + insVal + liq + pv + objCol + pc + pc2 + pc3 + pr;
+
+    tCred+=credVal; tAdic+=adicVal; tIns+=insVal; tLiq+=liq;
+    tPv+=pv; tOc+=objCol; tPc+=pc; tPc2+=pc2; tPc3+=pc3; tT+=tot;
+
+    // Atualiza células da linha individual na tabela
+    const e2 = id => document.getElementById(id);
+    if (e2(`s-ins-${sid(key)}`))              e2(`s-ins-${sid(key)}`).textContent              = fmt(insVal);
+    if (e2(`s-liq-${sid(key)}`))              e2(`s-liq-${sid(key)}`).textContent              = fmt(liq);
+    if (e2(`s-pvol-${tipo}-${sid(key)}`))     e2(`s-pvol-${tipo}-${sid(key)}`).textContent     = fmt(pv);
+    if (e2(`s-objcol-${tipo}-${sid(key)}`))   e2(`s-objcol-${tipo}-${sid(key)}`).textContent   = fmt(objCol);
+    if (e2(`s-pcamp-${tipo}-${sid(key)}`))    e2(`s-pcamp-${tipo}-${sid(key)}`).textContent    = fmt(pc + pr);
+    if (e2(`s-pcamp2-${tipo}-${sid(key)}`))   e2(`s-pcamp2-${tipo}-${sid(key)}`).textContent   = fmt(pc2);
+    if (e2(`s-pcamp3-${tipo}-${sid(key)}`))   e2(`s-pcamp3-${tipo}-${sid(key)}`).textContent   = fmt(pc3);
+    if (e2(`s-tot-${tipo}-${sid(key)}`))      e2(`s-tot-${tipo}-${sid(key)}`).textContent      = fmt(tot);
+  });
+
+  // Atualiza linha de total
+  const el = id => document.getElementById(id);
+  if (el(`st-cred-${tipo}`))   el(`st-cred-${tipo}`).textContent   = fmt(tCred);
+  if (el(`st-adic-${tipo}`))   el(`st-adic-${tipo}`).textContent   = fmt(tAdic);
+  if (el(`st-ins-${tipo}`))    el(`st-ins-${tipo}`).textContent    = fmt(tIns);
+  if (el(`st-liq-${tipo}`))    el(`st-liq-${tipo}`).textContent    = fmt(tLiq);
+  if (el(`st-pvol-${tipo}`))   el(`st-pvol-${tipo}`).textContent   = fmt(tPv);
+  if (el(`st-objcol-${tipo}`)) el(`st-objcol-${tipo}`).textContent = fmt(tOc);
+  if (el(`st-pcamp-${tipo}`))  el(`st-pcamp-${tipo}`).textContent  = fmt(tPc);
+  if (el(`st-pcamp2-${tipo}`)) el(`st-pcamp2-${tipo}`).textContent = fmt(tPc2);
+  if (el(`st-pcamp3-${tipo}`)) el(`st-pcamp3-${tipo}`).textContent = fmt(tPc3);
+  if (el(`st-tot-${tipo}`))    el(`st-tot-${tipo}`).textContent    = fmt(tT);
+}
+
+// ── MODAL BREAKDOWN ───────────────────────────────────────────────────────
+function abrirModal(tipo, key) {
+  const d=tipo==='comercial'?state.comercial[key]:state.juridico[key];
+  if (!d) return;
+  const isJohnathan = tipo==='juridico' && d.nome==='Johnathan';
+  const nomeDisp=d.sigla?`${d.nome} (${d.sigla})`:d.nome;
+  const comissao = comissaoBase(tipo, d);
+  const insQt = (tipo==='juridico' && !isJohnathan) ? getManual(key,'ins') : 0;
+  const insVal = insQt * CFG.INSERCAO_VAL;
+  const liqVal = tipo==='juridico' ? comissaoLiquidados(key) : 0;
+  const pVol=premioVolume(d.volume);
+  const pCamp=getManual(key,'camp');
+  const pCamp2=getManual(key,'camp2');
+  const pCamp3=getManual(key,'camp3');
+  const objCol=state.manuais[`obj_col_${tipo}`]||0;
+  const precQt=getManual(key,'prec');
+  const precQt2=getManual(key,'prec2');
+  const precVal=(precQt+precQt2)*20;
+  const total=comissao+insVal+liqVal+pVol+objCol+pCamp+pCamp2+pCamp3+precVal;
+
+  document.getElementById('modal-name').textContent=nomeDisp;
+  document.getElementById('modal-tag').innerHTML=`<span class="tag ${tipo}">${tipo==='comercial'?'Comercial':'Jurídico'}</span>`;
+
+  let html='';
+
+  if (isJohnathan) {
+    html+=`
+    <div class="modal-section">
+      <div class="modal-section-title">Comissão por processo</div>
+      <div class="breakdown-row">
+        <span class="blbl">Processos (linhas) com CONTRATO = PAGO</span>
+        <span class="bval">${fmtN(d.linhas)}</span>
+      </div>
+      <div class="breakdown-row">
+        <span class="blbl">Valor por processo</span>
+        <span class="bval">R$ 60,00</span>
+      </div>
+      <div class="breakdown-row">
+        <span class="blbl">Comissão total<br><span style="font-size:11px;color:var(--mu)">${fmtN(d.linhas)} × R$ 60,00</span></span>
+        <span class="bval green">${fmt(comissao)}</span>
+      </div>
+    </div>`;
+  } else {
+    const isFaixaModal = tipo==='juridico' && FAIXA_NOMES.includes(d.nome.toLowerCase());
+    const multModal = isFaixaModal ? faixaMultiplicador(d.volume) : CFG.CREDITO_VAL;
+    const faixaDetalhe = isFaixaModal ? `
+      <div class="breakdown-row">
+        <span class="blbl">Faixa de volume<br><span style="font-size:11px;color:var(--mu)">0–100k: R$5 · 100–250k: R$10 · 250–400k: R$15 · +400k: R$20</span></span>
+        <span class="bval">R$ ${multModal},00/crédito</span>
+      </div>` : '';
+    html+=`
+    <div class="modal-section">
+      <div class="modal-section-title">Créditos comprados</div>
+      ${faixaDetalhe}
+      <div class="breakdown-row">
+        <span class="blbl">Créditos normais</span>
+        <span class="bval">${fmtN(d.creditos)} créditos</span>
+      </div>
+      <div class="breakdown-row">
+        <span class="blbl">Créditos adicionais<br><span style="font-size:11px;color:var(--mu)">(compras ≥ R$ 20.000 → +2 créditos cada)</span></span>
+        <span class="bval">${fmtN(d.adicionais)} créditos</span>
+      </div>
+      <div class="breakdown-row">
+        <span class="blbl">Total de créditos</span>
+        <span class="bval">${fmtN(d.creditos+d.adicionais)} créditos</span>
+      </div>
+      <div class="breakdown-row">
+        <span class="blbl">Comissão créditos<br><span style="font-size:11px;color:var(--mu)">${fmtN(d.creditos+d.adicionais)} × R$ ${multModal},00</span></span>
+        <span class="bval green">${fmt(comissao)}</span>
+      </div>
+    </div>`;
+  }
+
+  if (tipo==='juridico' && !isJohnathan) {
+    const totalEmpresa = state.totalCreditosEmpresa;
+    const pct = totalEmpresa > 0 ? (d.creditos / totalEmpresa * 100).toFixed(2) : '0.00';
+    const liqQt = getVal('#gc-liq-qt');
+    const liqTotal = liqQt * CFG.LIQ_VAL_UNIT;
+    html+=`
+    <div class="modal-section">
+      <div class="modal-section-title">Processos inseridos</div>
+      <div class="breakdown-row">
+        <span class="blbl">Inserções informadas</span>
+        <span class="bval">${fmtN(insQt)}</span>
+      </div>
+      <div class="breakdown-row">
+        <span class="blbl">Comissão inserções<br><span style="font-size:11px;color:var(--mu)">${fmtN(insQt)} × R$ 0,50</span></span>
+        <span class="bval green">${fmt(insVal)}</span>
+      </div>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-title">Comissão Processos Liquidados</div>
+      <div class="breakdown-row">
+        <span class="blbl">Créditos normais da pessoa</span>
+        <span class="bval">${fmtN(d.creditos)}</span>
+      </div>
+      <div class="breakdown-row">
+        <span class="blbl">Total créditos empresa</span>
+        <span class="bval">${fmtN(totalEmpresa)}</span>
+      </div>
+      <div class="breakdown-row">
+        <span class="blbl">% participação</span>
+        <span class="bval">${pct}%</span>
+      </div>
+      <div class="breakdown-row">
+        <span class="blbl">Valor total liquidados<br><span style="font-size:11px;color:var(--mu)">${fmtN(liqQt)} créditos × R$ 11,25</span></span>
+        <span class="bval">${fmt(liqTotal)}</span>
+      </div>
+      <div class="breakdown-row">
+        <span class="blbl">Comissão liquidados<br><span style="font-size:11px;color:var(--mu)">${pct}% × ${fmt(liqTotal)}</span></span>
+        <span class="bval green">${fmt(liqVal)}</span>
+      </div>
+    </div>`;
+  }
+
+  // Prêmio Objetivo
+  let premioDetalhe = d.volume >= CFG.PREMIO_BASE_VOL
+    ? `Volume ≥ R$ 400k → base R$ 400 + ${Math.floor((d.volume-CFG.PREMIO_BASE_VOL)/CFG.PREMIO_INC_VOL)} × R$ 100`
+    : `Volume ${fmt(d.volume)} abaixo de R$ 400.000 → sem prêmio`;
+  html+=`
+    <div class="modal-section">
+      <div class="modal-section-title">Prêmio Objetivo</div>
+      <div class="breakdown-row">
+        <span class="blbl">Volume total</span>
+        <span class="bval">${fmt(d.volume)}</span>
+      </div>
+      <div class="breakdown-row">
+        <span class="blbl">Cálculo<br><span style="font-size:11px;color:var(--mu)">${premioDetalhe}</span></span>
+        <span class="bval gold">${fmt(pVol)}</span>
+      </div>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-title">Prêmios manuais</div>
+      <div class="breakdown-row">
+        <span class="blbl">Prêmio campanha</span>
+        <span class="bval gold">${fmt(pCamp)}</span>
+      </div>`;
+  if (d.nome.toLowerCase()==='nicolli') {
+    html+=`<div class="breakdown-row">
+        <span class="blbl">Comissão Precatório</span>
+        <span class="bval gold">${fmt(precVal)}</span>
+      </div>`;
+  }
+  html+=`</div>`;
+
+  document.getElementById('modal-body').innerHTML=html;
+  document.getElementById('modal-total').textContent=fmt(total);
+  document.getElementById('modalBackdrop').classList.add('open');
+}
+
+function abrirModalFinanceiro() {
+  const exec=state.manuais['marco_fin_exec']||0, res=state.manuais['marco_fin_res']||0;
+  const total=exec+res;
+  document.getElementById('modal-name').textContent='Marco Antônio';
+  document.getElementById('modal-tag').innerHTML=`<span class="tag financeiro">Financeiro/ADM</span>`;
+  document.getElementById('modal-body').innerHTML=`
+    <div class="modal-section">
+      <div class="modal-section-title">Prêmios</div>
+      <div class="breakdown-row"><span class="blbl">Prêmio Execução</span><span class="bval gold">${fmt(exec)}</span></div>
+      <div class="breakdown-row"><span class="blbl">Prêmio Resultado</span><span class="bval gold">${fmt(res)}</span></div>
+      <div class="breakdown-row"><span class="blbl">Objetivo Coletivo</span><span class="bval gold">${fmt(objCol)}</span></div>
+    </div>`;
+  document.getElementById('modal-total').textContent=fmt(total);
+  document.getElementById('modalBackdrop').classList.add('open');
+}
+
+function fecharModal(e) { if (e.target===document.getElementById('modalBackdrop')) closeModal(); }
+function closeModal() { document.getElementById('modalBackdrop').classList.remove('open'); }
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeModal(); });
+
+// ── REMOVE / RESTORE ──────────────────────────────────────────────────────
+function remover(tipo,key) {
+  if (tipo==='comercial') state.removedComercial.push(key);
+  else state.removedJuridico.push(key);
+  renderTime(tipo);
+}
+function restaurar(tipo,key) {
+  if (tipo==='comercial') state.removedComercial=state.removedComercial.filter(k=>k!==key);
+  else state.removedJuridico=state.removedJuridico.filter(k=>k!==key);
+  renderTime(tipo);
+}
+
+// ── TABS ──────────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  ['comercial','juridico','financeiro'].forEach(t=>{
+    document.getElementById(`tab-${t}`).style.display=t===tab?'block':'none';
+  });
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelector(`.tab[onclick*="${tab}"]`).classList.add('active');
+}
+
+// ── EXPORT ────────────────────────────────────────────────────────────────
+function exportar(tipo) {
+  const mesRef = (document.getElementById('mes-ref').textContent || '').replace(/[^a-zA-Z0-9]/g,'_').replace(/^_+|_+$/g,'') || 'sem_data';
+  let rows=[], wb=XLSX.utils.book_new();
+
+  if (tipo==='financeiro') {
+    const exec=state.manuais['marco_fin_exec']||0, res=state.manuais['marco_fin_res']||0, objCol=state.manuais['obj_col_financeiro']||0;
+    rows=[['Nome','Prêmio Execução (R$)','Prêmio Resultado (R$)','Objetivo Coletivo (R$)','Total (R$)'],
+          ['Marco Antônio', exec, res, objCol, exec+res+objCol]];
+  } else {
+    const data=tipo==='comercial'?state.comercial:state.juridico;
+    const removed=tipo==='comercial'?state.removedComercial:state.removedJuridico;
+    const nomes=Object.keys(data).filter(k=>!removed.includes(k)).sort((a,b)=>data[b].volume-data[a].volume);
+    const headers=tipo==='comercial'
+      ?['Nome','Créditos','Adicionais','Volume (R$)','Comissão (R$)','Prêmio Objetivo (R$)','Prêmio Campanha (R$)','Total (R$)']
+      :['Nome','Créditos','Adicionais','Inserções','Volume (R$)','Comissão (R$)','Com. Liquidados (R$)','Prêmio Objetivo (R$)','Prêmio Campanha (R$)','Com. Precatório (R$)','Total (R$)'];
+    rows=[headers];
+    nomes.forEach(key=>{
+      const d=data[key];
+      const nD=d.sigla?`${d.nome} (${d.sigla})`:d.nome;
+      const com = comissaoBase(tipo, d);
+      const ins=tipo==='juridico'?getManual(key,'ins'):0;
+      const insV=ins*CFG.INSERCAO_VAL;
+      const liq=tipo==='juridico'?comissaoLiquidados(key):0;
+      const pv=premioVolume(d.volume);
+      const pc=getManual(key,'camp');
+      const pr=getManual(key,'prec');
+      const tot=com+insV+liq+pv+pc+pr;
+      if (tipo==='comercial') rows.push([nD,d.creditos,d.adicionais,d.volume,com,pv,pc,tot]);
+      else rows.push([nD,d.creditos,d.adicionais,ins,d.volume,com+insV,liq,pv,pc,pr,tot]);
+    });
+  }
+
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  XLSX.utils.book_append_sheet(wb,ws,tipo==='comercial'?'Comercial':tipo==='juridico'?'Juridico':'Financeiro');
+  XLSX.writeFile(wb,`Comissionamento_${tipo}_${mesRef}.xlsx`);
+}
+
+// ── THEME ─────────────────────────────────────────────────────────────────
+function toggleTheme() {
+  const html=document.documentElement;
+  const dark=html.getAttribute('data-theme')==='dark';
+  html.setAttribute('data-theme', dark?'light':'dark');
+  document.getElementById('btnTheme').textContent=dark?'🌙':'☀️';
+  // Atualiza cor das letras do logo
+  const color=dark?'#0D4A3A':'#3a9c74';
+  document.querySelectorAll('.logo-letter').forEach(el=>el.setAttribute('fill',color));
+}
+
+// ── EXPORTAR PDF ──────────────────────────────────────────────────────────
+function exportarPDF() {
+  const mesRef = document.getElementById('mes-ref').textContent || '—';
+  const win = window.open('', '_blank');
+
+  let html = `<!DOCTYPE html><html lang="pt-BR"><head>
+  <meta charset="UTF-8">
+  <title>Comissionamento PBL — ${mesRef}</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Segoe UI',Arial,sans-serif;font-size:12px;color:#111;background:#fff}
+    h1{font-size:18px;font-weight:700;color:#0D4A3A;margin-bottom:4px}
+    .subtitle{font-size:11px;color:#546860;margin-bottom:32px}
+    .team-title{font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+      color:#fff;background:#0D4A3A;padding:8px 14px;margin:24px 0 12px;border-radius:4px}
+    .team-title.new-page{page-break-before:always}
+    .person{border:1px solid #c2d9d1;border-radius:8px;margin-bottom:16px;
+      page-break-inside:avoid;overflow:hidden}
+    .person-header{background:#f4f9f7;padding:12px 16px;border-bottom:1px solid #c2d9d1;
+      display:flex;justify-content:space-between;align-items:center}
+    .person-name{font-size:14px;font-weight:700;color:#0D4A3A}
+    .person-tag{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+      padding:2px 8px;border-radius:3px}
+    .tag-com{background:#dff0e9;color:#0D4A3A}
+    .tag-jur{background:#fdf3e0;color:#9c7a34}
+    .tag-fin{background:#e8eaf6;color:#3949ab}
+    .person-stats{display:flex;border-bottom:1px solid #c2d9d1}
+    .stat{flex:1;text-align:center;padding:8px 4px;border-right:1px solid #c2d9d1}
+    .stat:last-child{border-right:none}
+    .stat-val{font-size:15px;font-weight:700;color:#0D4A3A}
+    .stat-lbl{font-size:9px;color:#546860;margin-top:2px}
+    .person-body{display:grid;grid-template-columns:1fr 1fr;gap:0}
+    .section{padding:12px 16px;border-right:1px solid #c2d9d1}
+    .section:last-child{border-right:none}
+    .section-title{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+      color:#546860;border-bottom:1px solid #c2d9d1;padding-bottom:4px;margin-bottom:8px}
+    .row{display:flex;justify-content:space-between;margin-bottom:5px;font-size:11px}
+    .row .lbl{color:#546860}
+    .row .val{font-weight:600}
+    .row .sub{font-size:9px;color:#7aaa9a;display:block}
+    .totals{display:grid;grid-template-columns:1fr 1fr 1fr;border-top:1px solid #c2d9d1;background:#dff0e9}
+    .tot-col{text-align:center;padding:8px;border-right:1px solid #c2d9d1}
+    .tot-col:last-child{border-right:none}
+    .tot-lbl{font-size:8px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#546860}
+    .tot-val{font-size:13px;font-weight:700;color:#0D4A3A;margin-top:2px}
+    @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+  </style></head><body>
+  <h1>Comissionamento PBL</h1>
+  <div class="subtitle">Competência: ${mesRef} · Gerado em ${new Date().toLocaleDateString('pt-BR')}</div>`;
+
+  // Função auxiliar para gerar bloco de pessoa
+  function pessoaHTML(tipo, key) {
+    const d = tipo === 'financeiro' ? null : (tipo === 'comercial' ? state.comercial[key] : state.juridico[key]);
+    const isJ   = tipo === 'juridico' && d?.nome === 'Johnathan';
+    const isNic = tipo === 'juridico' && d?.nome?.toLowerCase() === 'nicolli';
+    const isFx  = tipo === 'juridico' && d && FAIXA_NOMES.includes(d.nome.toLowerCase());
+    const mult  = isFx ? faixaMultiplicador(d.volume) : CFG.CREDITO_VAL;
+    const tagClass = tipo === 'comercial' ? 'tag-com' : tipo === 'juridico' ? 'tag-jur' : 'tag-fin';
+    const tagLabel = tipo === 'comercial' ? 'Comercial' : tipo === 'juridico' ? 'Jurídico' : 'Financeiro/ADM';
+
+    if (tipo === 'financeiro') {
+      const exec   = state.manuais['marco_fin_exec']||0;
+      const res    = state.manuais['marco_fin_res']||0;
+      const objCol = state.manuais['obj_col_financeiro']||0;
+      const tot    = exec + res + objCol;
+      return `<div class="person">
+        <div class="person-header"><span class="person-name">Marco Antônio</span><span class="person-tag ${tagClass}">${tagLabel}</span></div>
+        <div class="person-body" style="grid-template-columns:1fr">
+          <div class="section">
+            <div class="section-title">Prêmios</div>
+            <div class="row"><span class="lbl">Prêmio Execução</span><span class="val">${fmt(exec)}</span></div>
+            <div class="row"><span class="lbl">Prêmio Resultado</span><span class="val">${fmt(res)}</span></div>
+            <div class="row"><span class="lbl">Objetivo Coletivo</span><span class="val">${fmt(objCol)}</span></div>
+          </div>
+        </div>
+        <div class="totals">
+          <div class="tot-col"><div class="tot-lbl">Comissões</div><div class="tot-val">${fmt(0)}</div></div>
+          <div class="tot-col"><div class="tot-lbl">Prêmios</div><div class="tot-val">${fmt(tot)}</div></div>
+          <div class="tot-col"><div class="tot-lbl">Total</div><div class="tot-val">${fmt(tot)}</div></div>
+        </div>
+      </div>`;
+    }
+
+    const credVal = isJ ? comissaoBase(tipo,d) : d.creditos * mult;
+    const adicVal = isJ ? 0 : d.adicionais * mult;
+    const insQt   = tipo==='juridico' ? getManual(key,'ins') : 0;
+    const insVal  = insQt * CFG.INSERCAO_VAL;
+    const liqQtG  = getVal('#gc-liq-qt');
+    const liqTot  = liqQtG * CFG.LIQ_VAL_UNIT;
+    const totalEmp= state.totalCreditosEmpresa;
+    const pct     = totalEmp>0 ? (d.creditos/totalEmp*100).toFixed(2) : '0.00';
+    const liqVal  = tipo==='juridico' && !isJ ? comissaoLiquidados(key) : 0;
+    const precQt  = isNic ? getManual(key,'prec') : 0;
+    const precQt2 = isNic ? getManual(key,'prec2') : 0;
+    const precVal = (precQt+precQt2)*20;
+    const pVol    = premioVolume(d.volume);
+    const objCol  = state.manuais[`obj_col_${tipo}`]||0;
+    const pc      = getManual(key,'camp');
+    const pcp2    = getManual(key,'campp2');
+    const pc2     = getManual(key,'camp2');
+    const pc2p2   = getManual(key,'camp2p2');
+    const pc3     = getManual(key,'camp3');
+    const pc3p2   = getManual(key,'camp3p2');
+    const totCom  = credVal+adicVal+insVal+liqVal+precVal;
+    const totPre  = pVol+objCol+pc+pcp2+pc2+pc2p2+pc3+pc3p2;
+    const totGeral= totCom+totPre;
+    const nomeDisp= d.sigla ? `${d.nome} (${d.sigla})` : d.nome;
+    const execLabel = tipo==='comercial' ? 'Camp. Execução (Meet)' : 'Camp. Execução (Inserções)';
+
+    const statsHTML = isJ
+      ? `<div class="stat"><div class="stat-val">${fmtN(d.linhas)}</div><div class="stat-lbl">Processos</div></div>
+         <div class="stat"><div class="stat-val">${fmt(d.volume)}</div><div class="stat-lbl">Volume</div></div>`
+      : `<div class="stat"><div class="stat-val">${fmtN(d.creditos)}</div><div class="stat-lbl">Créditos</div></div>
+         <div class="stat"><div class="stat-val">${fmtN(d.adicionais)}</div><div class="stat-lbl">Adicionais</div></div>
+         <div class="stat"><div class="stat-val">${fmt(d.volume)}</div><div class="stat-lbl">Volume</div></div>`;
+
+    const comHTML = isJ
+      ? `<div class="row"><span class="lbl">Créditos Comprados<span class="sub">${fmtN(d.linhas)} proc. × R$ 60,00</span></span><span class="val">${fmt(credVal)}</span></div>`
+      : `<div class="row"><span class="lbl">Créditos Comprados<span class="sub">${fmtN(d.creditos)} × R$ ${mult},00</span></span><span class="val">${fmt(credVal)}</span></div>
+         <div class="row"><span class="lbl">Créditos Adicionais<span class="sub">${fmtN(d.adicionais)} × R$ ${mult},00</span></span><span class="val">${fmt(adicVal)}</span></div>`;
+
+    const jurExtra = tipo==='juridico' ? `
+      <div class="row"><span class="lbl">Proc. Inseridos<span class="sub">${fmtN(insQt)} × R$ 0,50</span></span><span class="val">${fmt(insVal)}</span></div>
+      <div class="row"><span class="lbl">Proc. Liquidados<span class="sub">${pct}% × ${fmt(liqTot)}</span></span><span class="val">${fmt(liqVal)}</span></div>
+      ${isNic ? `<div class="row"><span class="lbl">Precatório<span class="sub">${fmtN(precQt)} × R$ 20,00</span></span><span class="val">${fmt(precQt*20)}</span></div>
+      <div class="row"><span class="lbl">Precatório Adicional<span class="sub">${fmtN(precQt2)} × R$ 20,00</span></span><span class="val">${fmt(precQt2*20)}</span></div>` : ''}` : '';
+
+    return `<div class="person">
+      <div class="person-header"><span class="person-name">${nomeDisp}</span><span class="person-tag ${tagClass}">${tagLabel}</span></div>
+      <div class="person-stats">${statsHTML}</div>
+      <div class="person-body">
+        <div class="section">
+          <div class="section-title">Comissões</div>
+          ${comHTML}${jurExtra}
+        </div>
+        <div class="section">
+          <div class="section-title">Prêmios</div>
+          <div class="row"><span class="lbl">Objetivo</span><span class="val">${fmt(pVol)}</span></div>
+          <div class="row"><span class="lbl">Objetivo Coletivo</span><span class="val">${fmt(objCol)}</span></div>
+          <div class="row"><span class="lbl">Camp. Volume — 13/04 a 17/04</span><span class="val">${fmt(pc2)}</span></div>
+          <div class="row"><span class="lbl">Camp. Volume — 27/04 a 30/04</span><span class="val">${fmt(pc2p2)}</span></div>
+          <div class="row"><span class="lbl">${execLabel} — 13/04 a 17/04</span><span class="val">${fmt(pc)}</span></div>
+          <div class="row"><span class="lbl">${execLabel} — 27/04 a 30/04</span><span class="val">${fmt(pcp2)}</span></div>
+          <div class="row"><span class="lbl">Camp. Dupla de Ouro — 13/04 a 17/04</span><span class="val">${fmt(pc3)}</span></div>
+          <div class="row"><span class="lbl">Camp. Dupla de Ouro — 27/04 a 30/04</span><span class="val">${fmt(pc3p2)}</span></div>
+        </div>
+      </div>
+      <div class="totals">
+        <div class="tot-col"><div class="tot-lbl">Comissões</div><div class="tot-val">${fmt(totCom)}</div></div>
+        <div class="tot-col"><div class="tot-lbl">Prêmios</div><div class="tot-val">${fmt(totPre)}</div></div>
+        <div class="tot-col"><div class="tot-lbl">Total</div><div class="tot-val">${fmt(totGeral)}</div></div>
+      </div>
+    </div>`;
+  }
+
+  // Comercial
+  const comRem = state.removedComercial;
+  const comNomes = Object.keys(state.comercial).filter(k=>!comRem.includes(k)).sort((a,b)=>state.comercial[b].volume-state.comercial[a].volume);
+  if (comNomes.length) {
+    html += '<div class="team-title">Comercial</div>';
+    comNomes.forEach(k => html += pessoaHTML('comercial', k));
+  }
+
+  // Jurídico
+  const jurRem = state.removedJuridico;
+  const jurNomes = Object.keys(state.juridico).filter(k=>!jurRem.includes(k)).sort((a,b)=>state.juridico[b].volume-state.juridico[a].volume);
+  if (jurNomes.length) {
+    html += '<div class="team-title new-page">Jurídico</div>';
+    jurNomes.forEach(k => html += pessoaHTML('juridico', k));
+  }
+
+  // Financeiro
+  html += '<div class="team-title new-page">Financeiro / ADM</div>';
+  html += pessoaHTML('financeiro', null);
+
+  html += '</body></html>';
+
+  win.document.write(html);
+  win.document.close();
+  setTimeout(() => win.print(), 500);
+}
+const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbzPZ3uVR8d5rfz5mvphA0cKPvC79DmltSGjV6EAX7c3laa2TLsK8sJ74i8-CgD-jpuP/exec';
+const SHEETS_CHAVE = 'pbl2026';
+
+async function registrarMes() {
+  const btn = document.getElementById('btnRegistrar');
+  const mesRef = document.getElementById('mes-ref').textContent || '—';
+
+  if (!confirm(`Registrar o mês "${mesRef}" no histórico do Google Sheets?`)) return;
+
+  btn.disabled = true;
+  btn.textContent = 'Registrando...';
+
+  // Dados globais de liquidados
+  const liqQt    = getVal('#gc-liq-qt');
+  const liqTotal = liqQt * CFG.LIQ_VAL_UNIT;
+  const totalEmp = state.totalCreditosEmpresa;
+
+  const headers = [
+    'Competência','Time','Nome',
+    // Volume
+    'Volume (R$)',
+    // Créditos comprados
+    'Qtd. Créditos','Com. Créditos (R$)',
+    'Qtd. Adicionais','Com. Adicionais (R$)',
+    // Inseridos
+    'Qtd. Inseridos','Com. Inseridos (R$)',
+    // Liquidados
+    '% Liquidados','Qtd. Liq. Global','Valor Total Liq. (R$)','Com. Liquidados (R$)',
+    // Precatório (Nicolli)
+    'Qtd. Precatório','Com. Precatório (R$)',
+    'Qtd. Precatório Adicional','Com. Precatório Adicional (R$)',
+    // Prêmios
+    'Prêmio Objetivo (R$)','Prêmio Obj. Coletivo (R$)','Camp. Exec. 13-17/04 (R$)','Camp. Exec. 27-30/04 (R$)','Camp. Volume 13-17/04 (R$)','Camp. Volume 27-30/04 (R$)','Camp. Dupla Ouro 13-17/04 (R$)','Camp. Dupla Ouro 27-30/04 (R$)',
+    // Total
+    'Total Comissões (R$)','Total Prêmios (R$)','Total Geral (R$)'
+  ];
+
+  const rows = [];
+
+  // Comercial
+  const comRem = state.removedComercial;
+  Object.keys(state.comercial).filter(k=>!comRem.includes(k))
+    .sort((a,b)=>state.comercial[b].volume-state.comercial[a].volume)
+    .forEach(key=>{
+      const d       = state.comercial[key];
+      const credVal = d.creditos * CFG.CREDITO_VAL;
+      const adicVal = d.adicionais * CFG.CREDITO_VAL;
+      const pVol    = premioVolume(d.volume);
+      const pCamp   = getManual(key,'camp');
+      const totCom  = credVal + adicVal;
+      const totPre  = pVol + pCamp;
+      rows.push([
+        mesRef, 'Comercial', d.nome,
+        d.volume,
+        d.creditos, credVal,
+        d.adicionais, adicVal,
+        '—', 0,
+        '—', '—', '—', 0,
+        '—', 0,
+        '—', 0,
+        pVol, state.manuais['obj_col_comercial']||0,
+        getManual(key,'camp'), getManual(key,'campp2'),
+        getManual(key,'camp2'), getManual(key,'camp2p2'),
+        getManual(key,'camp3'), getManual(key,'camp3p2'),
+        totCom, totPre, totCom + totPre
+      ]);
+    });
+
+  // Jurídico
+  const jurRem = state.removedJuridico;
+  Object.keys(state.juridico).filter(k=>!jurRem.includes(k))
+    .sort((a,b)=>state.juridico[b].volume-state.juridico[a].volume)
+    .forEach(key=>{
+      const d        = state.juridico[key];
+      const isJ      = d.nome === 'Johnathan';
+      const isNic    = d.nome.toLowerCase() === 'nicolli';
+      const isFx     = FAIXA_NOMES.includes(d.nome.toLowerCase());
+      const mult     = isFx ? faixaMultiplicador(d.volume) : CFG.CREDITO_VAL;
+      const credVal  = isJ ? comissaoBase('juridico', d) : d.creditos * mult;
+      const adicVal  = isJ ? 0 : d.adicionais * mult;
+      const insQt    = getManual(key, 'ins');
+      const insVal   = insQt * CFG.INSERCAO_VAL;
+      const pct      = totalEmp > 0 ? (d.creditos / totalEmp * 100).toFixed(2) + '%' : '0%';
+      const liqVal   = comissaoLiquidados(key);
+      const precQt   = isNic ? getManual(key, 'prec') : 0;
+      const precQt2  = isNic ? getManual(key, 'prec2') : 0;
+      const precVal1 = precQt * 20;
+      const precVal2 = precQt2 * 20;
+      const precVal  = precVal1 + precVal2;
+      const pVol     = premioVolume(d.volume);
+      const pCamp    = getManual(key, 'camp');
+      const nomeDisp = d.sigla ? `${d.nome} (${d.sigla})` : d.nome;
+      const totCom   = credVal + adicVal + insVal + liqVal + precVal;
+      const totPre   = pVol + pCamp;
+      rows.push([
+        mesRef, 'Jurídico', nomeDisp,
+        d.volume,
+        isJ ? d.linhas : d.creditos, credVal,
+        isJ ? '—' : d.adicionais, adicVal,
+        insQt, insVal,
+        pct, liqQt, liqTotal, liqVal,
+        isNic ? precQt  : '—', isNic ? precVal1 : 0,
+        isNic ? precQt2 : '—', isNic ? precVal2 : 0,
+        pVol, state.manuais['obj_col_juridico']||0,
+        getManual(key,'camp'), getManual(key,'campp2'),
+        getManual(key,'camp2'), getManual(key,'camp2p2'),
+        getManual(key,'camp3'), getManual(key,'camp3p2'),
+        totCom, totPre, totCom + totPre
+      ]);
+    });
+
+  // Financeiro
+  const exec = state.manuais['marco_fin_exec'] || 0;
+  const res  = state.manuais['marco_fin_res']  || 0;
+  rows.push([
+    mesRef, 'Financeiro/ADM', 'Marco Antônio',
+    0,
+    '—', exec,
+    '—', res,
+    '—', 0,
+    '—', '—', '—', 0,
+    '—', 0,
+    '—', 0,
+    0, state.manuais['obj_col_financeiro']||0, 0, 0, 0, 0, 0, 0,
+    exec + res, state.manuais['obj_col_financeiro']||0, exec + res + (state.manuais['obj_col_financeiro']||0)
+  ]);
+
+  try {
+    await fetch(SHEETS_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chave: SHEETS_CHAVE, headers, rows })
+    });
+    alert(`✓ Dados do mês "${mesRef}" enviados! Verifique a aba Histórico no Google Sheets.`);
+  } catch(err) {
+    alert('Erro: ' + err.message);
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Registrar mês';
+}
+function setStatus(msg,type=''){
+  const el=document.getElementById('statusBar');
+  el.textContent=msg; el.className='status-bar '+type;
+}
+
+document.getElementById('fileInput').addEventListener('change',e=>{
+  const f=e.target.files[0]; if(f) lerArquivo(f);
+});
+const zone=document.getElementById('uploadZone');
+zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('drag-over');});
+zone.addEventListener('dragleave',()=>zone.classList.remove('drag-over'));
+zone.addEventListener('drop',e=>{
+  e.preventDefault(); zone.classList.remove('drag-over');
+  const f=e.dataTransfer.files[0]; if(f) lerArquivo(f);
+});
+function lerArquivo(file){
+  setStatus('Lendo arquivo...','');
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try {
+      processarPlanilha(new Uint8Array(e.target.result));
+      zone.classList.add('loaded');
+      zone.querySelector('h3').textContent=file.name;
+    } catch(err){ setStatus('Erro: '+err.message,'error'); }
+  };
+  reader.readAsArrayBuffer(file);
+}
+</script>
+</body>
+</html>
