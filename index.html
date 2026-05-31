@@ -137,6 +137,13 @@ body{background:var(--bg);background-color:var(--bg-solid);color:var(--tx);font-
 .btn-preencher:hover{border-color:var(--g);color:var(--g);background:var(--gl)}
 .btn-add-pessoa{background:none;border:1px dashed var(--bo);border-radius:6px;color:var(--mu);cursor:pointer;font-size:13px;font-family:inherit;font-weight:500;padding:7px 16px;transition:all .15s}
 .btn-add-pessoa:hover{border-color:var(--g);color:var(--g);border-style:solid}
+.btn-add-camp{background:var(--g);color:#fff;border:none;border-radius:6px;padding:7px 16px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:background .15s}
+.btn-add-camp:hover{background:var(--gd)}
+.camp-item{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg-solid);border:1px solid var(--bo);border-radius:6px;margin-bottom:6px}
+.camp-item-nome{flex:1;font-size:13px;font-weight:500}
+.camp-item-time{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:2px 6px;border-radius:3px;background:var(--gl);color:var(--g)}
+.btn-rm-camp{background:none;border:none;cursor:pointer;color:var(--mu);font-size:14px;padding:0 4px;transition:color .15s}
+.btn-rm-camp:hover{color:var(--danger)}
 /* MODAL INDIVIDUAL */
 .modal-ind-backdrop{display:none;position:fixed;inset:0;background:var(--overlay);z-index:700;align-items:center;justify-content:center;padding:24px 16px}
 .modal-ind-backdrop.open{display:flex}
@@ -319,6 +326,7 @@ tr:not(.totals-row):hover td{opacity:.85;cursor:pointer}
     </label>
     <button class="btn-session" id="btnSalvarSessao" onclick="salvarSessao()" style="display:none">💾 Salvar sessão</button>
     <div class="header-divider"></div>
+    <button class="btn-add-camp" id="btnCamp" onclick="abrirModalCampanhas()" style="display:none">Campanhas</button>
     <button class="btn-fill" id="btnFill" onclick="abrirModalManuais()" style="display:none">Dados manuais</button>
     <button class="btn-registrar" id="btnRegistrar" onclick="registrarMes()" style="display:none">Registrar mês</button>
     <button class="btn-pdf" id="btnPdf" onclick="exportarPDF()" style="display:none">Exportar PDF</button>
@@ -398,10 +406,9 @@ tr:not(.totals-row):hover td{opacity:.85;cursor:pointer}
               <th class="th-com th-com-first">Créditos</th>
               <th class="th-com th-com-last">Adicionais</th>
               <th class="th-pre th-pre-first">Objetivo</th>
-              <th class="th-pre">Obj. Coletivo</th>
-              <th class="th-pre">Campanha Volume</th>
-              <th class="th-pre">Campanha Execução</th>
-              <th class="th-pre th-pre-last">Dupla de Ouro</th>
+              <th class="th-pre">Obj. Col. (Liq.)</th>
+              <th class="th-pre" id="th-camp-cols-comercial"></th>
+              <th class="th-pre th-pre-last" id="th-camp-last-comercial" style="display:none"></th>
               <th>Total</th>
             </tr></thead>
             <tbody id="tbody-comercial"></tbody>
@@ -471,6 +478,38 @@ tr:not(.totals-row):hover td{opacity:.85;cursor:pointer}
     </div>
   </div>
 </main>
+
+<!-- MODAL CAMPANHAS -->
+<div class="modal-ind-backdrop" id="modalCampBackdrop">
+  <div class="modal-ind" style="max-width:480px">
+    <div class="modal-ind-header">
+      <span class="modal-ind-title">Campanhas do mês</span>
+      <button class="btn-close" onclick="fecharModalCampanhas()">✕</button>
+    </div>
+    <div class="modal-ind-body">
+      <div id="campList" style="margin-bottom:16px"></div>
+      <div style="border-top:1px solid var(--bo);padding-top:14px">
+        <div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mu);margin-bottom:10px">Adicionar campanha</div>
+        <div class="mm-field" style="margin-bottom:10px">
+          <label>Nome da campanha</label>
+          <input type="text" class="mm-input" id="new-camp-nome" placeholder="Ex: Camp. Volume Maio" style="width:200px">
+        </div>
+        <div class="mm-field" style="margin-bottom:10px">
+          <label>Time</label>
+          <select class="mm-input" id="new-camp-time" style="width:140px">
+            <option value="comercial">Comercial</option>
+            <option value="juridico">Jurídico</option>
+            <option value="ambos">Ambos</option>
+          </select>
+        </div>
+        <button class="btn-mm-apply" onclick="adicionarCampanha()" style="padding:8px 20px">+ Adicionar</button>
+      </div>
+    </div>
+    <div class="modal-ind-footer">
+      <button class="btn-mm-apply" onclick="fecharModalCampanhas()">Fechar</button>
+    </div>
+  </div>
+</div>
 
 <!-- MODAL DADOS MANUAIS -->
 <div class="modal-manuais-backdrop" id="modalManuaisBackdrop" onclick="fecharModalManuais(event)">
@@ -549,19 +588,11 @@ tr:not(.totals-row):hover td{opacity:.85;cursor:pointer}
 
 <script>
 // ── MAPA SIGLA → NOME ─────────────────────────────────────────────────────
-const JURIDICO_MAP = {
-  "D":  "Daniel",
-  "DL": "Débora",
-  "EZ": "Eduardo",
-  "F":  "Fernanda",
-  "JC": "Johnathan",
-  "LF": "Luiz F.",
-  "L":  "Luiz H.",
-  "NE": "Nataly",
-  "NS": "Nicolli",
-  "TZ": "Tarciane",
-  "TP": "Tatiana",
-};
+// Nomes do jurídico (lidos diretamente da planilha, sem sigla)
+const JURIDICO_NOMES = [
+  "Daniel", "Fernanda", "Luiz", "Fernando",
+  "Nicolli", "Tarciane", "Tatiana", "Eduardo", "Débora", "Johnathan"
+];
 
 // ── CONFIG ────────────────────────────────────────────────────────────────
 const CFG = {
@@ -584,7 +615,8 @@ let state = {
   removedComercial: [],
   removedJuridico: [],
   totalCreditosEmpresa: 0,
-  manuais: {}, // { key: { ins, camp, prec } }
+  manuais: {}, // { key: { ins, prec, prec2, campanhas: [{id,nome,valor}] } }
+  campanhas: [], // [{ id, nome, time }] — campanhas do mês criadas pelo usuário
 };
 
 // ── UTILS ─────────────────────────────────────────────────────────────────
@@ -596,6 +628,17 @@ const sid  = k => k.replace(/[^a-z0-9]/g, '_');
 function getManual(key, field) {
   return (state.manuais[key] && state.manuais[key][field]) || 0;
 }
+
+function getCampanhas(key) {
+  return (state.manuais[key] && state.manuais[key].campanhas) || [];
+}
+
+function getTotalCampanhas(key) {
+  return getCampanhas(key).reduce((s, c) => s + (c.valor || 0), 0);
+}
+
+function getObjColLiq(tipo) { return state.manuais[`obj_col_liq_${tipo}`] || 0; }
+function getObjColComp(tipo) { return state.manuais[`obj_col_comp_${tipo}`] || 0; }
 
 function premioVolume(vol) {
   if (vol < CFG.PREMIO_BASE_VOL) return 0;
@@ -661,17 +704,17 @@ function processarPlanilha(data) {
       comercial[key].linhas    += 1;
     }
 
-    // Jurídico (sigla → nome)
+    // Jurídico (nome direto da planilha)
     if (colD!==-1) {
-      const sigla = row[colD] ? String(row[colD]).trim().toUpperCase() : '';
-      const nomeJur = JURIDICO_MAP[sigla];
+      const nomeRaw = row[colD] ? String(row[colD]).trim() : '';
+      const nomeJur = JURIDICO_NOMES.find(n => n.toLowerCase() === nomeRaw.toLowerCase());
       if (nomeJur) {
         const key = nomeJur.toLowerCase();
-        if (!juridico[key]) juridico[key]={nome:nomeJur,sigla,creditos:0,adicionais:0,volume:0,linhas:0};
+        if (!juridico[key]) juridico[key]={nome:nomeJur,sigla:null,creditos:0,adicionais:0,volume:0,linhas:0};
         juridico[key].creditos  += creditos;
         juridico[key].adicionais+= adicional;
         juridico[key].volume    += valor;
-        juridico[key].linhas    += 1; // para Johnathan: R$60 por linha
+        juridico[key].linhas    += 1;
       }
     }
   }
@@ -695,6 +738,7 @@ function processarPlanilha(data) {
   renderAll();
   renderFinanceiro();
   document.getElementById('appContent').style.display='block';
+  document.getElementById('btnCamp').style.display='block';
   document.getElementById('btnFill').style.display='block';
   document.getElementById('btnRegistrar').style.display='block';
   document.getElementById('btnPdf').style.display='block';
@@ -722,7 +766,7 @@ function faixaMultiplicador(volume) {
   return 20;
 }
 
-const FAIXA_NOMES = ['fernanda', 'luiz h.'];
+const FAIXA_NOMES = ['fernanda', 'luiz'];
 
 function comissaoBase(tipo, d) {
   if (tipo === 'juridico' && d.nome === 'Johnathan') {
@@ -765,7 +809,7 @@ function renderTime(tipo) {
 
   nomes.forEach((key,idx)=>{
     const d=data[key];
-    const nomeDisp = d.sigla ? `${d.nome} (${d.sigla})` : d.nome;
+    const nomeDisp = d.nome;
     const isJohnathan = tipo==='juridico' && d.nome==='Johnathan';
     const isFaixa     = tipo==='juridico' && FAIXA_NOMES.includes(d.nome.toLowerCase());
     const mult        = isFaixa ? faixaMultiplicador(d.volume) : CFG.CREDITO_VAL;
@@ -887,44 +931,24 @@ function renderTime(tipo) {
       const insQt  = getManual(key,'ins');
       const insVal = insQt * CFG.INSERCAO_VAL;
       const precVal = (getManual(key,'prec') + getManual(key,'prec2')) * 20;
-      const campVal = getManual(key,'camp') + getManual(key,'campp2');
-      const camp2Val= getManual(key,'camp2') + getManual(key,'camp2p2');
-      const camp3Val= getManual(key,'camp3') + getManual(key,'camp3p2');
-      const objCol  = state.manuais[`obj_col_${tipo}`]||0;
-      const treinVal = (d.nome==='Daniel') ? getManual(key,'trein') : 0;
-      const rowTotal = comissao + insVal + liqVal + precVal + pVol + objCol + campVal + camp2Val + camp3Val + treinVal;
-      tr.innerHTML=`
-        <td>${nomeDisp}</td>
-        <td>${fmt(d.volume)}</td>
-        <td class="td-com-first" id="s-cred-${sid(key)}">${fmt(isJohnathan ? comissao : d.creditos * mult)}</td>
-        <td class="td-com" id="s-adic-${sid(key)}">${isJohnathan ? '—' : fmt(d.adicionais * mult)}</td>
-        <td class="td-com" id="s-prec-${sid(key)}">${fmt(getManual(key,'prec') * 20)}</td>
-        <td class="td-com" id="s-prec2-${sid(key)}">${fmt(getManual(key,'prec2') * 20)}</td>
-        <td class="td-com" id="s-ins-${sid(key)}">${fmt(insVal)}</td>
-        <td class="td-com-last" id="s-liq-${sid(key)}">${fmt(liqVal)}</td>
-        <td class="td-pre-first" id="s-pvol-${tipo}-${sid(key)}">${fmt(pVol)}</td>
-        <td class="td-pre" id="s-objcol-${tipo}-${sid(key)}">${fmt(objCol)}</td>
-        <td class="td-pre" id="s-pcamp-${tipo}-${sid(key)}">${fmt(campVal)}</td>
-        <td class="td-pre" id="s-pcamp2-${tipo}-${sid(key)}">${fmt(camp2Val)}</td>
-        <td class="td-pre" id="s-pcamp3-${tipo}-${sid(key)}">${fmt(camp3Val)}</td>
-        <td class="td-pre-last" id="s-trein-${tipo}-${sid(key)}">${fmt(getManual(key,'trein'))}</td>
-        <td id="s-tot-${tipo}-${sid(key)}">${fmt(rowTotal)}</td>`;
     } else {
-      const campVal  = getManual(key,'camp')  + getManual(key,'campp2');
-      const camp2Val = getManual(key,'camp2') + getManual(key,'camp2p2');
-      const camp3Val = getManual(key,'camp3') + getManual(key,'camp3p2');
-      const objCol   = state.manuais[`obj_col_${tipo}`]||0;
-      const rowTotal = comissao + pVol + objCol + campVal + camp2Val + camp3Val;
+      const totalCampRow = getTotalCampanhas(key);
+      const objLiqRow = getObjColLiq(tipo);
+      const objCompRow = getObjColComp(tipo);
+      const rowTotal = comissao + pVol + objLiqRow + objCompRow + totalCampRow;
+      const campCells = state.campanhas.filter(cp=>cp.time===tipo||cp.time==='ambos').map(camp=>{
+        const v = getCampanhas(key).find(cp=>cp.id===camp.id);
+        return `<td class="td-pre" id="s-camp-${sid(key)}-${camp.id}">${fmt(v?.valor||0)}</td>`;
+      }).join('');
       tr.innerHTML=`
         <td>${nomeDisp}</td>
         <td>${fmt(d.volume)}</td>
         <td class="td-com-first">${fmt(d.creditos * CFG.CREDITO_VAL)}</td>
         <td class="td-com-last">${fmt(d.adicionais * CFG.CREDITO_VAL)}</td>
         <td class="td-pre-first" id="s-pvol-${tipo}-${sid(key)}">${fmt(pVol)}</td>
-        <td class="td-pre" id="s-objcol-${tipo}-${sid(key)}">${fmt(objCol)}</td>
-        <td class="td-pre" id="s-pcamp-${tipo}-${sid(key)}">${fmt(campVal)}</td>
-        <td class="td-pre" id="s-pcamp2-${tipo}-${sid(key)}">${fmt(camp2Val)}</td>
-        <td class="td-pre-last" id="s-pcamp3-${tipo}-${sid(key)}">${fmt(camp3Val)}</td>
+        <td class="td-pre" id="s-objcol-${tipo}-${sid(key)}">${fmt(objLiqRow+objCompRow)}</td>
+        ${campCells}
+        <td class="td-pre-last" id="s-pcamp-${tipo}-${sid(key)}">${fmt(totalCampRow)}</td>
         <td id="s-tot-${tipo}-${sid(key)}">${fmt(rowTotal)}</td>`;
     }
     tbodyEl.appendChild(tr);
@@ -961,9 +985,7 @@ function renderTime(tipo) {
       <td class="td-pre-first" id="st-pvol-${tipo}">${fmt(totPvol)}</td>
       <td class="td-pre" id="st-objcol-${tipo}">${fmt(0)}</td>
       <td class="td-pre" id="st-pcamp-${tipo}">${fmt(0)}</td>
-      <td class="td-pre" id="st-pcamp2-${tipo}">${fmt(0)}</td>
-      <td class="td-pre-last" id="st-pcamp3-${tipo}">${fmt(0)}</td>
-      <td id="st-tot-${tipo}">${fmt(totTotal)}</td>`;
+      <td class="td-pre-last" id="st-tot-${tipo}">${fmt(totTotal)}</td>`;
   }
   tbodyEl.appendChild(trT);
 
@@ -996,7 +1018,8 @@ function renderFinanceiro() {
       <div class="card-group-label">Prêmios</div>
       <div class="row"><span class="lbl">Prêmio Execução</span><span class="val" id="fin-exec-val">R$ 0,00</span></div>
       <div class="row"><span class="lbl">Prêmio Resultado</span><span class="val" id="fin-res-val">R$ 0,00</span></div>
-      <div class="row"><span class="lbl">Objetivo Coletivo</span><span class="val" id="fin-objcol-val">R$ 0,00</span></div>
+      <div class="row"><span class="lbl">Obj. Coletivo (Liquidação)</span><span class="val" id="fin-objcol-liq-val">R$ 0,00</span></div>
+      <div class="row"><span class="lbl">Obj. Coletivo (Comprados)</span><span class="val" id="fin-objcol-comp-val">R$ 0,00</span></div>
       <p class="hint">Clique para ver o detalhamento</p>
     </div>
     <div class="card-total">
@@ -1023,7 +1046,9 @@ function renderFinanceiro() {
 function recalcFinanceiro() {
   const exec   = state.manuais['marco_fin_exec']||0;
   const res    = state.manuais['marco_fin_res']||0;
-  const objCol = state.manuais['obj_col_financeiro']||0;
+  const objLiqF  = state.manuais['obj_col_liq_financeiro']  || 0;
+  const objCompF = state.manuais['obj_col_comp_financeiro'] || 0;
+  const objCol   = objLiqF + objCompF;
   const premios = exec + res + objCol;
   const tot     = premios;
   const el = id => document.getElementById(id);
@@ -1032,7 +1057,8 @@ function recalcFinanceiro() {
   if(el('fin-pre-val'))  el('fin-pre-val').textContent  = fmt(premios);
   if(el('fin-exec-val')) el('fin-exec-val').textContent = fmt(exec);
   if(el('fin-res-val'))  el('fin-res-val').textContent  = fmt(res);
-  if(el('fin-objcol-val'))el('fin-objcol-val').textContent = fmt(objCol);
+  if(el('fin-objcol-liq-val'))  el('fin-objcol-liq-val').textContent  = fmt(objLiqF);
+  if(el('fin-objcol-comp-val')) el('fin-objcol-comp-val').textContent = fmt(objCompF);
   if(el('s-fin-exec'))   el('s-fin-exec').textContent   = fmt(exec);
   if(el('s-fin-res'))    el('s-fin-res').textContent    = fmt(res);
   if(el('s-fin-objcol')) el('s-fin-objcol').textContent = fmt(objCol);
@@ -1079,22 +1105,21 @@ function _recalcCardInternal(tipo, key) {
   const insVal   = insQt * CFG.INSERCAO_VAL;
   const liqVal   = (tipo==='juridico' && !isJohnathan) ? comissaoLiquidados(key) : 0;
   const pVol     = premioVolume(d.volume);
-  const pCamp    = getManual(key,'camp')  + getManual(key,'campp2');
-  const pCamp2   = getManual(key,'camp2') + getManual(key,'camp2p2');
-  const pCamp3   = getManual(key,'camp3') + getManual(key,'camp3p2');
-  const objCol   = state.manuais[`obj_col_${tipo}`] || 0;
+  const totalCamp = getTotalCampanhas(key);
+  const objColLiq = getObjColLiq(tipo);
+  const objColComp= getObjColComp(tipo);
   const precQt   = getManual(key,'prec');
   const precQt2  = getManual(key,'prec2');
   const precVal  = (precQt + precQt2) * 20;
-  const trein    = (tipo==='juridico' && d.nome==='Daniel') ? getManual(key,'trein') : 0;
-  const total    = comissao + insVal + liqVal + pVol + objCol + pCamp + pCamp2 + pCamp3 + precVal + trein;
+  const total    = comissao + insVal + liqVal + pVol + objColLiq + objColComp + totalCamp + precVal;
 
   const el = id => document.getElementById(id);
   if (el(`total-${tipo}-${sid(key)}`)) el(`total-${tipo}-${sid(key)}`).textContent = fmt(total);
   if (el(`subtot-com-${tipo}-${sid(key)}`)) el(`subtot-com-${tipo}-${sid(key)}`).textContent = fmt(comissao + insVal + liqVal + precVal);
-  if (el(`subtot-pre-${tipo}-${sid(key)}`)) el(`subtot-pre-${tipo}-${sid(key)}`).textContent = fmt(pVol + objCol + pCamp + pCamp2 + pCamp3 + trein);
-  if (el(`row-trein-val-${sid(key)}`)) el(`row-trein-val-${sid(key)}`).textContent = fmt(trein);
-  if (el(`row-objcol-val-${sid(key)}`)) el(`row-objcol-val-${sid(key)}`).textContent = fmt(objCol);
+  if (el(`subtot-pre-${tipo}-${sid(key)}`)) el(`subtot-pre-${tipo}-${sid(key)}`).textContent = fmt(pVol + objColLiq + objColComp + totalCamp);
+
+  if (el(`row-objcol-liq-val-${sid(key)}`)) el(`row-objcol-liq-val-${sid(key)}`).textContent = fmt(objColLiq);
+  if (el(`row-objcol-comp-val-${sid(key)}`)) el(`row-objcol-comp-val-${sid(key)}`).textContent = fmt(objColComp);
   if (el(`s-ins-${sid(key)}`))  el(`s-ins-${sid(key)}`).textContent  = fmtN(insQt);
   if (el(`s-liq-${sid(key)}`))  el(`s-liq-${sid(key)}`).textContent  = fmt(liqVal);
   if (el(`row-ins-val-${sid(key)}`)) el(`row-ins-val-${sid(key)}`).textContent = fmt(insVal);
@@ -1103,19 +1128,81 @@ function _recalcCardInternal(tipo, key) {
   if (el(`prec-sub-${sid(key)}`))      el(`prec-sub-${sid(key)}`).textContent      = `${fmtN(precQt)} × R$ 20,00`;
   if (el(`prec2-sub-${sid(key)}`))     el(`prec2-sub-${sid(key)}`).textContent     = `${fmtN(precQt2)} × R$ 20,00`;
   if (el(`row-prec2-val-${sid(key)}`)) el(`row-prec2-val-${sid(key)}`).textContent = fmt(precQt2 * 20);
-  if (el(`row-camp-val-${sid(key)}`))  el(`row-camp-val-${sid(key)}`).textContent  = fmt(pCamp);
-  if (el(`row-camp-val-${sid(key)}`))    el(`row-camp-val-${sid(key)}`).textContent    = fmt(getManual(key,'camp'));
-  if (el(`row-campp2-val-${sid(key)}`))  el(`row-campp2-val-${sid(key)}`).textContent  = fmt(getManual(key,'campp2'));
-  if (el(`row-camp2-val-${sid(key)}`))   el(`row-camp2-val-${sid(key)}`).textContent   = fmt(getManual(key,'camp2'));
-  if (el(`row-camp2p2-val-${sid(key)}`)) el(`row-camp2p2-val-${sid(key)}`).textContent = fmt(getManual(key,'camp2p2'));
-  if (el(`row-camp3-val-${sid(key)}`))   el(`row-camp3-val-${sid(key)}`).textContent   = fmt(getManual(key,'camp3'));
-  if (el(`row-camp3p2-val-${sid(key)}`)) el(`row-camp3p2-val-${sid(key)}`).textContent = fmt(getManual(key,'camp3p2'));
-  if (el(`s-com-${tipo}-${sid(key)}`)) el(`s-com-${tipo}-${sid(key)}`).textContent = fmt(comissao + insVal);
+  // Atualizar linhas de campanha dinâmicas no card
+  getCampanhas(key).forEach(camp => {
+    const elC = el(`row-camp-val-${sid(key)}-${camp.id}`);
+    if (elC) elC.textContent = fmt(camp.valor||0);
+  });
   if (el(`s-pvol-${tipo}-${sid(key)}`)) el(`s-pvol-${tipo}-${sid(key)}`).textContent = fmt(pVol);
-  if (el(`s-pcamp-${tipo}-${sid(key)}`)) el(`s-pcamp-${tipo}-${sid(key)}`).textContent = fmt(pCamp + precVal);
+  if (el(`s-pcamp-${tipo}-${sid(key)}`)) el(`s-pcamp-${tipo}-${sid(key)}`).textContent = fmt(totalCamp);
   if (el(`s-tot-${tipo}-${sid(key)}`)) el(`s-tot-${tipo}-${sid(key)}`).textContent = fmt(total);
 }
 
+
+// ── GERENCIAR CAMPANHAS ───────────────────────────────────────────────────
+let _campId = 1;
+
+function abrirModalCampanhas() {
+  renderCampList();
+  document.getElementById('modalCampBackdrop').classList.add('open');
+}
+
+function fecharModalCampanhas() {
+  document.getElementById('modalCampBackdrop').classList.remove('open');
+  renderAll();
+  renderFinanceiro();
+}
+
+function renderCampList() {
+  const list = document.getElementById('campList');
+  if (!state.campanhas.length) {
+    list.innerHTML = '<div style="font-size:12px;color:var(--mu);font-style:italic">Nenhuma campanha criada.</div>';
+    return;
+  }
+  list.innerHTML = state.campanhas.map(camp => `
+    <div class="camp-item">
+      <span class="camp-item-nome">${camp.nome}</span>
+      <span class="camp-item-time">${camp.time === 'ambos' ? 'Todos' : camp.time === 'comercial' ? 'Comercial' : 'Jurídico'}</span>
+      <button class="btn-rm-camp" onclick="removerCampanha(${camp.id})" title="Remover">✕</button>
+    </div>`).join('');
+}
+
+function adicionarCampanha() {
+  const nome = document.getElementById('new-camp-nome').value.trim();
+  const time = document.getElementById('new-camp-time').value;
+  if (!nome) { alert('Informe o nome da campanha.'); return; }
+  state.campanhas.push({ id: _campId++, nome, time });
+  document.getElementById('new-camp-nome').value = '';
+  renderCampList();
+}
+
+function removerCampanha(id) {
+  if (!confirm('Remover esta campanha? Os valores preenchidos serão perdidos.')) return;
+  state.campanhas = state.campanhas.filter(c => c.id !== id);
+  // Limpar valores da campanha removida de todos os manuais
+  Object.keys(state.manuais).forEach(key => {
+    if (state.manuais[key].campanhas) {
+      state.manuais[key].campanhas = state.manuais[key].campanhas.filter(c => c.id !== id);
+    }
+  });
+  renderCampList();
+}
+
+function renderCampanhasCols(tipo) {
+  // Atualiza células de campanha dinâmica nas linhas da tabela
+  const data = tipo==='comercial' ? state.comercial : state.juridico;
+  const removed = tipo==='comercial' ? state.removedComercial : state.removedJuridico;
+  const camps = state.campanhas.filter(c => c.time === tipo || c.time === 'ambos');
+  Object.keys(data).filter(k=>!removed.includes(k)).forEach(key => {
+    camps.forEach(camp => {
+      const el = document.getElementById(`s-camp-${sid(key)}-${camp.id}`);
+      if (el) {
+        const val = getCampanhas(key).find(c => c.id === camp.id)?.valor || 0;
+        el.textContent = fmt(val);
+      }
+    });
+  });
+}
 
 // ── ADICIONAR PESSOA MANUALMENTE ─────────────────────────────────────────
 let _addPessoaTipo = null;
@@ -1167,7 +1254,7 @@ function abrirModalIndividual(tipo, key) {
 
   const d = tipo === 'comercial' ? state.comercial[key] : state.juridico[key];
   const m = state.manuais[key] || {};
-  const nomeDisp = d.sigla ? `${d.nome} (${d.sigla})` : d.nome;
+  const nomeDisp = d.nome;
   const isJohn = tipo === 'juridico' && d.nome === 'Johnathan';
   const isNic  = tipo === 'juridico' && d.nome.toLowerCase() === 'nicolli';
   const execLabel = tipo === 'comercial' ? 'Campanha Execução (Meet)' : 'Campanha Execução (Inserções)';
@@ -1194,15 +1281,14 @@ function abrirModalIndividual(tipo, key) {
   }
 
   html += `<div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mu);margin:14px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--bo)">Campanhas</div>`;
-  html += field(`${execLabel} — 13/04 a 17/04`, 'camp',    m.camp||0);
-  html += field(`${execLabel} — 27/04 a 30/04`, 'campp2',  m.campp2||0);
-  html += field('Campanha Volume — 13/04 a 17/04',          'camp2',   m.camp2||0);
-  html += field('Campanha Volume — 27/04 a 30/04',          'camp2p2', m.camp2p2||0);
-  html += field('Campanha Dupla de Ouro — 13/04 a 17/04',   'camp3',   m.camp3||0);
-  html += field('Campanha Dupla de Ouro — 27/04 a 30/04',   'camp3p2', m.camp3p2||0);
-  if (tipo === 'juridico' && d.nome === 'Daniel') {
-    html += `<div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mu);margin:14px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--bo)">Prêmios Especiais</div>`;
-    html += field('Prêmio Treinamento', 'trein', m.trein||0);
+  // Campanhas dinâmicas do time
+  const campsTime = state.campanhas.filter(cp => cp.time === tipo || cp.time === 'ambos');
+  if (campsTime.length) {
+    html += `<div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mu);margin:14px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--bo)">Campanhas</div>`;
+    campsTime.forEach(camp => {
+      const val = (m.campanhas||[]).find(cp => cp.id === camp.id)?.valor || 0;
+      html += field(camp.nome, `camp_${camp.id}`, val);
+    });
   }
 
   document.getElementById('modalIndBody').innerHTML = html;
@@ -1224,13 +1310,13 @@ function aplicarModalInd() {
     m.ins   = get('ins');
     if (isNic) { m.prec = get('prec'); m.prec2 = get('prec2'); }
   }
-  m.camp   = get('camp');
-  m.campp2 = get('campp2');
-  m.camp2  = get('camp2');
-  m.camp2p2= get('camp2p2');
-  m.camp3  = get('camp3');
-  m.camp3p2= get('camp3p2');
-  if (tipo === 'juridico' && d.nome === 'Daniel') m.trein = get('trein');
+  // Salvar campanhas dinâmicas
+  const campsTime = state.campanhas.filter(cp => cp.time === tipo || cp.time === 'ambos');
+  m.campanhas = campsTime.map(camp => ({
+    id: camp.id,
+    nome: camp.nome,
+    valor: parseFloat(document.getElementById(`ind-camp_${camp.id}`)?.value) || 0
+  }));
 
   _recalcCardInternal(tipo, key);
   recalcTotals(tipo);
@@ -1268,8 +1354,12 @@ function abrirModalManuais() {
     <div class="mm-person">
       <div class="mm-person-name" style="font-size:12px;font-weight:600;color:var(--mu)">Prêmio coletivo do time</div>
       <div class="mm-field">
-        <label>Prêmio Objetivo Coletivo</label>
-        <input type="number" min="0" step="0.01" class="mm-input" id="mm-obj-col-juridico" value="${state.manuais['obj_col_juridico']||0}" placeholder="0,00">
+        <label>Objetivo Coletivo (Liquidação)</label>
+        <input type="number" min="0" step="0.01" class="mm-input" id="mm-obj-col-liq-juridico" value="${state.manuais['obj_col_liq_juridico']||0}" placeholder="0,00">
+      </div>
+      <div class="mm-field">
+        <label>Objetivo Coletivo (Comprados)</label>
+        <input type="number" min="0" step="0.01" class="mm-input" id="mm-obj-col-comp-juridico" value="${state.manuais['obj_col_comp_juridico']||0}" placeholder="0,00">
       </div>
     </div>`;
     jurNomes.forEach(key => {
@@ -1277,7 +1367,7 @@ function abrirModalManuais() {
       const isJohn = d.nome === 'Johnathan';
       const isNic  = d.nome.toLowerCase() === 'nicolli';
       const m = state.manuais[key] || {};
-      const nomeDisp = d.sigla ? `${d.nome} (${d.sigla})` : d.nome;
+      const nomeDisp = d.nome;
       const p = document.createElement('div');
       p.className = 'mm-person';
       p.innerHTML = `
@@ -1306,14 +1396,10 @@ function abrirModalManuais() {
             <span class="mm-input-hint">× R$ 20,00</span>
           </div>
         </div>` : ''}
-        <div class="mm-field"><label>Campanha Execução (Inserções) — 13/04 a 17/04</label><div class="mm-field-right"><input type="number" min="0" step="0.01" class="mm-input" id="mm-camp-jur-${sid(key)}" value="${m.camp||0}" placeholder="0,00"></div></div>
-        <div class="mm-field"><label>Campanha Execução (Inserções) — 27/04 a 30/04</label><div class="mm-field-right"><input type="number" min="0" step="0.01" class="mm-input" id="mm-camp-jur-p2-${sid(key)}" value="${m.campp2||0}" placeholder="0,00"></div></div>
-        <div class="mm-field"><label>Campanha Volume — 13/04 a 17/04</label><div class="mm-field-right"><input type="number" min="0" step="0.01" class="mm-input" id="mm-camp2-jur-${sid(key)}" value="${m.camp2||0}" placeholder="0,00"></div></div>
-        <div class="mm-field"><label>Campanha Volume — 27/04 a 30/04</label><div class="mm-field-right"><input type="number" min="0" step="0.01" class="mm-input" id="mm-camp2-jur-p2-${sid(key)}" value="${m.camp2p2||0}" placeholder="0,00"></div></div>
-        <div class="mm-field"><label>Campanha Dupla de Ouro — 13/04 a 17/04</label><div class="mm-field-right"><input type="number" min="0" step="0.01" class="mm-input" id="mm-camp3-jur-${sid(key)}" value="${m.camp3||0}" placeholder="0,00"></div></div>
-        <div class="mm-field"><label>Campanha Dupla de Ouro — 27/04 a 30/04</label><div class="mm-field-right"><input type="number" min="0" step="0.01" class="mm-input" id="mm-camp3-jur-p2-${sid(key)}" value="${m.camp3p2||0}" placeholder="0,00"></div></div>
-        ${d.nome === 'Daniel' ? `
-        <div class="mm-field"><label>Prêmio Treinamento</label><div class="mm-field-right"><input type="number" min="0" step="0.01" class="mm-input" id="mm-trein-${sid(key)}" value="${m.trein||0}" placeholder="0,00"></div></div>` : ''}
+        ${state.campanhas.filter(cp=>cp.time==='juridico'||cp.time==='ambos').map(camp=>{
+          const val=(m.campanhas||[]).find(cp=>cp.id===camp.id)?.valor||0;
+          return `<div class="mm-field"><label>${camp.nome}</label><div class="mm-field-right"><input type="number" min="0" step="0.01" class="mm-input" id="mm-camp-jur-${sid(key)}-${camp.id}" value="${val}" placeholder="0,00"></div></div>`;
+        }).join('')}
         `;
       sec.appendChild(p);
     });
@@ -1333,8 +1419,12 @@ function abrirModalManuais() {
     <div class="mm-person">
       <div class="mm-person-name" style="font-size:12px;font-weight:600;color:var(--mu)">Prêmio coletivo do time</div>
       <div class="mm-field">
-        <label>Prêmio Objetivo Coletivo</label>
-        <input type="number" min="0" step="0.01" class="mm-input" id="mm-obj-col-comercial" value="${state.manuais['obj_col_comercial']||0}" placeholder="0,00">
+        <label>Objetivo Coletivo (Liquidação)</label>
+        <input type="number" min="0" step="0.01" class="mm-input" id="mm-obj-col-liq-comercial" value="${state.manuais['obj_col_liq_comercial']||0}" placeholder="0,00">
+      </div>
+      <div class="mm-field">
+        <label>Objetivo Coletivo (Comprados)</label>
+        <input type="number" min="0" step="0.01" class="mm-input" id="mm-obj-col-comp-comercial" value="${state.manuais['obj_col_comp_comercial']||0}" placeholder="0,00">
       </div>
     </div>`;
     comNomes.forEach(key => {
@@ -1344,12 +1434,10 @@ function abrirModalManuais() {
       p.className = 'mm-person';
       p.innerHTML = `
         <div class="mm-person-name">${d.nome}</div>
-        <div class="mm-field"><label>Campanha Execução (Meet) — 13/04 a 17/04</label><div class="mm-field-right"><input type="number" min="0" step="0.01" class="mm-input" id="mm-camp-com-${sid(key)}" value="${m.camp||0}" placeholder="0,00"></div></div>
-        <div class="mm-field"><label>Campanha Execução (Meet) — 27/04 a 30/04</label><div class="mm-field-right"><input type="number" min="0" step="0.01" class="mm-input" id="mm-camp-com-p2-${sid(key)}" value="${m.campp2||0}" placeholder="0,00"></div></div>
-        <div class="mm-field"><label>Campanha Volume — 13/04 a 17/04</label><div class="mm-field-right"><input type="number" min="0" step="0.01" class="mm-input" id="mm-camp2-com-${sid(key)}" value="${m.camp2||0}" placeholder="0,00"></div></div>
-        <div class="mm-field"><label>Campanha Volume — 27/04 a 30/04</label><div class="mm-field-right"><input type="number" min="0" step="0.01" class="mm-input" id="mm-camp2-com-p2-${sid(key)}" value="${m.camp2p2||0}" placeholder="0,00"></div></div>
-        <div class="mm-field"><label>Campanha Dupla de Ouro — 13/04 a 17/04</label><div class="mm-field-right"><input type="number" min="0" step="0.01" class="mm-input" id="mm-camp3-com-${sid(key)}" value="${m.camp3||0}" placeholder="0,00"></div></div>
-        <div class="mm-field"><label>Campanha Dupla de Ouro — 27/04 a 30/04</label><div class="mm-field-right"><input type="number" min="0" step="0.01" class="mm-input" id="mm-camp3-com-p2-${sid(key)}" value="${m.camp3p2||0}" placeholder="0,00"></div></div>`;
+        ${state.campanhas.filter(cp=>cp.time==='comercial'||cp.time==='ambos').map(camp=>{
+          const val=(m.campanhas||[]).find(cp=>cp.id===camp.id)?.valor||0;
+          return `<div class="mm-field"><label>${camp.nome}</label><div class="mm-field-right"><input type="number" min="0" step="0.01" class="mm-input" id="mm-camp-com-${sid(key)}-${camp.id}" value="${val}" placeholder="0,00"></div></div>`;
+        }).join('')}`;
       sec.appendChild(p);
     });
     body.appendChild(sec);
@@ -1365,8 +1453,12 @@ function abrirModalManuais() {
     <div class="mm-person">
       <div class="mm-person-name" style="font-size:12px;font-weight:600;color:var(--mu)">Prêmio coletivo do time</div>
       <div class="mm-field">
-        <label>Prêmio Objetivo Coletivo</label>
-        <input type="number" min="0" step="0.01" class="mm-input" id="mm-obj-col-financeiro" value="${state.manuais['obj_col_financeiro']||0}" placeholder="0,00">
+        <label>Objetivo Coletivo (Liquidação)</label>
+        <input type="number" min="0" step="0.01" class="mm-input" id="mm-obj-col-liq-financeiro" value="${state.manuais['obj_col_liq_financeiro']||0}" placeholder="0,00">
+      </div>
+      <div class="mm-field">
+        <label>Objetivo Coletivo (Comprados)</label>
+        <input type="number" min="0" step="0.01" class="mm-input" id="mm-obj-col-comp-financeiro" value="${state.manuais['obj_col_comp_financeiro']||0}" placeholder="0,00">
       </div>
     </div>
     <div class="mm-person">
@@ -1386,10 +1478,13 @@ function abrirModalManuais() {
 }
 
 function aplicarManuais() {
-  // Salvar obj_col antes de recalcular os cards
-  state.manuais['obj_col_juridico']  = parseFloat(document.getElementById('mm-obj-col-juridico')?.value)  || 0;
-  state.manuais['obj_col_comercial'] = parseFloat(document.getElementById('mm-obj-col-comercial')?.value) || 0;
-  state.manuais['obj_col_financeiro']= parseFloat(document.getElementById('mm-obj-col-financeiro')?.value)|| 0;
+  // Salvar obj_col duplo antes de recalcular os cards
+  state.manuais['obj_col_liq_juridico']   = parseFloat(document.getElementById('mm-obj-col-liq-juridico')?.value)   || 0;
+  state.manuais['obj_col_comp_juridico']  = parseFloat(document.getElementById('mm-obj-col-comp-juridico')?.value)  || 0;
+  state.manuais['obj_col_liq_comercial']  = parseFloat(document.getElementById('mm-obj-col-liq-comercial')?.value)  || 0;
+  state.manuais['obj_col_comp_comercial'] = parseFloat(document.getElementById('mm-obj-col-comp-comercial')?.value) || 0;
+  state.manuais['obj_col_liq_financeiro'] = parseFloat(document.getElementById('mm-obj-col-liq-financeiro')?.value) || 0;
+  state.manuais['obj_col_comp_financeiro']= parseFloat(document.getElementById('mm-obj-col-comp-financeiro')?.value)|| 0;
 
   // Jurídico
   const jurRem = state.removedJuridico;
@@ -1398,13 +1493,11 @@ function aplicarManuais() {
     const isNic = d.nome.toLowerCase() === 'nicolli';
     if (!state.manuais[key]) state.manuais[key] = {};
     state.manuais[key].ins  = parseFloat(document.getElementById(`mm-ins-${sid(key)}`)?.value) || 0;
-    state.manuais[key].camp   = parseFloat(document.getElementById(`mm-camp-jur-${sid(key)}`)?.value)    || 0;
-    state.manuais[key].campp2 = parseFloat(document.getElementById(`mm-camp-jur-p2-${sid(key)}`)?.value)  || 0;
-    state.manuais[key].camp2  = parseFloat(document.getElementById(`mm-camp2-jur-${sid(key)}`)?.value)   || 0;
-    state.manuais[key].camp2p2= parseFloat(document.getElementById(`mm-camp2-jur-p2-${sid(key)}`)?.value)|| 0;
-    state.manuais[key].camp3  = parseFloat(document.getElementById(`mm-camp3-jur-${sid(key)}`)?.value)   || 0;
-    state.manuais[key].camp3p2= parseFloat(document.getElementById(`mm-camp3-jur-p2-${sid(key)}`)?.value)|| 0;
-    state.manuais[key].trein  = d.nome==='Daniel' ? (parseFloat(document.getElementById(`mm-trein-${sid(key)}`)?.value)||0) : 0;
+    const campsJur = state.campanhas.filter(cp=>cp.time==='juridico'||cp.time==='ambos');
+    state.manuais[key].campanhas = campsJur.map(camp => ({
+      id: camp.id, nome: camp.nome,
+      valor: parseFloat(document.getElementById(`mm-camp-jur-${sid(key)}-${camp.id}`)?.value) || 0
+    }));
     state.manuais[key].prec = isNic ? (parseFloat(document.getElementById(`mm-prec-${sid(key)}`)?.value) || 0) : 0;
     state.manuais[key].prec2 = isNic ? (parseFloat(document.getElementById(`mm-prec2-${sid(key)}`)?.value) || 0) : 0;
     _recalcCardInternal('juridico', key);
@@ -1415,12 +1508,11 @@ function aplicarManuais() {
   const comRem = state.removedComercial;
   Object.keys(state.comercial).filter(k=>!comRem.includes(k)).forEach(key => {
     if (!state.manuais[key]) state.manuais[key] = {};
-    state.manuais[key].camp   = parseFloat(document.getElementById(`mm-camp-com-${sid(key)}`)?.value)    || 0;
-    state.manuais[key].campp2 = parseFloat(document.getElementById(`mm-camp-com-p2-${sid(key)}`)?.value)  || 0;
-    state.manuais[key].camp2  = parseFloat(document.getElementById(`mm-camp2-com-${sid(key)}`)?.value)   || 0;
-    state.manuais[key].camp2p2= parseFloat(document.getElementById(`mm-camp2-com-p2-${sid(key)}`)?.value)|| 0;
-    state.manuais[key].camp3  = parseFloat(document.getElementById(`mm-camp3-com-${sid(key)}`)?.value)   || 0;
-    state.manuais[key].camp3p2= parseFloat(document.getElementById(`mm-camp3-com-p2-${sid(key)}`)?.value)|| 0;
+    const campsCom = state.campanhas.filter(cp=>cp.time==='comercial'||cp.time==='ambos');
+    state.manuais[key].campanhas = campsCom.map(camp => ({
+      id: camp.id, nome: camp.nome,
+      valor: parseFloat(document.getElementById(`mm-camp-com-${sid(key)}-${camp.id}`)?.value) || 0
+    }));
     _recalcCardInternal('comercial', key);
   });
   recalcTotals('comercial');
@@ -1452,7 +1544,7 @@ function recalcTotals(tipo) {
   const nomes   = Object.keys(data).filter(k=>!removed.includes(k));
   const objCol  = state.manuais[`obj_col_${tipo}`] || 0;
 
-  let tCred=0, tAdic=0, tPrec=0, tPrec2=0, tIns=0, tLiq=0, tPv=0, tOc=0, tPc=0, tPc2=0, tPc3=0, tTrein=0, tT=0;
+  let tCred=0, tAdic=0, tPrec=0, tPrec2=0, tIns=0, tLiq=0, tPv=0, tOc=0, tPc=0, tT=0;
 
   nomes.forEach(key=>{
     const d    = data[key];
@@ -1466,32 +1558,27 @@ function recalcTotals(tipo) {
     const insVal  = insQt * CFG.INSERCAO_VAL;
     const liq     = tipo==='juridico' ? comissaoLiquidados(key) : 0;
     const pv      = premioVolume(d.volume);
-    const pc      = getManual(key,'camp')  + getManual(key,'campp2');
-    const pc2     = getManual(key,'camp2') + getManual(key,'camp2p2');
-    const pc3     = getManual(key,'camp3') + getManual(key,'camp3p2');
     const pr      = (getManual(key,'prec') + getManual(key,'prec2')) * 20;
-    const trein   = (tipo==='juridico' && d.nome==='Daniel') ? getManual(key,'trein') : 0;
-    const tot     = credVal + adicVal + insVal + liq + pv + objCol + pc + pc2 + pc3 + pr + trein;
+    const tcamp   = getTotalCampanhas(key);
+    const objLiq  = getObjColLiq(tipo);
+    const objComp = getObjColComp(tipo);
+    const tot     = credVal + adicVal + insVal + liq + pv + objLiq + objComp + tcamp + pr;
 
     const precV  = getManual(key,'prec') * 20;
     const precV2 = getManual(key,'prec2') * 20;
     tCred+=credVal; tAdic+=adicVal; tPrec+=precV; tPrec2+=precV2; tIns+=insVal; tLiq+=liq;
-    tPv+=pv; tOc+=objCol; tPc+=pc; tPc2+=pc2; tPc3+=pc3; tT+=tot;
-    tTrein = (tTrein||0) + trein;
+    tPv+=pv; tOc+=(objLiq+objComp); tPc+=tcamp; tT+=tot;
 
     // Atualiza células da linha individual na tabela
     const e2 = id => document.getElementById(id);
-    if (e2(`s-prec-${sid(key)}`))   e2(`s-prec-${sid(key)}`).textContent   = fmt(getManual(key,'prec') * 20);
-    if (e2(`s-prec2-${sid(key)}`))  e2(`s-prec2-${sid(key)}`).textContent  = fmt(getManual(key,'prec2') * 20);
-    if (e2(`s-ins-${sid(key)}`))              e2(`s-ins-${sid(key)}`).textContent              = fmt(insVal);
-    if (e2(`s-liq-${sid(key)}`))              e2(`s-liq-${sid(key)}`).textContent              = fmt(liq);
-    if (e2(`s-pvol-${tipo}-${sid(key)}`))     e2(`s-pvol-${tipo}-${sid(key)}`).textContent     = fmt(pv);
-    if (e2(`s-objcol-${tipo}-${sid(key)}`))   e2(`s-objcol-${tipo}-${sid(key)}`).textContent   = fmt(objCol);
-    if (e2(`s-pcamp-${tipo}-${sid(key)}`))    e2(`s-pcamp-${tipo}-${sid(key)}`).textContent    = fmt(pc);
-    if (e2(`s-pcamp2-${tipo}-${sid(key)}`))   e2(`s-pcamp2-${tipo}-${sid(key)}`).textContent   = fmt(pc2);
-    if (e2(`s-pcamp3-${tipo}-${sid(key)}`))   e2(`s-pcamp3-${tipo}-${sid(key)}`).textContent   = fmt(pc3);
-    if (e2(`s-trein-${tipo}-${sid(key)}`))     e2(`s-trein-${tipo}-${sid(key)}`).textContent     = fmt(trein);
-    if (e2(`s-tot-${tipo}-${sid(key)}`))      e2(`s-tot-${tipo}-${sid(key)}`).textContent      = fmt(tot);
+    if (e2(`s-prec-${sid(key)}`))   e2(`s-prec-${sid(key)}`).textContent   = fmt(precV);
+    if (e2(`s-prec2-${sid(key)}`))  e2(`s-prec2-${sid(key)}`).textContent  = fmt(precV2);
+    if (e2(`s-ins-${sid(key)}`))    e2(`s-ins-${sid(key)}`).textContent    = fmt(insVal);
+    if (e2(`s-liq-${sid(key)}`))    e2(`s-liq-${sid(key)}`).textContent    = fmt(liq);
+    if (e2(`s-pvol-${tipo}-${sid(key)}`))   e2(`s-pvol-${tipo}-${sid(key)}`).textContent   = fmt(pv);
+    if (e2(`s-objcol-${tipo}-${sid(key)}`)) e2(`s-objcol-${tipo}-${sid(key)}`).textContent = fmt(objLiq+objComp);
+    if (e2(`s-pcamp-${tipo}-${sid(key)}`))  e2(`s-pcamp-${tipo}-${sid(key)}`).textContent  = fmt(tcamp);
+    if (e2(`s-tot-${tipo}-${sid(key)}`))    e2(`s-tot-${tipo}-${sid(key)}`).textContent    = fmt(tot);
   });
 
   // Atualiza linha de total
@@ -1505,10 +1592,9 @@ function recalcTotals(tipo) {
   if (el(`st-pvol-${tipo}`))   el(`st-pvol-${tipo}`).textContent   = fmt(tPv);
   if (el(`st-objcol-${tipo}`)) el(`st-objcol-${tipo}`).textContent = fmt(tOc);
   if (el(`st-pcamp-${tipo}`))  el(`st-pcamp-${tipo}`).textContent  = fmt(tPc);
-  if (el(`st-pcamp2-${tipo}`)) el(`st-pcamp2-${tipo}`).textContent = fmt(tPc2);
-  if (el(`st-pcamp3-${tipo}`)) el(`st-pcamp3-${tipo}`).textContent = fmt(tPc3);
-  if (el(`st-trein-${tipo}`))  el(`st-trein-${tipo}`).textContent  = fmt(tTrein);
   if (el(`st-tot-${tipo}`))    el(`st-tot-${tipo}`).textContent    = fmt(tT);
+  // Atualizar colunas dinâmicas de campanha na tabela
+  renderCampanhasCols(tipo);
 }
 
 // ── MODAL BREAKDOWN ───────────────────────────────────────────────────────
@@ -1522,14 +1608,11 @@ function abrirModal(tipo, key) {
   const insVal = insQt * CFG.INSERCAO_VAL;
   const liqVal = tipo==='juridico' ? comissaoLiquidados(key) : 0;
   const pVol=premioVolume(d.volume);
-  const pCamp=getManual(key,'camp');
-  const pCamp2=getManual(key,'camp2');
-  const pCamp3=getManual(key,'camp3');
-  const objCol=state.manuais[`obj_col_${tipo}`]||0;
+  const objCol=(getObjColLiq(tipo)+getObjColComp(tipo));
   const precQt=getManual(key,'prec');
   const precQt2=getManual(key,'prec2');
   const precVal=(precQt+precQt2)*20;
-  const total=comissao+insVal+liqVal+pVol+objCol+pCamp+pCamp2+pCamp3+precVal;
+  const total=comissao+insVal+liqVal+pVol+objCol+getTotalCampanhas(key)+precVal;
 
   document.getElementById('modal-name').textContent=nomeDisp;
   document.getElementById('modal-tag').innerHTML=`<span class="tag ${tipo}">${tipo==='comercial'?'Comercial':'Jurídico'}</span>`;
@@ -1727,7 +1810,7 @@ function exportar(tipo) {
       const insV=ins*CFG.INSERCAO_VAL;
       const liq=tipo==='juridico'?comissaoLiquidados(key):0;
       const pv=premioVolume(d.volume);
-      const pc=getManual(key,'camp');
+      const pc=getTotalCampanhas(key);
       const pr=getManual(key,'prec');
       const tot=com+insV+liq+pv+pc+pr;
       if (tipo==='comercial') rows.push([nD,d.creditos,d.adicionais,d.volume,com,pv,pc,tot]);
@@ -1791,6 +1874,7 @@ function salvarSessao() {
     salvoEmFormatado: dataLocal,
     mesRef: document.getElementById('mes-ref').textContent || '—',
     liquidadosQt: getVal('#gc-liq-qt'),
+    campanhas: state.campanhas,
     manuais: state.manuais,
     removedComercial: state.removedComercial,
     removedJuridico: state.removedJuridico,
@@ -1827,6 +1911,9 @@ function carregarSessao(event) {
       state.removedComercial       = sessao.removedComercial || [];
       state.removedJuridico        = sessao.removedJuridico  || [];
       state.totalCreditosEmpresa   = sessao.totalCreditosEmpresa || 0;
+      state.campanhas = sessao.campanhas || [];
+      // Restaurar _campId para evitar conflito de IDs
+      if (state.campanhas.length) _campId = Math.max(...state.campanhas.map(c=>c.id)) + 1;
 
       // Restaurar mês de referência
       if (sessao.mesRef) document.getElementById('mes-ref').textContent = sessao.mesRef;
@@ -1849,6 +1936,7 @@ function carregarSessao(event) {
       renderAll();
       renderFinanceiro();
       document.getElementById('appContent').style.display = 'block';
+      document.getElementById('btnCamp').style.display    = 'block';
       document.getElementById('btnFill').style.display    = 'block';
       document.getElementById('btnRegistrar').style.display = 'block';
       document.getElementById('btnPdf').style.display     = 'block';
@@ -1936,7 +2024,9 @@ function exportarPDF() {
     if (tipo === 'financeiro') {
       const exec   = state.manuais['marco_fin_exec']||0;
       const res    = state.manuais['marco_fin_res']||0;
-      const objCol = state.manuais['obj_col_financeiro']||0;
+      const objLiqF  = state.manuais['obj_col_liq_financeiro']  || 0;
+  const objCompF = state.manuais['obj_col_comp_financeiro'] || 0;
+  const objCol   = objLiqF + objCompF;
       const tot    = exec + res + objCol;
       return `<div class="person">
         <div class="person-header"><span class="person-name">Marco Antônio</span><span class="person-tag ${tagClass}">${tagLabel}</span></div>
@@ -1970,18 +2060,11 @@ function exportarPDF() {
     const precVal = (precQt+precQt2)*20;
     const pVol    = premioVolume(d.volume);
     const objCol  = state.manuais[`obj_col_${tipo}`]||0;
-    const pc      = getManual(key,'camp');
-    const pcp2    = getManual(key,'campp2');
-    const pc2     = getManual(key,'camp2');
-    const pc2p2   = getManual(key,'camp2p2');
-    const pc3     = getManual(key,'camp3');
-    const pc3p2   = getManual(key,'camp3p2');
     const totCom  = credVal+adicVal+insVal+liqVal+precVal;
-    const treinPDF= tipo==='juridico' && d.nome==='Daniel' ? getManual(key,'trein') : 0;
-    const totPre  = pVol+objCol+pc+pcp2+pc2+pc2p2+pc3+pc3p2+treinPDF;
+    const totCampPDF = getCampanhas(key).reduce((s,c)=>s+(c.valor||0),0);
+    const totPre  = pVol + getObjColLiq(tipo) + getObjColComp(tipo) + totCampPDF;
     const totGeral= totCom+totPre;
     const nomeDisp= d.sigla ? `${d.nome} (${d.sigla})` : d.nome;
-    const execLabel = tipo==='comercial' ? 'Camp. Execução (Meet)' : 'Camp. Execução (Inserções)';
 
     const statsHTML = isJ
       ? `<div class="stat"><div class="stat-val">${fmtN(d.linhas)}</div><div class="stat-lbl">Processos</div></div>
@@ -2012,14 +2095,12 @@ function exportarPDF() {
         <div class="section">
           <div class="section-title">Prêmios</div>
           <div class="row"><span class="lbl">Objetivo</span><span class="val">${fmt(pVol)}</span></div>
-          <div class="row"><span class="lbl">Objetivo Coletivo</span><span class="val">${fmt(objCol)}</span></div>
-          <div class="row"><span class="lbl">Camp. Volume — 13/04 a 17/04</span><span class="val">${fmt(pc2)}</span></div>
-          <div class="row"><span class="lbl">Camp. Volume — 27/04 a 30/04</span><span class="val">${fmt(pc2p2)}</span></div>
-          <div class="row"><span class="lbl">${execLabel} — 13/04 a 17/04</span><span class="val">${fmt(pc)}</span></div>
-          <div class="row"><span class="lbl">${execLabel} — 27/04 a 30/04</span><span class="val">${fmt(pcp2)}</span></div>
-          <div class="row"><span class="lbl">Camp. Dupla de Ouro — 13/04 a 17/04</span><span class="val">${fmt(pc3)}</span></div>
-          <div class="row"><span class="lbl">Camp. Dupla de Ouro — 27/04 a 30/04</span><span class="val">${fmt(pc3p2)}</span></div>
-          ${tipo==='juridico' && d.nome==='Daniel' ? `<div class="row"><span class="lbl">Prêmio Treinamento</span><span class="val">${fmt(getManual(key,'trein'))}</span></div>` : ''}
+          <div class="row"><span class="lbl">Obj. Coletivo (Liquidação)</span><span class="val">${fmt(getObjColLiq(tipo))}</span></div>
+          <div class="row"><span class="lbl">Obj. Coletivo (Comprados)</span><span class="val">${fmt(getObjColComp(tipo))}</span></div>
+          ${state.campanhas.filter(camp=>camp.time===tipo||camp.time==='ambos').map(camp=>{
+            const val = getCampanhas(key).find(c=>c.id===camp.id)?.valor||0;
+            return `<div class="row"><span class="lbl">${camp.nome}</span><span class="val">${fmt(val)}</span></div>`;
+          }).join('')}
         </div>
       </div>
       <div class="totals">
@@ -2102,13 +2183,19 @@ async function registrarMes() {
   Object.keys(state.comercial).filter(k=>!comRem.includes(k))
     .sort((a,b)=>state.comercial[b].volume-state.comercial[a].volume)
     .forEach(key=>{
-      const d       = state.comercial[key];
-      const credVal = d.creditos * CFG.CREDITO_VAL;
-      const adicVal = d.adicionais * CFG.CREDITO_VAL;
-      const pVol    = premioVolume(d.volume);
-      const objCol  = state.manuais['obj_col_comercial']||0;
+      const d        = state.comercial[key];
+      const credVal  = d.creditos * CFG.CREDITO_VAL;
+      const adicVal  = d.adicionais * CFG.CREDITO_VAL;
+      const pVol     = premioVolume(d.volume);
+      const objLiqC  = getObjColLiq('comercial');
+      const objCompC = getObjColComp('comercial');
+      const campVals = state.campanhas.map(camp => {
+        if (camp.time !== 'comercial' && camp.time !== 'ambos') return 0;
+        return getCampanhas(key).find(c=>c.id===camp.id)?.valor || 0;
+      });
+      const totCamp = campVals.reduce((s,v)=>s+v,0);
       const totCom  = credVal + adicVal;
-      const totPre  = pVol + objCol + getManual(key,'camp') + getManual(key,'campp2') + getManual(key,'camp2') + getManual(key,'camp2p2') + getManual(key,'camp3') + getManual(key,'camp3p2');
+      const totPre  = pVol + objLiqC + objCompC + totCamp;
       rows.push([
         mesRef, 'Comercial', d.nome,
         d.volume,
@@ -2116,15 +2203,11 @@ async function registrarMes() {
         d.adicionais, adicVal,
         '—', 0,
         '—', '—', '—', 0,
-        '—', 0,
-        '—', 0,
-        pVol, state.manuais['obj_col_comercial']||0,
-        getManual(key,'camp'), getManual(key,'campp2'),
-        getManual(key,'camp2'), getManual(key,'camp2p2'),
-        getManual(key,'camp3'), getManual(key,'camp3p2'),
-        0,
-        0, 0,
-        totCom, totPre, totCom + totPre
+        '—', 0, '—', 0,
+        pVol, objLiqC, objCompC,
+        ...campVals,
+        totCom, totPre, totCom + totPre,
+        0, 0
       ]);
     });
 
@@ -2150,13 +2233,17 @@ async function registrarMes() {
       const precVal2 = precQt2 * 20;
       const precVal  = precVal1 + precVal2;
       const pVol     = premioVolume(d.volume);
-      const pCamp    = getManual(key, 'camp');
-      const nomeDisp = d.sigla ? `${d.nome} (${d.sigla})` : d.nome;
-      const objColJ  = state.manuais['obj_col_juridico']||0;
-      const totCom   = credVal + adicVal + insVal + liqVal + precVal;
-      const totPre   = pVol + objColJ + getManual(key,'camp') + getManual(key,'campp2') + getManual(key,'camp2') + getManual(key,'camp2p2') + getManual(key,'camp3') + getManual(key,'camp3p2') + (d.nome==='Daniel' ? getManual(key,'trein') : 0);
+      const objLiqJ  = getObjColLiq('juridico');
+      const objCompJ = getObjColComp('juridico');
+      const campVals = state.campanhas.map(camp => {
+        if (camp.time !== 'juridico' && camp.time !== 'ambos') return 0;
+        return getCampanhas(key).find(c=>c.id===camp.id)?.valor || 0;
+      });
+      const totCamp = campVals.reduce((s,v)=>s+v,0);
+      const totCom  = credVal + adicVal + insVal + liqVal + precVal;
+      const totPre  = pVol + objLiqJ + objCompJ + totCamp;
       rows.push([
-        mesRef, 'Jurídico', nomeDisp,
+        mesRef, 'Jurídico', d.nome,
         d.volume,
         isJ ? d.linhas : d.creditos, credVal,
         isJ ? '—' : d.adicionais, adicVal,
@@ -2164,36 +2251,30 @@ async function registrarMes() {
         pct, liqQt, liqTotal, liqVal,
         isNic ? precQt  : '—', isNic ? precVal1 : 0,
         isNic ? precQt2 : '—', isNic ? precVal2 : 0,
-        pVol, objColJ,
-        getManual(key,'camp'), getManual(key,'campp2'),
-        getManual(key,'camp2'), getManual(key,'camp2p2'),
-        getManual(key,'camp3'), getManual(key,'camp3p2'),
-        d.nome==='Daniel' ? getManual(key,'trein') : 0,
-        0, 0,
-        totCom, totPre, totCom + totPre
+        pVol, objLiqJ, objCompJ,
+        ...campVals,
+        totCom, totPre, totCom + totPre,
+        0, 0
       ]);
     });
 
   // Financeiro
   const exec   = state.manuais['marco_fin_exec'] || 0;
   const res    = state.manuais['marco_fin_res']  || 0;
-  const objFin = state.manuais['obj_col_financeiro'] || 0;
-  const totFin = exec + res + objFin;
+  const objLiqFin  = state.manuais['obj_col_liq_financeiro']  || 0;
+  const objCompFin = state.manuais['obj_col_comp_financeiro'] || 0;
+  const totFin = exec + res + objLiqFin + objCompFin;
+  const campZeros = state.campanhas.map(() => 0);
   rows.push([
     mesRef, 'Financeiro/ADM', 'Marco Antônio',
-    0,        // Volume
-    '—', 0,   // Qtd. Créditos, Com. Créditos
-    '—', 0,   // Qtd. Adicionais, Com. Adicionais
-    '—', 0,   // Qtd. Inseridos, Com. Inseridos
-    '—','—','—', 0,  // Liquidados
-    '—', 0,   // Precatório
-    '—', 0,   // Precatório Adicional
-    // Prêmios: Objetivo=exec, ObjColetivo=objFin, camps=0, Treinamento=res
-    0, objFin, 0, 0, 0, 0, 0, 0, 0,
-    // Prêmios exclusivos Marco
-    exec, res,
-    // Totais
-    0, totFin, totFin
+    0,
+    '—', 0, '—', 0, '—', 0,
+    '—','—','—', 0,
+    '—', 0, '—', 0,
+    0, objLiqFin, objCompFin,
+    ...campZeros,
+    0, totFin, totFin,
+    exec, res
   ]);
 
   try {
