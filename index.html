@@ -2183,12 +2183,17 @@ async function registrarMes() {
 
   try {
     await fetch(SHEETS_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chave: SHEETS_CHAVE, headers, rows })
-    });
-    alert(`✓ Dados do mês "${mesRef}" enviados! Verifique a aba Histórico no Google Sheets.`);
+  method: 'POST',
+  mode: 'no-cors',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ 
+    chave: SHEETS_CHAVE, 
+    mesRef, 
+    headers, 
+    rows 
+  })
+});
+    alert(`✓ Dados do mês "${mesRef}" enviados! Verifique a aba "${mesRef}" no Google Sheets.`);
   } catch(err) {
     alert('Erro: ' + err.message);
   }
