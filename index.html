@@ -333,7 +333,7 @@ tr:not(.totals-row):hover td{opacity:.85;cursor:pointer}
       <input type="file" id="fileInput" accept=".xlsx,.xls">
       <div class="upload-icon">📂</div>
       <h3>Arraste ou clique para subir a planilha mensal</h3>
-      <p>Aba: Principal · C (Comercial) · D (Jurídico, siglas) · I (Créditos) · P (Valor) · R (Contrato)</p>
+      <p>Aba: Principal · C (Comercial) · D (Jurídico, nomes) · I (Créditos) · P (Valor) · R (Contrato)</p>
     </div>
     <div class="status-bar" id="statusBar"></div>
   </div>
@@ -499,10 +499,6 @@ tr:not(.totals-row):hover td{opacity:.85;cursor:pointer}
         <label>Nome completo</label>
         <input type="text" class="mm-input" id="add-nome" placeholder="Ex: Eduardo Zattar" style="width:100%">
       </div>
-      <div class="mm-field" style="margin-bottom:14px">
-        <label>Sigla</label>
-        <input type="text" class="mm-input" id="add-sigla" placeholder="Ex: EZ" style="width:60px;text-transform:uppercase" maxlength="4">
-      </div>
       <div style="font-size:11px;color:var(--mu);margin-top:8px">
         O card será criado com créditos e volume zerados. Preencha os dados pelo botão <strong>✏️ Preencher</strong> no card.
       </div>
@@ -548,7 +544,7 @@ tr:not(.totals-row):hover td{opacity:.85;cursor:pointer}
 </div>
 
 <script>
-// ── MAPA SIGLA → NOME ─────────────────────────────────────────────────────
+// ── NOMES DO JURÍDICO ────────────────────────────────────────────────────
 const JURIDICO_NOMES = [
   "Daniel",
   "Fernanda",
@@ -562,16 +558,19 @@ const JURIDICO_NOMES = [
   "Johnathan"
 ];
 
+function semAcento(v) {
+  return String(v || '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '');
+}
+
 function normalizarNomeJur(nome) {
   const nomeLimpo = String(nome || '').trim();
   if (!nomeLimpo) return null;
 
-  const encontrado = JURIDICO_NOMES.find(n =>
-    n.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') ===
-    nomeLimpo.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-  );
-
-  return encontrado || null;
+  return JURIDICO_NOMES.find(n => semAcento(n) === semAcento(nomeLimpo)) || null;
 }
 
 // ── CONFIG ────────────────────────────────────────────────────────────────
@@ -673,28 +672,17 @@ function processarPlanilha(data) {
     }
 
     // Jurídico: agora lê o nome diretamente da coluna JURÍDICO
-if (colD !== -1) {
-  const nomeJur = normalizarNomeJur(row[colD]);
-
-  if (nomeJur) {
-    const key = nomeJur.toLowerCase();
-
-    if (!juridico[key]) {
-      juridico[key] = {
-        nome: nomeJur,
-        creditos: 0,
-        adicionais: 0,
-        volume: 0,
-        linhas: 0
-      };
+    if (colD !== -1) {
+      const nomeJur = normalizarNomeJur(row[colD]);
+      if (nomeJur) {
+        const key = nomeJur.toLowerCase();
+        if (!juridico[key]) juridico[key] = { nome: nomeJur, creditos: 0, adicionais: 0, volume: 0, linhas: 0 };
+        juridico[key].creditos   += creditos;
+        juridico[key].adicionais += adicional;
+        juridico[key].volume     += valor;
+        juridico[key].linhas     += 1; // para Johnathan: R$60 por linha
+      }
     }
-
-    juridico[key].creditos   += creditos;
-    juridico[key].adicionais += adicional;
-    juridico[key].volume     += valor;
-    juridico[key].linhas     += 1; // para Johnathan: R$60 por linha
-  }
-}
   }
 
   state.comercial = comercial;
@@ -842,12 +830,9 @@ function renderTime(tipo) {
         <div class="card-group-label">Prêmios</div>
         <div class="row"><span class="lbl">Objetivo</span><span class="val">${fmt(pVol)}</span></div>
         <div class="row"><span class="lbl">Objetivo Coletivo</span><span class="val" id="row-objcol-val-${sid(key)}">R$ 0,00</span></div>
-        <div class="row"><span class="lbl">${tipo==='comercial'?'Campanha Execução (Meet)':'Campanha Execução (Inserções)'} — 13/04 a 17/04</span><span class="val" id="row-camp-val-${sid(key)}">R$ 0,00</span></div>
-        <div class="row"><span class="lbl">${tipo==='comercial'?'Campanha Execução (Meet)':'Campanha Execução (Inserções)'} — 27/04 a 30/04</span><span class="val" id="row-campp2-val-${sid(key)}">R$ 0,00</span></div>
-        <div class="row"><span class="lbl">Campanha Volume — 13/04 a 17/04</span><span class="val" id="row-camp2-val-${sid(key)}">R$ 0,00</span></div>
-        <div class="row"><span class="lbl">Campanha Volume — 27/04 a 30/04</span><span class="val" id="row-camp2p2-val-${sid(key)}">R$ 0,00</span></div>
-        <div class="row"><span class="lbl">Campanha Dupla de Ouro — 13/04 a 17/04</span><span class="val" id="row-camp3-val-${sid(key)}">R$ 0,00</span></div>
-        <div class="row"><span class="lbl">Campanha Dupla de Ouro — 27/04 a 30/04</span><span class="val" id="row-camp3p2-val-${sid(key)}">R$ 0,00</span></div>
+        <div class="row"><span class="lbl">${tipo==='comercial'?'Campanha Execução (Meet)':'Campanha Execução (Inserções)'} — 11/05 a 15/05</span><span class="val" id="row-camp-val-${sid(key)}">R$ 0,00</span></div>
+        <div class="row"><span class="lbl">Campanha Volume — 11/05 a 15/05</span><span class="val" id="row-camp2-val-${sid(key)}">R$ 0,00</span></div>
+        <div class="row"><span class="lbl">Campanha Dupla de Ouro — 11/05 a 15/05</span><span class="val" id="row-camp3-val-${sid(key)}">R$ 0,00</span></div>
         ${tipo==='juridico' && d.nome==='Daniel' ? `
         <div class="row"><span class="lbl">Prêmio Treinamento</span><span class="val" id="row-trein-val-${sid(key)}">R$ 0,00</span></div>` : ''}`;
 
@@ -908,7 +893,7 @@ function renderTime(tipo) {
       const insQt  = getManual(key,'ins');
       const insVal = insQt * CFG.INSERCAO_VAL;
       const precVal = (getManual(key,'prec') + getManual(key,'prec2')) * 20;
-      const campVal = getManual(key,'camp') + getManual(key,'campp2');
+      const campVal = getManual(key,'camp');
       const camp2Val= getManual(key,'camp2') + getManual(key,'camp2p2');
       const camp3Val= getManual(key,'camp3') + getManual(key,'camp3p2');
       const objCol  = state.manuais[`obj_col_${tipo}`]||0;
@@ -931,7 +916,7 @@ function renderTime(tipo) {
         <td class="td-pre-last" id="s-trein-${tipo}-${sid(key)}">${fmt(getManual(key,'trein'))}</td>
         <td id="s-tot-${tipo}-${sid(key)}">${fmt(rowTotal)}</td>`;
     } else {
-      const campVal  = getManual(key,'camp')  + getManual(key,'campp2');
+      const campVal  = getManual(key,'camp');
       const camp2Val = getManual(key,'camp2') + getManual(key,'camp2p2');
       const camp3Val = getManual(key,'camp3') + getManual(key,'camp3p2');
       const objCol   = state.manuais[`obj_col_${tipo}`]||0;
@@ -1100,9 +1085,9 @@ function _recalcCardInternal(tipo, key) {
   const insVal   = insQt * CFG.INSERCAO_VAL;
   const liqVal   = (tipo==='juridico' && !isJohnathan) ? comissaoLiquidados(key) : 0;
   const pVol     = premioVolume(d.volume);
-  const pCamp    = getManual(key,'camp')  + getManual(key,'campp2');
-  const pCamp2   = getManual(key,'camp2') + getManual(key,'camp2p2');
-  const pCamp3   = getManual(key,'camp3') + getManual(key,'camp3p2');
+  const pCamp    = getManual(key,'camp');
+  const pCamp2   = getManual(key,'camp2');
+  const pCamp3   = getManual(key,'camp3');
   const objCol   = state.manuais[`obj_col_${tipo}`] || 0;
   const precQt   = getManual(key,'prec');
   const precQt2  = getManual(key,'prec2');
@@ -1126,11 +1111,8 @@ function _recalcCardInternal(tipo, key) {
   if (el(`row-prec2-val-${sid(key)}`)) el(`row-prec2-val-${sid(key)}`).textContent = fmt(precQt2 * 20);
   if (el(`row-camp-val-${sid(key)}`))  el(`row-camp-val-${sid(key)}`).textContent  = fmt(pCamp);
   if (el(`row-camp-val-${sid(key)}`))    el(`row-camp-val-${sid(key)}`).textContent    = fmt(getManual(key,'camp'));
-  if (el(`row-campp2-val-${sid(key)}`))  el(`row-campp2-val-${sid(key)}`).textContent  = fmt(getManual(key,'campp2'));
   if (el(`row-camp2-val-${sid(key)}`))   el(`row-camp2-val-${sid(key)}`).textContent   = fmt(getManual(key,'camp2'));
-  if (el(`row-camp2p2-val-${sid(key)}`)) el(`row-camp2p2-val-${sid(key)}`).textContent = fmt(getManual(key,'camp2p2'));
   if (el(`row-camp3-val-${sid(key)}`))   el(`row-camp3-val-${sid(key)}`).textContent   = fmt(getManual(key,'camp3'));
-  if (el(`row-camp3p2-val-${sid(key)}`)) el(`row-camp3p2-val-${sid(key)}`).textContent = fmt(getManual(key,'camp3p2'));
   if (el(`s-com-${tipo}-${sid(key)}`)) el(`s-com-${tipo}-${sid(key)}`).textContent = fmt(comissao + insVal);
   if (el(`s-pvol-${tipo}-${sid(key)}`)) el(`s-pvol-${tipo}-${sid(key)}`).textContent = fmt(pVol);
   if (el(`s-pcamp-${tipo}-${sid(key)}`)) el(`s-pcamp-${tipo}-${sid(key)}`).textContent = fmt(pCamp + precVal);
@@ -1145,27 +1127,24 @@ function abrirModalAddPessoa(tipo) {
   _addPessoaTipo = tipo;
   document.getElementById('modalAddTitle').textContent = `Adicionar pessoa — ${tipo === 'comercial' ? 'Comercial' : 'Jurídico'}`;
   document.getElementById('add-nome').value   = '';
-  document.getElementById('add-sigla').value  = '';
   document.getElementById('modalAddBackdrop').classList.add('open');
   setTimeout(() => document.getElementById('add-nome').focus(), 100);
 }
 
 function confirmarAddPessoa() {
-  const nome  = document.getElementById('add-nome').value.trim();
-  const sigla = document.getElementById('add-sigla').value.trim().toUpperCase();
+  const nome = document.getElementById('add-nome').value.trim();
 
   if (!nome) { alert('Informe o nome da pessoa.'); return; }
-  if (!sigla) { alert('Informe a sigla.'); return; }
 
   // Gerar key única baseada no nome
   const key = nome.toLowerCase().replace(/\s+/g,'_') + '_manual';
 
   if (_addPessoaTipo === 'comercial') {
     if (state.comercial[key]) { alert('Já existe uma pessoa com esse nome.'); return; }
-    state.comercial[key] = { nome, sigla: null, creditos: 0, adicionais: 0, volume: 0, _manual: true };
+    state.comercial[key] = { nome, creditos: 0, adicionais: 0, volume: 0, linhas: 0, _manual: true };
   } else {
     if (state.juridico[key]) { alert('Já existe uma pessoa com esse nome.'); return; }
-    state.juridico[key] = { nome, sigla, creditos: 0, adicionais: 0, volume: 0, linhas: 0, _manual: true };
+    state.juridico[key] = { nome, creditos: 0, adicionais: 0, volume: 0, linhas: 0, _manual: true };
     // Atualizar totalCreditosEmpresa não muda pois créditos = 0
   }
 
@@ -1188,7 +1167,7 @@ function abrirModalIndividual(tipo, key) {
 
   const d = tipo === 'comercial' ? state.comercial[key] : state.juridico[key];
   const m = state.manuais[key] || {};
-  const nomeDisp = d.sigla ? `${d.nome} (${d.sigla})` : d.nome;
+  const nomeDisp = d.nome;
   const isJohn = tipo === 'juridico' && d.nome === 'Johnathan';
   const isNic  = tipo === 'juridico' && d.nome.toLowerCase() === 'nicolli';
   const execLabel = tipo === 'comercial' ? 'Campanha Execução (Meet)' : 'Campanha Execução (Inserções)';
@@ -1215,12 +1194,9 @@ function abrirModalIndividual(tipo, key) {
   }
 
   html += `<div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mu);margin:14px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--bo)">Campanhas</div>`;
-  html += field(`${execLabel} — 13/04 a 17/04`, 'camp',    m.camp||0);
-  html += field(`${execLabel} — 27/04 a 30/04`, 'campp2',  m.campp2||0);
-  html += field('Campanha Volume — 13/04 a 17/04',          'camp2',   m.camp2||0);
-  html += field('Campanha Volume — 27/04 a 30/04',          'camp2p2', m.camp2p2||0);
-  html += field('Campanha Dupla de Ouro — 13/04 a 17/04',   'camp3',   m.camp3||0);
-  html += field('Campanha Dupla de Ouro — 27/04 a 30/04',   'camp3p2', m.camp3p2||0);
+  html += field(`${execLabel} — 11/05 a 15/05`, 'camp', m.camp||0);
+  html += field('Campanha Volume — 11/05 a 15/05', 'camp2', m.camp2||0);
+  html += field('Campanha Dupla de Ouro — 11/05 a 15/05', 'camp3', m.camp3||0);
   if (tipo === 'juridico' && d.nome === 'Daniel') {
     html += `<div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mu);margin:14px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--bo)">Prêmios Especiais</div>`;
     html += field('Prêmio Treinamento', 'trein', m.trein||0);
@@ -1246,11 +1222,11 @@ function aplicarModalInd() {
     if (isNic) { m.prec = get('prec'); m.prec2 = get('prec2'); }
   }
   m.camp   = get('camp');
-  m.campp2 = get('campp2');
   m.camp2  = get('camp2');
-  m.camp2p2= get('camp2p2');
   m.camp3  = get('camp3');
-  m.camp3p2= get('camp3p2');
+  m.campp2  = 0;
+  m.camp2p2 = 0;
+  m.camp3p2 = 0;
   if (tipo === 'juridico' && d.nome === 'Daniel') m.trein = get('trein');
 
   _recalcCardInternal(tipo, key);
@@ -1298,7 +1274,7 @@ function abrirModalManuais() {
       const isJohn = d.nome === 'Johnathan';
       const isNic  = d.nome.toLowerCase() === 'nicolli';
       const m = state.manuais[key] || {};
-      const nomeDisp = d.sigla ? `${d.nome} (${d.sigla})` : d.nome;
+      const nomeDisp = d.nome;
       const p = document.createElement('div');
       p.className = 'mm-person';
       p.innerHTML = `
@@ -1327,12 +1303,9 @@ function abrirModalManuais() {
             <span class="mm-input-hint">× R$ 20,00</span>
           </div>
         </div>` : ''}
-        <div class="mm-field"><label>Campanha Execução (Inserções) — 13/04 a 17/04</label><div class="mm-field-right"><input type="number" min="0" step="0.01" class="mm-input" id="mm-camp-jur-${sid(key)}" value="${m.camp||0}" placeholder="0,00"></div></div>
-        <div class="mm-field"><label>Campanha Execução (Inserções) — 27/04 a 30/04</label><div class="mm-field-right"><input type="number" min="0" step="0.01" class="mm-input" id="mm-camp-jur-p2-${sid(key)}" value="${m.campp2||0}" placeholder="0,00"></div></div>
-        <div class="mm-field"><label>Campanha Volume — 13/04 a 17/04</label><div class="mm-field-right"><input type="number" min="0" step="0.01" class="mm-input" id="mm-camp2-jur-${sid(key)}" value="${m.camp2||0}" placeholder="0,00"></div></div>
-        <div class="mm-field"><label>Campanha Volume — 27/04 a 30/04</label><div class="mm-field-right"><input type="number" min="0" step="0.01" class="mm-input" id="mm-camp2-jur-p2-${sid(key)}" value="${m.camp2p2||0}" placeholder="0,00"></div></div>
-        <div class="mm-field"><label>Campanha Dupla de Ouro — 13/04 a 17/04</label><div class="mm-field-right"><input type="number" min="0" step="0.01" class="mm-input" id="mm-camp3-jur-${sid(key)}" value="${m.camp3||0}" placeholder="0,00"></div></div>
-        <div class="mm-field"><label>Campanha Dupla de Ouro — 27/04 a 30/04</label><div class="mm-field-right"><input type="number" min="0" step="0.01" class="mm-input" id="mm-camp3-jur-p2-${sid(key)}" value="${m.camp3p2||0}" placeholder="0,00"></div></div>
+        <div class="mm-field"><label>Campanha Execução (Inserções) — 11/05 a 15/05</label><div class="mm-field-right"><input type="number" min="0" step="0.01" class="mm-input" id="mm-camp-jur-${sid(key)}" value="${m.camp||0}" placeholder="0,00"></div></div>
+        <div class="mm-field"><label>Campanha Volume — 11/05 a 15/05</label><div class="mm-field-right"><input type="number" min="0" step="0.01" class="mm-input" id="mm-camp2-jur-${sid(key)}" value="${m.camp2||0}" placeholder="0,00"></div></div>
+        <div class="mm-field"><label>Campanha Dupla de Ouro — 11/05 a 15/05</label><div class="mm-field-right"><input type="number" min="0" step="0.01" class="mm-input" id="mm-camp3-jur-${sid(key)}" value="${m.camp3||0}" placeholder="0,00"></div></div>
         ${d.nome === 'Daniel' ? `
         <div class="mm-field"><label>Prêmio Treinamento</label><div class="mm-field-right"><input type="number" min="0" step="0.01" class="mm-input" id="mm-trein-${sid(key)}" value="${m.trein||0}" placeholder="0,00"></div></div>` : ''}
         `;
@@ -1365,12 +1338,9 @@ function abrirModalManuais() {
       p.className = 'mm-person';
       p.innerHTML = `
         <div class="mm-person-name">${d.nome}</div>
-        <div class="mm-field"><label>Campanha Execução (Meet) — 13/04 a 17/04</label><div class="mm-field-right"><input type="number" min="0" step="0.01" class="mm-input" id="mm-camp-com-${sid(key)}" value="${m.camp||0}" placeholder="0,00"></div></div>
-        <div class="mm-field"><label>Campanha Execução (Meet) — 27/04 a 30/04</label><div class="mm-field-right"><input type="number" min="0" step="0.01" class="mm-input" id="mm-camp-com-p2-${sid(key)}" value="${m.campp2||0}" placeholder="0,00"></div></div>
-        <div class="mm-field"><label>Campanha Volume — 13/04 a 17/04</label><div class="mm-field-right"><input type="number" min="0" step="0.01" class="mm-input" id="mm-camp2-com-${sid(key)}" value="${m.camp2||0}" placeholder="0,00"></div></div>
-        <div class="mm-field"><label>Campanha Volume — 27/04 a 30/04</label><div class="mm-field-right"><input type="number" min="0" step="0.01" class="mm-input" id="mm-camp2-com-p2-${sid(key)}" value="${m.camp2p2||0}" placeholder="0,00"></div></div>
-        <div class="mm-field"><label>Campanha Dupla de Ouro — 13/04 a 17/04</label><div class="mm-field-right"><input type="number" min="0" step="0.01" class="mm-input" id="mm-camp3-com-${sid(key)}" value="${m.camp3||0}" placeholder="0,00"></div></div>
-        <div class="mm-field"><label>Campanha Dupla de Ouro — 27/04 a 30/04</label><div class="mm-field-right"><input type="number" min="0" step="0.01" class="mm-input" id="mm-camp3-com-p2-${sid(key)}" value="${m.camp3p2||0}" placeholder="0,00"></div></div>`;
+        <div class="mm-field"><label>Campanha Execução (Meet) — 11/05 a 15/05</label><div class="mm-field-right"><input type="number" min="0" step="0.01" class="mm-input" id="mm-camp-com-${sid(key)}" value="${m.camp||0}" placeholder="0,00"></div></div>
+        <div class="mm-field"><label>Campanha Volume — 11/05 a 15/05</label><div class="mm-field-right"><input type="number" min="0" step="0.01" class="mm-input" id="mm-camp2-com-${sid(key)}" value="${m.camp2||0}" placeholder="0,00"></div></div>
+        <div class="mm-field"><label>Campanha Dupla de Ouro — 11/05 a 15/05</label><div class="mm-field-right"><input type="number" min="0" step="0.01" class="mm-input" id="mm-camp3-com-${sid(key)}" value="${m.camp3||0}" placeholder="0,00"></div></div>`;
       sec.appendChild(p);
     });
     body.appendChild(sec);
@@ -1420,11 +1390,11 @@ function aplicarManuais() {
     if (!state.manuais[key]) state.manuais[key] = {};
     state.manuais[key].ins  = parseFloat(document.getElementById(`mm-ins-${sid(key)}`)?.value) || 0;
     state.manuais[key].camp   = parseFloat(document.getElementById(`mm-camp-jur-${sid(key)}`)?.value)    || 0;
-    state.manuais[key].campp2 = parseFloat(document.getElementById(`mm-camp-jur-p2-${sid(key)}`)?.value)  || 0;
+    state.manuais[key].campp2 = 0;
     state.manuais[key].camp2  = parseFloat(document.getElementById(`mm-camp2-jur-${sid(key)}`)?.value)   || 0;
-    state.manuais[key].camp2p2= parseFloat(document.getElementById(`mm-camp2-jur-p2-${sid(key)}`)?.value)|| 0;
+    state.manuais[key].camp2p2 = 0;
     state.manuais[key].camp3  = parseFloat(document.getElementById(`mm-camp3-jur-${sid(key)}`)?.value)   || 0;
-    state.manuais[key].camp3p2= parseFloat(document.getElementById(`mm-camp3-jur-p2-${sid(key)}`)?.value)|| 0;
+    state.manuais[key].camp3p2 = 0;
     state.manuais[key].trein  = d.nome==='Daniel' ? (parseFloat(document.getElementById(`mm-trein-${sid(key)}`)?.value)||0) : 0;
     state.manuais[key].prec = isNic ? (parseFloat(document.getElementById(`mm-prec-${sid(key)}`)?.value) || 0) : 0;
     state.manuais[key].prec2 = isNic ? (parseFloat(document.getElementById(`mm-prec2-${sid(key)}`)?.value) || 0) : 0;
@@ -1437,11 +1407,11 @@ function aplicarManuais() {
   Object.keys(state.comercial).filter(k=>!comRem.includes(k)).forEach(key => {
     if (!state.manuais[key]) state.manuais[key] = {};
     state.manuais[key].camp   = parseFloat(document.getElementById(`mm-camp-com-${sid(key)}`)?.value)    || 0;
-    state.manuais[key].campp2 = parseFloat(document.getElementById(`mm-camp-com-p2-${sid(key)}`)?.value)  || 0;
+    state.manuais[key].campp2 = 0;
     state.manuais[key].camp2  = parseFloat(document.getElementById(`mm-camp2-com-${sid(key)}`)?.value)   || 0;
-    state.manuais[key].camp2p2= parseFloat(document.getElementById(`mm-camp2-com-p2-${sid(key)}`)?.value)|| 0;
+    state.manuais[key].camp2p2 = 0;
     state.manuais[key].camp3  = parseFloat(document.getElementById(`mm-camp3-com-${sid(key)}`)?.value)   || 0;
-    state.manuais[key].camp3p2= parseFloat(document.getElementById(`mm-camp3-com-p2-${sid(key)}`)?.value)|| 0;
+    state.manuais[key].camp3p2 = 0;
     _recalcCardInternal('comercial', key);
   });
   recalcTotals('comercial');
@@ -1487,9 +1457,9 @@ function recalcTotals(tipo) {
     const insVal  = insQt * CFG.INSERCAO_VAL;
     const liq     = tipo==='juridico' ? comissaoLiquidados(key) : 0;
     const pv      = premioVolume(d.volume);
-    const pc      = getManual(key,'camp')  + getManual(key,'campp2');
-    const pc2     = getManual(key,'camp2') + getManual(key,'camp2p2');
-    const pc3     = getManual(key,'camp3') + getManual(key,'camp3p2');
+    const pc      = getManual(key,'camp');
+    const pc2     = getManual(key,'camp2');
+    const pc3     = getManual(key,'camp3');
     const pr      = (getManual(key,'prec') + getManual(key,'prec2')) * 20;
     const trein   = (tipo==='juridico' && d.nome==='Daniel') ? getManual(key,'trein') : 0;
     const tot     = credVal + adicVal + insVal + liq + pv + objCol + pc + pc2 + pc3 + pr + trein;
@@ -1537,7 +1507,7 @@ function abrirModal(tipo, key) {
   const d=tipo==='comercial'?state.comercial[key]:state.juridico[key];
   if (!d) return;
   const isJohnathan = tipo==='juridico' && d.nome==='Johnathan';
-  const nomeDisp=d.sigla?`${d.nome} (${d.sigla})`:d.nome;
+  const nomeDisp = d.nome;
   const comissao = comissaoBase(tipo, d);
   const insQt = (tipo==='juridico' && !isJohnathan) ? getManual(key,'ins') : 0;
   const insVal = insQt * CFG.INSERCAO_VAL;
@@ -1742,7 +1712,7 @@ function exportar(tipo) {
     rows=[headers];
     nomes.forEach(key=>{
       const d=data[key];
-      const nD=d.sigla?`${d.nome} (${d.sigla})`:d.nome;
+      const nD = d.nome;
       const com = comissaoBase(tipo, d);
       const ins=tipo==='juridico'?getManual(key,'ins'):0;
       const insV=ins*CFG.INSERCAO_VAL;
@@ -1992,16 +1962,13 @@ function exportarPDF() {
     const pVol    = premioVolume(d.volume);
     const objCol  = state.manuais[`obj_col_${tipo}`]||0;
     const pc      = getManual(key,'camp');
-    const pcp2    = getManual(key,'campp2');
     const pc2     = getManual(key,'camp2');
-    const pc2p2   = getManual(key,'camp2p2');
     const pc3     = getManual(key,'camp3');
-    const pc3p2   = getManual(key,'camp3p2');
     const totCom  = credVal+adicVal+insVal+liqVal+precVal;
     const treinPDF= tipo==='juridico' && d.nome==='Daniel' ? getManual(key,'trein') : 0;
-    const totPre  = pVol+objCol+pc+pcp2+pc2+pc2p2+pc3+pc3p2+treinPDF;
+    const totPre  = pVol+objCol+pc+pc2+pc3+treinPDF;
     const totGeral= totCom+totPre;
-    const nomeDisp= d.sigla ? `${d.nome} (${d.sigla})` : d.nome;
+    const nomeDisp = d.nome;
     const execLabel = tipo==='comercial' ? 'Camp. Execução (Meet)' : 'Camp. Execução (Inserções)';
 
     const statsHTML = isJ
@@ -2034,12 +2001,9 @@ function exportarPDF() {
           <div class="section-title">Prêmios</div>
           <div class="row"><span class="lbl">Objetivo</span><span class="val">${fmt(pVol)}</span></div>
           <div class="row"><span class="lbl">Objetivo Coletivo</span><span class="val">${fmt(objCol)}</span></div>
-          <div class="row"><span class="lbl">Camp. Volume — 13/04 a 17/04</span><span class="val">${fmt(pc2)}</span></div>
-          <div class="row"><span class="lbl">Camp. Volume — 27/04 a 30/04</span><span class="val">${fmt(pc2p2)}</span></div>
-          <div class="row"><span class="lbl">${execLabel} — 13/04 a 17/04</span><span class="val">${fmt(pc)}</span></div>
-          <div class="row"><span class="lbl">${execLabel} — 27/04 a 30/04</span><span class="val">${fmt(pcp2)}</span></div>
-          <div class="row"><span class="lbl">Camp. Dupla de Ouro — 13/04 a 17/04</span><span class="val">${fmt(pc3)}</span></div>
-          <div class="row"><span class="lbl">Camp. Dupla de Ouro — 27/04 a 30/04</span><span class="val">${fmt(pc3p2)}</span></div>
+          <div class="row"><span class="lbl">Camp. Volume — 11/05 a 15/05</span><span class="val">${fmt(pc2)}</span></div>
+          <div class="row"><span class="lbl">${execLabel} — 11/05 a 15/05</span><span class="val">${fmt(pc)}</span></div>
+          <div class="row"><span class="lbl">Camp. Dupla de Ouro — 11/05 a 15/05</span><span class="val">${fmt(pc3)}</span></div>
           ${tipo==='juridico' && d.nome==='Daniel' ? `<div class="row"><span class="lbl">Prêmio Treinamento</span><span class="val">${fmt(getManual(key,'trein'))}</span></div>` : ''}
         </div>
       </div>
@@ -2109,7 +2073,7 @@ async function registrarMes() {
     'Qtd. Precatório','Com. Precatório (R$)',
     'Qtd. Precatório Adicional','Com. Precatório Adicional (R$)',
     // Prêmios
-    'Prêmio Objetivo (R$)','Prêmio Obj. Coletivo (R$)','Camp. Exec. 13-17/04 (R$)','Camp. Exec. 27-30/04 (R$)','Camp. Volume 13-17/04 (R$)','Camp. Volume 27-30/04 (R$)','Camp. Dupla Ouro 13-17/04 (R$)','Camp. Dupla Ouro 27-30/04 (R$)','Prêmio Treinamento (R$)',
+    'Prêmio Objetivo (R$)','Prêmio Obj. Coletivo (R$)','Camp. Exec. 11-15/05 (R$)','Camp. Volume 11-15/05 (R$)','Camp. Dupla Ouro 11-15/05 (R$)','Prêmio Treinamento (R$)',
     // Prêmios exclusivos Marco
     'Prêmio Execução (R$)','Prêmio Resultado (R$)',
     // Total
@@ -2129,7 +2093,7 @@ async function registrarMes() {
       const pVol    = premioVolume(d.volume);
       const objCol  = state.manuais['obj_col_comercial']||0;
       const totCom  = credVal + adicVal;
-      const totPre  = pVol + objCol + getManual(key,'camp') + getManual(key,'campp2') + getManual(key,'camp2') + getManual(key,'camp2p2') + getManual(key,'camp3') + getManual(key,'camp3p2');
+      const totPre  = pVol + objCol + getManual(key,'camp') + getManual(key,'camp2') + getManual(key,'camp3');
       rows.push([
         mesRef, 'Comercial', d.nome,
         d.volume,
@@ -2140,9 +2104,9 @@ async function registrarMes() {
         '—', 0,
         '—', 0,
         pVol, state.manuais['obj_col_comercial']||0,
-        getManual(key,'camp'), getManual(key,'campp2'),
-        getManual(key,'camp2'), getManual(key,'camp2p2'),
-        getManual(key,'camp3'), getManual(key,'camp3p2'),
+        getManual(key,'camp'),
+        getManual(key,'camp2'),
+        getManual(key,'camp3'),
         0,
         0, 0,
         totCom, totPre, totCom + totPre
@@ -2172,10 +2136,10 @@ async function registrarMes() {
       const precVal  = precVal1 + precVal2;
       const pVol     = premioVolume(d.volume);
       const pCamp    = getManual(key, 'camp');
-      const nomeDisp = d.sigla ? `${d.nome} (${d.sigla})` : d.nome;
+      const nomeDisp = d.nome;
       const objColJ  = state.manuais['obj_col_juridico']||0;
       const totCom   = credVal + adicVal + insVal + liqVal + precVal;
-      const totPre   = pVol + objColJ + getManual(key,'camp') + getManual(key,'campp2') + getManual(key,'camp2') + getManual(key,'camp2p2') + getManual(key,'camp3') + getManual(key,'camp3p2') + (d.nome==='Daniel' ? getManual(key,'trein') : 0);
+      const totPre   = pVol + objColJ + getManual(key,'camp') + getManual(key,'camp2') + getManual(key,'camp3') + (d.nome==='Daniel' ? getManual(key,'trein') : 0);
       rows.push([
         mesRef, 'Jurídico', nomeDisp,
         d.volume,
@@ -2186,9 +2150,9 @@ async function registrarMes() {
         isNic ? precQt  : '—', isNic ? precVal1 : 0,
         isNic ? precQt2 : '—', isNic ? precVal2 : 0,
         pVol, objColJ,
-        getManual(key,'camp'), getManual(key,'campp2'),
-        getManual(key,'camp2'), getManual(key,'camp2p2'),
-        getManual(key,'camp3'), getManual(key,'camp3p2'),
+        getManual(key,'camp'),
+        getManual(key,'camp2'),
+        getManual(key,'camp3'),
         d.nome==='Daniel' ? getManual(key,'trein') : 0,
         0, 0,
         totCom, totPre, totCom + totPre
