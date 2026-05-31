@@ -549,19 +549,30 @@ tr:not(.totals-row):hover td{opacity:.85;cursor:pointer}
 
 <script>
 // ── MAPA SIGLA → NOME ─────────────────────────────────────────────────────
-const JURIDICO_MAP = {
-  "D":  "Daniel",
-  "DL": "Débora",
-  "EZ": "Eduardo",
-  "F":  "Fernanda",
-  "JC": "Johnathan",
-  "LF": "Luiz F.",
-  "L":  "Luiz H.",
-  "NE": "Nataly",
-  "NS": "Nicolli",
-  "TZ": "Tarciane",
-  "TP": "Tatiana",
-};
+const JURIDICO_NOMES = [
+  "Daniel",
+  "Fernanda",
+  "Luiz",
+  "Fernando",
+  "Nicolli",
+  "Tarciane",
+  "Tatiana",
+  "Eduardo",
+  "Débora",
+  "Johnathan"
+];
+
+function normalizarNomeJur(nome) {
+  const nomeLimpo = String(nome || '').trim();
+  if (!nomeLimpo) return null;
+
+  const encontrado = JURIDICO_NOMES.find(n =>
+    n.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') ===
+    nomeLimpo.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  );
+
+  return encontrado || null;
+}
 
 // ── CONFIG ────────────────────────────────────────────────────────────────
 const CFG = {
@@ -661,19 +672,29 @@ function processarPlanilha(data) {
       comercial[key].linhas    += 1;
     }
 
-    // Jurídico (sigla → nome)
-    if (colD!==-1) {
-      const sigla = row[colD] ? String(row[colD]).trim().toUpperCase() : '';
-      const nomeJur = JURIDICO_MAP[sigla];
-      if (nomeJur) {
-        const key = nomeJur.toLowerCase();
-        if (!juridico[key]) juridico[key]={nome:nomeJur,sigla,creditos:0,adicionais:0,volume:0,linhas:0};
-        juridico[key].creditos  += creditos;
-        juridico[key].adicionais+= adicional;
-        juridico[key].volume    += valor;
-        juridico[key].linhas    += 1; // para Johnathan: R$60 por linha
-      }
+    // Jurídico: agora lê o nome diretamente da coluna JURÍDICO
+if (colD !== -1) {
+  const nomeJur = normalizarNomeJur(row[colD]);
+
+  if (nomeJur) {
+    const key = nomeJur.toLowerCase();
+
+    if (!juridico[key]) {
+      juridico[key] = {
+        nome: nomeJur,
+        creditos: 0,
+        adicionais: 0,
+        volume: 0,
+        linhas: 0
+      };
     }
+
+    juridico[key].creditos   += creditos;
+    juridico[key].adicionais += adicional;
+    juridico[key].volume     += valor;
+    juridico[key].linhas     += 1; // para Johnathan: R$60 por linha
+  }
+}
   }
 
   state.comercial = comercial;
@@ -722,7 +743,7 @@ function faixaMultiplicador(volume) {
   return 20;
 }
 
-const FAIXA_NOMES = ['fernanda', 'luiz h.'];
+const FAIXA_NOMES = ['fernanda', 'luiz'];
 
 function comissaoBase(tipo, d) {
   if (tipo === 'juridico' && d.nome === 'Johnathan') {
@@ -765,7 +786,7 @@ function renderTime(tipo) {
 
   nomes.forEach((key,idx)=>{
     const d=data[key];
-    const nomeDisp = d.sigla ? `${d.nome} (${d.sigla})` : d.nome;
+    const nomeDisp = d.nome;
     const isJohnathan = tipo==='juridico' && d.nome==='Johnathan';
     const isFaixa     = tipo==='juridico' && FAIXA_NOMES.includes(d.nome.toLowerCase());
     const mult        = isFaixa ? faixaMultiplicador(d.volume) : CFG.CREDITO_VAL;
