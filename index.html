@@ -439,7 +439,6 @@ tr:not(.totals-row):hover td{opacity:.85;cursor:pointer}
               <th class="th-pre">Campanha Volume</th>
               <th class="th-pre">Campanha Execução</th>
               <th class="th-pre">Dupla de Ouro</th>
-              <th class="th-pre th-pre-last">Treinamento</th>
               <th>Total</th>
             </tr></thead>
             <tbody id="tbody-juridico"></tbody>
@@ -833,8 +832,7 @@ function renderTime(tipo) {
         <div class="row"><span class="lbl">${tipo==='comercial'?'Campanha Execução (Meet)':'Campanha Execução (Inserções)'} — 11/05 a 15/05</span><span class="val" id="row-camp-val-${sid(key)}">R$ 0,00</span></div>
         <div class="row"><span class="lbl">Campanha Volume — 11/05 a 15/05</span><span class="val" id="row-camp2-val-${sid(key)}">R$ 0,00</span></div>
         <div class="row"><span class="lbl">Campanha Dupla de Ouro — 11/05 a 15/05</span><span class="val" id="row-camp3-val-${sid(key)}">R$ 0,00</span></div>
-        ${tipo==='juridico' && d.nome==='Daniel' ? `
-        <div class="row"><span class="lbl">Prêmio Treinamento</span><span class="val" id="row-trein-val-${sid(key)}">R$ 0,00</span></div>` : ''}`;
+        `;
 
     if (isNicolli) { /* precatório já está no bloco de comissões */ }
 
@@ -897,8 +895,7 @@ function renderTime(tipo) {
       const camp2Val= getManual(key,'camp2') + getManual(key,'camp2p2');
       const camp3Val= getManual(key,'camp3') + getManual(key,'camp3p2');
       const objCol  = state.manuais[`obj_col_${tipo}`]||0;
-      const treinVal = (d.nome==='Daniel') ? getManual(key,'trein') : 0;
-      const rowTotal = comissao + insVal + liqVal + precVal + pVol + objCol + campVal + camp2Val + camp3Val + treinVal;
+      const rowTotal = comissao + insVal + liqVal + precVal + pVol + objCol + campVal + camp2Val + camp3Val;
       tr.innerHTML=`
         <td>${nomeDisp}</td>
         <td>${fmt(d.volume)}</td>
@@ -913,7 +910,6 @@ function renderTime(tipo) {
         <td class="td-pre" id="s-pcamp-${tipo}-${sid(key)}">${fmt(campVal)}</td>
         <td class="td-pre" id="s-pcamp2-${tipo}-${sid(key)}">${fmt(camp2Val)}</td>
         <td class="td-pre" id="s-pcamp3-${tipo}-${sid(key)}">${fmt(camp3Val)}</td>
-        <td class="td-pre-last" id="s-trein-${tipo}-${sid(key)}">${fmt(getManual(key,'trein'))}</td>
         <td id="s-tot-${tipo}-${sid(key)}">${fmt(rowTotal)}</td>`;
     } else {
       const campVal  = getManual(key,'camp');
@@ -958,7 +954,6 @@ function renderTime(tipo) {
       <td class="td-pre" id="st-pcamp-${tipo}">${fmt(0)}</td>
       <td class="td-pre" id="st-pcamp2-${tipo}">${fmt(0)}</td>
       <td class="td-pre" id="st-pcamp3-${tipo}">${fmt(0)}</td>
-      <td class="td-pre-last" id="st-trein-${tipo}">${fmt(0)}</td>
       <td id="st-tot-${tipo}">${fmt(totTotal)}</td>`;
   } else {
     trT.innerHTML=`<td>Total</td><td>${fmt(totVol)}</td>
@@ -1092,14 +1087,12 @@ function _recalcCardInternal(tipo, key) {
   const precQt   = getManual(key,'prec');
   const precQt2  = getManual(key,'prec2');
   const precVal  = (precQt + precQt2) * 20;
-  const trein    = (tipo==='juridico' && d.nome==='Daniel') ? getManual(key,'trein') : 0;
-  const total    = comissao + insVal + liqVal + pVol + objCol + pCamp + pCamp2 + pCamp3 + precVal + trein;
+  const total    = comissao + insVal + liqVal + pVol + objCol + pCamp + pCamp2 + pCamp3 + precVal;
 
   const el = id => document.getElementById(id);
   if (el(`total-${tipo}-${sid(key)}`)) el(`total-${tipo}-${sid(key)}`).textContent = fmt(total);
   if (el(`subtot-com-${tipo}-${sid(key)}`)) el(`subtot-com-${tipo}-${sid(key)}`).textContent = fmt(comissao + insVal + liqVal + precVal);
-  if (el(`subtot-pre-${tipo}-${sid(key)}`)) el(`subtot-pre-${tipo}-${sid(key)}`).textContent = fmt(pVol + objCol + pCamp + pCamp2 + pCamp3 + trein);
-  if (el(`row-trein-val-${sid(key)}`)) el(`row-trein-val-${sid(key)}`).textContent = fmt(trein);
+  if (el(`subtot-pre-${tipo}-${sid(key)}`)) el(`subtot-pre-${tipo}-${sid(key)}`).textContent = fmt(pVol + objCol + pCamp + pCamp2 + pCamp3);
   if (el(`row-objcol-val-${sid(key)}`)) el(`row-objcol-val-${sid(key)}`).textContent = fmt(objCol);
   if (el(`s-ins-${sid(key)}`))  el(`s-ins-${sid(key)}`).textContent  = fmtN(insQt);
   if (el(`s-liq-${sid(key)}`))  el(`s-liq-${sid(key)}`).textContent  = fmt(liqVal);
@@ -1197,10 +1190,7 @@ function abrirModalIndividual(tipo, key) {
   html += field(`${execLabel} — 11/05 a 15/05`, 'camp', m.camp||0);
   html += field('Campanha Volume — 11/05 a 15/05', 'camp2', m.camp2||0);
   html += field('Campanha Dupla de Ouro — 11/05 a 15/05', 'camp3', m.camp3||0);
-  if (tipo === 'juridico' && d.nome === 'Daniel') {
-    html += `<div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mu);margin:14px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--bo)">Prêmios Especiais</div>`;
-    html += field('Prêmio Treinamento', 'trein', m.trein||0);
-  }
+
 
   document.getElementById('modalIndBody').innerHTML = html;
   document.getElementById('modalIndBackdrop').classList.add('open');
@@ -1227,7 +1217,6 @@ function aplicarModalInd() {
   m.campp2  = 0;
   m.camp2p2 = 0;
   m.camp3p2 = 0;
-  if (tipo === 'juridico' && d.nome === 'Daniel') m.trein = get('trein');
 
   _recalcCardInternal(tipo, key);
   recalcTotals(tipo);
@@ -1306,8 +1295,6 @@ function abrirModalManuais() {
         <div class="mm-field"><label>Campanha Execução (Inserções) — 11/05 a 15/05</label><div class="mm-field-right"><input type="number" min="0" step="0.01" class="mm-input" id="mm-camp-jur-${sid(key)}" value="${m.camp||0}" placeholder="0,00"></div></div>
         <div class="mm-field"><label>Campanha Volume — 11/05 a 15/05</label><div class="mm-field-right"><input type="number" min="0" step="0.01" class="mm-input" id="mm-camp2-jur-${sid(key)}" value="${m.camp2||0}" placeholder="0,00"></div></div>
         <div class="mm-field"><label>Campanha Dupla de Ouro — 11/05 a 15/05</label><div class="mm-field-right"><input type="number" min="0" step="0.01" class="mm-input" id="mm-camp3-jur-${sid(key)}" value="${m.camp3||0}" placeholder="0,00"></div></div>
-        ${d.nome === 'Daniel' ? `
-        <div class="mm-field"><label>Prêmio Treinamento</label><div class="mm-field-right"><input type="number" min="0" step="0.01" class="mm-input" id="mm-trein-${sid(key)}" value="${m.trein||0}" placeholder="0,00"></div></div>` : ''}
         `;
       sec.appendChild(p);
     });
@@ -1395,7 +1382,6 @@ function aplicarManuais() {
     state.manuais[key].camp2p2 = 0;
     state.manuais[key].camp3  = parseFloat(document.getElementById(`mm-camp3-jur-${sid(key)}`)?.value)   || 0;
     state.manuais[key].camp3p2 = 0;
-    state.manuais[key].trein  = d.nome==='Daniel' ? (parseFloat(document.getElementById(`mm-trein-${sid(key)}`)?.value)||0) : 0;
     state.manuais[key].prec = isNic ? (parseFloat(document.getElementById(`mm-prec-${sid(key)}`)?.value) || 0) : 0;
     state.manuais[key].prec2 = isNic ? (parseFloat(document.getElementById(`mm-prec2-${sid(key)}`)?.value) || 0) : 0;
     _recalcCardInternal('juridico', key);
@@ -1443,7 +1429,7 @@ function recalcTotals(tipo) {
   const nomes   = Object.keys(data).filter(k=>!removed.includes(k));
   const objCol  = state.manuais[`obj_col_${tipo}`] || 0;
 
-  let tCred=0, tAdic=0, tPrec=0, tPrec2=0, tIns=0, tLiq=0, tPv=0, tOc=0, tPc=0, tPc2=0, tPc3=0, tTrein=0, tT=0;
+  let tCred=0, tAdic=0, tPrec=0, tPrec2=0, tIns=0, tLiq=0, tPv=0, tOc=0, tPc=0, tPc2=0, tPc3=0, tT=0;
 
   nomes.forEach(key=>{
     const d    = data[key];
@@ -1461,14 +1447,12 @@ function recalcTotals(tipo) {
     const pc2     = getManual(key,'camp2');
     const pc3     = getManual(key,'camp3');
     const pr      = (getManual(key,'prec') + getManual(key,'prec2')) * 20;
-    const trein   = (tipo==='juridico' && d.nome==='Daniel') ? getManual(key,'trein') : 0;
-    const tot     = credVal + adicVal + insVal + liq + pv + objCol + pc + pc2 + pc3 + pr + trein;
+    const tot     = credVal + adicVal + insVal + liq + pv + objCol + pc + pc2 + pc3 + pr;
 
     const precV  = getManual(key,'prec') * 20;
     const precV2 = getManual(key,'prec2') * 20;
     tCred+=credVal; tAdic+=adicVal; tPrec+=precV; tPrec2+=precV2; tIns+=insVal; tLiq+=liq;
     tPv+=pv; tOc+=objCol; tPc+=pc; tPc2+=pc2; tPc3+=pc3; tT+=tot;
-    tTrein = (tTrein||0) + trein;
 
     // Atualiza células da linha individual na tabela
     const e2 = id => document.getElementById(id);
@@ -1481,7 +1465,6 @@ function recalcTotals(tipo) {
     if (e2(`s-pcamp-${tipo}-${sid(key)}`))    e2(`s-pcamp-${tipo}-${sid(key)}`).textContent    = fmt(pc);
     if (e2(`s-pcamp2-${tipo}-${sid(key)}`))   e2(`s-pcamp2-${tipo}-${sid(key)}`).textContent   = fmt(pc2);
     if (e2(`s-pcamp3-${tipo}-${sid(key)}`))   e2(`s-pcamp3-${tipo}-${sid(key)}`).textContent   = fmt(pc3);
-    if (e2(`s-trein-${tipo}-${sid(key)}`))     e2(`s-trein-${tipo}-${sid(key)}`).textContent     = fmt(trein);
     if (e2(`s-tot-${tipo}-${sid(key)}`))      e2(`s-tot-${tipo}-${sid(key)}`).textContent      = fmt(tot);
   });
 
@@ -1498,7 +1481,6 @@ function recalcTotals(tipo) {
   if (el(`st-pcamp-${tipo}`))  el(`st-pcamp-${tipo}`).textContent  = fmt(tPc);
   if (el(`st-pcamp2-${tipo}`)) el(`st-pcamp2-${tipo}`).textContent = fmt(tPc2);
   if (el(`st-pcamp3-${tipo}`)) el(`st-pcamp3-${tipo}`).textContent = fmt(tPc3);
-  if (el(`st-trein-${tipo}`))  el(`st-trein-${tipo}`).textContent  = fmt(tTrein);
   if (el(`st-tot-${tipo}`))    el(`st-tot-${tipo}`).textContent    = fmt(tT);
 }
 
@@ -1965,8 +1947,7 @@ function exportarPDF() {
     const pc2     = getManual(key,'camp2');
     const pc3     = getManual(key,'camp3');
     const totCom  = credVal+adicVal+insVal+liqVal+precVal;
-    const treinPDF= tipo==='juridico' && d.nome==='Daniel' ? getManual(key,'trein') : 0;
-    const totPre  = pVol+objCol+pc+pc2+pc3+treinPDF;
+    const totPre  = pVol+objCol+pc+pc2+pc3;
     const totGeral= totCom+totPre;
     const nomeDisp = d.nome;
     const execLabel = tipo==='comercial' ? 'Camp. Execução (Meet)' : 'Camp. Execução (Inserções)';
@@ -2004,7 +1985,6 @@ function exportarPDF() {
           <div class="row"><span class="lbl">Camp. Volume — 11/05 a 15/05</span><span class="val">${fmt(pc2)}</span></div>
           <div class="row"><span class="lbl">${execLabel} — 11/05 a 15/05</span><span class="val">${fmt(pc)}</span></div>
           <div class="row"><span class="lbl">Camp. Dupla de Ouro — 11/05 a 15/05</span><span class="val">${fmt(pc3)}</span></div>
-          ${tipo==='juridico' && d.nome==='Daniel' ? `<div class="row"><span class="lbl">Prêmio Treinamento</span><span class="val">${fmt(getManual(key,'trein'))}</span></div>` : ''}
         </div>
       </div>
       <div class="totals">
@@ -2073,7 +2053,7 @@ async function registrarMes() {
     'Qtd. Precatório','Com. Precatório (R$)',
     'Qtd. Precatório Adicional','Com. Precatório Adicional (R$)',
     // Prêmios
-    'Prêmio Objetivo (R$)','Prêmio Obj. Coletivo (R$)','Camp. Exec. 11-15/05 (R$)','Camp. Volume 11-15/05 (R$)','Camp. Dupla Ouro 11-15/05 (R$)','Prêmio Treinamento (R$)',
+    'Prêmio Objetivo (R$)','Prêmio Obj. Coletivo (R$)','Camp. Exec. 11-15/05 (R$)','Camp. Volume 11-15/05 (R$)','Camp. Dupla Ouro 11-15/05 (R$)',
     // Prêmios exclusivos Marco
     'Prêmio Execução (R$)','Prêmio Resultado (R$)',
     // Total
@@ -2139,7 +2119,7 @@ async function registrarMes() {
       const nomeDisp = d.nome;
       const objColJ  = state.manuais['obj_col_juridico']||0;
       const totCom   = credVal + adicVal + insVal + liqVal + precVal;
-      const totPre   = pVol + objColJ + getManual(key,'camp') + getManual(key,'camp2') + getManual(key,'camp3') + (d.nome==='Daniel' ? getManual(key,'trein') : 0);
+      const totPre   = pVol + objColJ + getManual(key,'camp') + getManual(key,'camp2') + getManual(key,'camp3');
       rows.push([
         mesRef, 'Jurídico', nomeDisp,
         d.volume,
@@ -2153,7 +2133,6 @@ async function registrarMes() {
         getManual(key,'camp'),
         getManual(key,'camp2'),
         getManual(key,'camp3'),
-        d.nome==='Daniel' ? getManual(key,'trein') : 0,
         0, 0,
         totCom, totPre, totCom + totPre
       ]);
@@ -2173,7 +2152,7 @@ async function registrarMes() {
     '—','—','—', 0,  // Liquidados
     '—', 0,   // Precatório
     '—', 0,   // Precatório Adicional
-    // Prêmios: Objetivo=exec, ObjColetivo=objFin, camps=0, Treinamento=res
+    // Prêmios: Objetivo=exec, ObjColetivo=objFin, camps=0
     0, objFin, 0, 0, 0, 0, 0, 0, 0,
     // Prêmios exclusivos Marco
     exec, res,
