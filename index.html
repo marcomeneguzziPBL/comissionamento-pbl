@@ -2075,21 +2075,20 @@ async function registrarMes() {
       const totCom  = credVal + adicVal;
       const totPre  = pVol + objCol + getManual(key,'camp') + getManual(key,'camp2') + getManual(key,'camp3');
       rows.push([
-        mesRef, 'Comercial', d.nome,
-        d.volume,
-        d.creditos, credVal,
-        d.adicionais, adicVal,
-        '—', 0,
-        '—', '—', '—', 0,
-        '—', 0,
-        '—', 0,
-        pVol, state.manuais['obj_col_comercial']||0,
-        getManual(key,'camp'),
-        getManual(key,'camp2'),
-        getManual(key,'camp3'),
-        0,
-        0, 0,
-        totCom, totPre, totCom + totPre
+        mesRef, 'Comercial', d.nome,      // 0,1,2
+        d.volume,                          // 3
+        d.creditos, credVal,               // 4,5
+        d.adicionais, adicVal,             // 6,7
+        '—', 0,                            // 8,9 inseridos
+        '—', '—', '—', 0,                  // 10,11,12,13 liquidados
+        '—', 0,                            // 14,15 precatório
+        '—', 0,                            // 16,17 precatório adicional
+        pVol, state.manuais['obj_col_comercial']||0, // 18,19 objetivo, obj coletivo
+        getManual(key,'camp'),             // 20 camp exec
+        getManual(key,'camp2'),            // 21 camp volume
+        getManual(key,'camp3'),            // 22 dupla ouro
+        0, 0,                              // 23,24 prêmio execução, resultado (só Marco)
+        totCom, totPre, totCom + totPre    // 25,26,27
       ]);
     });
 
