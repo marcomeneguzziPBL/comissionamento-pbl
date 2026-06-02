@@ -2151,12 +2151,9 @@ async function registrarMes() {
     '—','—','—', 0,  // Liquidados
     '—', 0,   // Precatório
     '—', 0,   // Precatório Adicional
-    // Prêmios: Objetivo=exec, ObjColetivo=objFin, camps=0
-    0, objFin, 0, 0, 0, 0, 0, 0, 0,
-    // Prêmios exclusivos Marco
-    exec, res,
-    // Totais
-    0, totFin, totFin
+    0, objFin, 0, 0, 0,  // 18-22: Objetivo, ObjColetivo, camps
+    exec, res,            // 23,24: Prêmio Execução, Resultado
+    0, totFin, totFin     // 25,26,27: Total Comissões, Prêmios, Geral
   ]);
 
   try {
