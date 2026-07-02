@@ -786,7 +786,7 @@ function renderTime(tipo) {
     const totalEmp   = state.totalCreditosEmpresa;
     const pct        = totalEmp > 0 ? (d.creditos / totalEmp * 100).toFixed(2) : '0.00';
     const liqSubtitle= liqQt > 0
-      ? `${pct}% × ${fmt(liqTotal)} (total liquidados)`
+      ? `${fmtN(liqQt)} créditos liq. × R$ 11,25 · sua part.: ${pct}%`
       : `Preencha os créditos liquidados`;
 
     const card=document.createElement('div');
@@ -1094,7 +1094,7 @@ function recalcLiquidados() {
     const totalEmp = state.totalCreditosEmpresa;
     const pct = totalEmp > 0 ? (d.creditos / totalEmp * 100).toFixed(2) : '0.00';
     const subtitle = liqQtVal > 0
-      ? `${pct}% × ${fmt(liqTotalVal)} (total liquidados)`
+      ? `${fmtN(liqQtVal)} créditos liq. × R$ 11,25 · sua part.: ${pct}%`
       : `Preencha os créditos liquidados`;
 
     const elR = document.getElementById(`row-liq-${sid(key)}`);
@@ -1617,7 +1617,7 @@ function abrirModal(tipo, key) {
         <span class="bval">${pct}%</span>
       </div>
       <div class="breakdown-row">
-        <span class="blbl">Valor total liquidados<br><span style="font-size:11px;color:var(--mu)">${fmtN(liqQt)} créditos × R$ 11,25</span></span>
+        <span class="blbl">Total liquidado (créditos × R$ 11,25)<br><span style="font-size:11px;color:var(--mu)">${fmtN(liqQt)} créditos liquidados</span></span>
         <span class="bval">${fmt(liqTotal)}</span>
       </div>
       <div class="breakdown-row">
