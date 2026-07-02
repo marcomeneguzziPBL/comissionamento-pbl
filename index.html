@@ -1968,7 +1968,7 @@ function exportarPDF() {
 
     const jurExtra = tipo==='juridico' ? `
       <div class="row"><span class="lbl">Proc. Inseridos<span class="sub">${fmtN(insQt)} × R$ 0,50</span></span><span class="val">${fmt(insVal)}</span></div>
-      <div class="row"><span class="lbl">Proc. Liquidados<span class="sub">${pct}% × ${fmt(liqTot)}</span></span><span class="val">${fmt(liqVal)}</span></div>
+      <div class="row"><span class="lbl">Proc. Liquidados<span class="sub">${fmtN(liqQtG)} créditos liq. × R$ 11,25 · sua part.: ${pct}%</span></span><span class="val">${fmt(liqVal)}</span></div>
       ${isNic ? `<div class="row"><span class="lbl">Precatório<span class="sub">${fmtN(precQt)} × R$ 20,00</span></span><span class="val">${fmt(precQt*20)}</span></div>
       <div class="row"><span class="lbl">Precatório Adicional<span class="sub">${fmtN(precQt2)} × R$ 20,00</span></span><span class="val">${fmt(precQt2*20)}</span></div>` : ''}` : '';
 
