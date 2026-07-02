@@ -1139,6 +1139,7 @@ function _recalcCardInternal(tipo, key) {
   if (el(`prec2-sub-${sid(key)}`))     el(`prec2-sub-${sid(key)}`).textContent     = `${fmtN(precQt2)} × R$ 20,00`;
   if (el(`row-prec2-val-${sid(key)}`)) el(`row-prec2-val-${sid(key)}`).textContent = fmt(precQt2 * 20);
   if (el(`s-pvol-${tipo}-${sid(key)}`)) el(`s-pvol-${tipo}-${sid(key)}`).textContent = fmt(pVol);
+  if (el(`row-trein-val-${sid(key)}`)) el(`row-trein-val-${sid(key)}`).textContent = fmt(trein);
   if (el(`s-trein-${tipo}-${sid(key)}`)) el(`s-trein-${tipo}-${sid(key)}`).textContent = fmt(trein);
   if (el(`s-tot-${tipo}-${sid(key)}`)) el(`s-tot-${tipo}-${sid(key)}`).textContent = fmt(total);
 }
@@ -1328,6 +1329,13 @@ function abrirModalManuais() {
           <div class="mm-field-right">
             <input type="number" min="0" step="1" class="mm-input" id="mm-prec2-${sid(key)}" value="${m.prec2||0}" placeholder="0">
             <span class="mm-input-hint">× R$ 20,00</span>
+          </div>
+        </div>` : ''}
+        ${(d.nome==='Daniel'||d.nome==='Tarciane') ? `
+        <div class="mm-field">
+          <label>Prêmio Treinamento</label>
+          <div class="mm-field-right">
+            <input type="number" min="0" step="0.01" class="mm-input" id="mm-trein-jur-${sid(key)}" value="${m.trein||0}" placeholder="0,00">
           </div>
         </div>` : ''}
         `;
