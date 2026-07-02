@@ -374,7 +374,7 @@ tr:not(.totals-row):hover td{opacity:.85;cursor:pointer}
       <div class="tabs">
         <button class="tab active" onclick="switchTab('comercial')">Comercial</button>
         <button class="tab" onclick="switchTab('juridico')">Jurídico</button>
-        <button class="tab" onclick="switchTab('financeiro')">Financeiro / ADM</button>
+        <button class="tab" onclick="switchTab('financeiro')">Financeiro e Cálculos Judiciais</button>
       </div>
     </div>
 
@@ -398,10 +398,7 @@ tr:not(.totals-row):hover td{opacity:.85;cursor:pointer}
               <th class="th-com th-com-first">Créditos</th>
               <th class="th-com th-com-last">Adicionais</th>
               <th class="th-pre th-pre-first">Objetivo</th>
-              <th class="th-pre">Obj. Coletivo</th>
-              <th class="th-pre">Campanha Volume</th>
-              <th class="th-pre">Campanha Execução</th>
-              <th class="th-pre th-pre-last">Dupla de Ouro</th>
+              <th class="th-pre th-pre-last">Obj. Coletivo</th>
               <th>Total</th>
             </tr></thead>
             <tbody id="tbody-comercial"></tbody>
@@ -436,9 +433,7 @@ tr:not(.totals-row):hover td{opacity:.85;cursor:pointer}
               <th class="th-com th-com-last">Liquidados</th>
               <th class="th-pre th-pre-first">Objetivo</th>
               <th class="th-pre">Obj. Coletivo</th>
-              <th class="th-pre">Campanha Volume</th>
-              <th class="th-pre">Campanha Execução</th>
-              <th class="th-pre">Dupla de Ouro</th>
+              <th class="th-pre th-pre-last">Treinamento</th>
               <th>Total</th>
             </tr></thead>
             <tbody id="tbody-juridico"></tbody>
@@ -452,7 +447,7 @@ tr:not(.totals-row):hover td{opacity:.85;cursor:pointer}
     <div id="tab-financeiro" style="display:none">
       <div class="people-grid" id="cards-financeiro"></div>
       <div class="summary-section">
-        <div class="summary-label">Resumo Financeiro / ADM</div>
+        <div class="summary-label">Resumo Financeiro e Cálculos Judiciais</div>
         <div class="table-wrap">
           <table>
             <thead><tr>
@@ -545,16 +540,8 @@ tr:not(.totals-row):hover td{opacity:.85;cursor:pointer}
 <script>
 // ── NOMES DO JURÍDICO ────────────────────────────────────────────────────
 const JURIDICO_NOMES = [
-  "Daniel",
-  "Fernanda",
-  "Luiz",
-  "Fernando",
-  "Nicolli",
-  "Tarciane",
-  "Tatiana",
-  "Eduardo",
-  "Débora",
-  "Johnathan"
+  "Nicolli", "Tarciane", "Daniel", "Fernanda", "Fernando",
+  "Eduardo", "Johnathan", "Débora", "Marina", "Raphaelly"
 ];
 
 function semAcento(v) {
@@ -562,7 +549,7 @@ function semAcento(v) {
     .trim()
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '');
+    .replace(/[\u0300-\u036f]/g, '');
 }
 
 function normalizarNomeJur(nome) {
@@ -690,6 +677,14 @@ function processarPlanilha(data) {
   state.removedJuridico=[];
   state.totalCreditosEmpresa = totalCreditosEmpresa;
 
+  // Garantir que todos os nomes do jurídico aparecem, mesmo sem compras
+  JURIDICO_NOMES.forEach(nome => {
+    const key = nome.toLowerCase();
+    if (!juridico[key]) {
+      juridico[key] = { nome, sigla: null, creditos: 0, adicionais: 0, volume: 0, linhas: 0 };
+    }
+  });
+
   if (mesRef) document.getElementById('mes-ref').textContent = mesRef;
 
   // Atualiza cards globais
@@ -730,7 +725,7 @@ function faixaMultiplicador(volume) {
   return 20;
 }
 
-const FAIXA_NOMES = ['fernanda', 'luiz'];
+const FAIXA_NOMES = ['fernanda'];
 
 function comissaoBase(tipo, d) {
   if (tipo === 'juridico' && d.nome === 'Johnathan') {
@@ -829,9 +824,8 @@ function renderTime(tipo) {
         <div class="card-group-label">Prêmios</div>
         <div class="row"><span class="lbl">Objetivo</span><span class="val">${fmt(pVol)}</span></div>
         <div class="row"><span class="lbl">Objetivo Coletivo</span><span class="val" id="row-objcol-val-${sid(key)}">R$ 0,00</span></div>
-        <div class="row"><span class="lbl">${tipo==='comercial'?'Campanha Execução (Meet)':'Campanha Execução (Inserções)'} — 11/05 a 15/05</span><span class="val" id="row-camp-val-${sid(key)}">R$ 0,00</span></div>
-        <div class="row"><span class="lbl">Campanha Volume — 11/05 a 15/05</span><span class="val" id="row-camp2-val-${sid(key)}">R$ 0,00</span></div>
-        <div class="row"><span class="lbl">Campanha Dupla de Ouro — 11/05 a 15/05</span><span class="val" id="row-camp3-val-${sid(key)}">R$ 0,00</span></div>
+        ${(tipo==='juridico' && (d.nome==='Daniel'||d.nome==='Tarciane')) ? `
+        <div class="row"><span class="lbl">Prêmio Treinamento</span><span class="val" id="row-trein-val-${sid(key)}">R$ 0,00</span></div>` : ''}
         `;
 
     if (isNicolli) { /* precatório já está no bloco de comissões */ }
@@ -891,11 +885,9 @@ function renderTime(tipo) {
       const insQt  = getManual(key,'ins');
       const insVal = insQt * CFG.INSERCAO_VAL;
       const precVal = (getManual(key,'prec') + getManual(key,'prec2')) * 20;
-      const campVal = getManual(key,'camp');
-      const camp2Val= getManual(key,'camp2') + getManual(key,'camp2p2');
-      const camp3Val= getManual(key,'camp3') + getManual(key,'camp3p2');
       const objCol  = state.manuais[`obj_col_${tipo}`]||0;
-      const rowTotal = comissao + insVal + liqVal + precVal + pVol + objCol + campVal + camp2Val + camp3Val;
+      const trein   = (d.nome==='Daniel'||d.nome==='Tarciane') ? getManual(key,'trein') : 0;
+      const rowTotal = comissao + insVal + liqVal + precVal + pVol + objCol + trein;
       tr.innerHTML=`
         <td>${nomeDisp}</td>
         <td>${fmt(d.volume)}</td>
@@ -907,26 +899,18 @@ function renderTime(tipo) {
         <td class="td-com-last" id="s-liq-${sid(key)}">${fmt(liqVal)}</td>
         <td class="td-pre-first" id="s-pvol-${tipo}-${sid(key)}">${fmt(pVol)}</td>
         <td class="td-pre" id="s-objcol-${tipo}-${sid(key)}">${fmt(objCol)}</td>
-        <td class="td-pre" id="s-pcamp-${tipo}-${sid(key)}">${fmt(campVal)}</td>
-        <td class="td-pre" id="s-pcamp2-${tipo}-${sid(key)}">${fmt(camp2Val)}</td>
-        <td class="td-pre" id="s-pcamp3-${tipo}-${sid(key)}">${fmt(camp3Val)}</td>
+        <td class="td-pre-last" id="s-trein-${tipo}-${sid(key)}">${fmt(trein)}</td>
         <td id="s-tot-${tipo}-${sid(key)}">${fmt(rowTotal)}</td>`;
     } else {
-      const campVal  = getManual(key,'camp');
-      const camp2Val = getManual(key,'camp2') + getManual(key,'camp2p2');
-      const camp3Val = getManual(key,'camp3') + getManual(key,'camp3p2');
       const objCol   = state.manuais[`obj_col_${tipo}`]||0;
-      const rowTotal = comissao + pVol + objCol + campVal + camp2Val + camp3Val;
+      const rowTotal = comissao + pVol + objCol;
       tr.innerHTML=`
         <td>${nomeDisp}</td>
         <td>${fmt(d.volume)}</td>
         <td class="td-com-first">${fmt(d.creditos * CFG.CREDITO_VAL)}</td>
         <td class="td-com-last">${fmt(d.adicionais * CFG.CREDITO_VAL)}</td>
         <td class="td-pre-first" id="s-pvol-${tipo}-${sid(key)}">${fmt(pVol)}</td>
-        <td class="td-pre" id="s-objcol-${tipo}-${sid(key)}">${fmt(objCol)}</td>
-        <td class="td-pre" id="s-pcamp-${tipo}-${sid(key)}">${fmt(campVal)}</td>
-        <td class="td-pre" id="s-pcamp2-${tipo}-${sid(key)}">${fmt(camp2Val)}</td>
-        <td class="td-pre-last" id="s-pcamp3-${tipo}-${sid(key)}">${fmt(camp3Val)}</td>
+        <td class="td-pre-last" id="s-objcol-${tipo}-${sid(key)}">${fmt(objCol)}</td>
         <td id="s-tot-${tipo}-${sid(key)}">${fmt(rowTotal)}</td>`;
     }
     tbodyEl.appendChild(tr);
@@ -951,19 +935,14 @@ function renderTime(tipo) {
       <td class="td-com-last" id="st-liq-${tipo}">${fmt(totLiq)}</td>
       <td class="td-pre-first" id="st-pvol-${tipo}">${fmt(totPvol)}</td>
       <td class="td-pre" id="st-objcol-${tipo}">${fmt(0)}</td>
-      <td class="td-pre" id="st-pcamp-${tipo}">${fmt(0)}</td>
-      <td class="td-pre" id="st-pcamp2-${tipo}">${fmt(0)}</td>
-      <td class="td-pre" id="st-pcamp3-${tipo}">${fmt(0)}</td>
+      <td class="td-pre-last" id="st-trein-${tipo}">${fmt(0)}</td>
       <td id="st-tot-${tipo}">${fmt(totTotal)}</td>`;
   } else {
     trT.innerHTML=`<td>Total</td><td>${fmt(totVol)}</td>
       <td class="td-com-first" id="st-cred-${tipo}">${fmt(totCred)}</td>
       <td class="td-com-last" id="st-adic-${tipo}">${fmt(totAdic)}</td>
       <td class="td-pre-first" id="st-pvol-${tipo}">${fmt(totPvol)}</td>
-      <td class="td-pre" id="st-objcol-${tipo}">${fmt(0)}</td>
-      <td class="td-pre" id="st-pcamp-${tipo}">${fmt(0)}</td>
-      <td class="td-pre" id="st-pcamp2-${tipo}">${fmt(0)}</td>
-      <td class="td-pre-last" id="st-pcamp3-${tipo}">${fmt(0)}</td>
+      <td class="td-pre-last" id="st-objcol-${tipo}">${fmt(0)}</td>
       <td id="st-tot-${tipo}">${fmt(totTotal)}</td>`;
   }
   tbodyEl.appendChild(trT);
@@ -984,16 +963,20 @@ function renderFinanceiro() {
   const tbodyEl=document.getElementById('tbody-financeiro');
   cardsEl.innerHTML=''; tbodyEl.innerHTML='';
 
-  const card=document.createElement('div');
-  card.className='person-card';
-  card.innerHTML=`
+  // Card Marco
+  const cardMarco=document.createElement('div');
+  cardMarco.className='person-card';
+  cardMarco.innerHTML=`
     <div class="card-top">
       <div class="card-top-row">
         <span class="person-name">Marco Antônio</span>
-        <span class="tag financeiro">Financeiro/ADM</span>
+        <div class="card-actions">
+          <button class="btn-preencher" onclick="event.stopPropagation();abrirModalIndividual('financeiro','marco')">✏️ Preencher</button>
+          <span class="tag financeiro">Financeiro e Cálculos Judiciais</span>
+        </div>
       </div>
     </div>
-    <div class="card-body" onclick="abrirModalFinanceiro()">
+    <div class="card-body" onclick="abrirModalFinanceiro('marco')">
       <div class="card-group-label">Prêmios</div>
       <div class="row"><span class="lbl">Prêmio Execução</span><span class="val" id="fin-exec-val">R$ 0,00</span></div>
       <div class="row"><span class="lbl">Prêmio Resultado</span><span class="val" id="fin-res-val">R$ 0,00</span></div>
@@ -1006,38 +989,93 @@ function renderFinanceiro() {
         <span class="total-val total-main" id="total-fin">R$ 0,00</span>
       </div>
     </div>`;
-  cardsEl.appendChild(card);
-  card.querySelector('.card-body').querySelectorAll('input').forEach(i=>i.addEventListener('click',e=>e.stopPropagation()));
+  cardsEl.appendChild(cardMarco);
+  cardMarco.querySelector('.card-body').querySelectorAll('input').forEach(i=>i.addEventListener('click',e=>e.stopPropagation()));
 
-  const tr=document.createElement('tr');
-  tr.onclick=()=>abrirModalFinanceiro();
-  tr.style.cursor='pointer';
-  tr.innerHTML=`
+  // Card Camila
+  const cardCamila=document.createElement('div');
+  cardCamila.className='person-card';
+  cardCamila.innerHTML=`
+    <div class="card-top">
+      <div class="card-top-row">
+        <span class="person-name">Camila</span>
+        <div class="card-actions">
+          <button class="btn-preencher" onclick="event.stopPropagation();abrirModalIndividual('financeiro','camila')">✏️ Preencher</button>
+          <span class="tag financeiro">Financeiro e Cálculos Judiciais</span>
+        </div>
+      </div>
+    </div>
+    <div class="card-body" onclick="abrirModalFinanceiro('camila')">
+      <div class="card-group-label">Prêmios</div>
+      <div class="row"><span class="lbl">Prêmio Execução</span><span class="val" id="camila-exec-val">R$ 0,00</span></div>
+      <div class="row"><span class="lbl">Prêmio Resultado</span><span class="val" id="camila-res-val">R$ 0,00</span></div>
+      <div class="row"><span class="lbl">Objetivo Coletivo</span><span class="val" id="camila-objcol-val">R$ 0,00</span></div>
+      <p class="hint">Clique para ver o detalhamento</p>
+    </div>
+    <div class="card-total">
+      <div class="card-total-col" style="grid-column:1/-1">
+        <span class="total-lbl">Total</span>
+        <span class="total-val total-main" id="total-camila">R$ 0,00</span>
+      </div>
+    </div>`;
+  cardsEl.appendChild(cardCamila);
+  cardCamila.querySelector('.card-body').querySelectorAll('input').forEach(i=>i.addEventListener('click',e=>e.stopPropagation()));
+
+  // Linha Marco na tabela
+  const trMarco=document.createElement('tr');
+  trMarco.onclick=()=>abrirModalFinanceiro('marco');
+  trMarco.style.cursor='pointer';
+  trMarco.innerHTML=`
     <td>Marco Antônio</td>
     <td class="td-pre-first" id="s-fin-exec">R$ 0,00</td>
     <td class="td-pre" id="s-fin-res">R$ 0,00</td>
     <td class="td-pre-last" id="s-fin-objcol">R$ 0,00</td>
     <td id="s-fin-tot">R$ 0,00</td>`;
-  tbodyEl.appendChild(tr);
+  tbodyEl.appendChild(trMarco);
+
+  // Linha Camila na tabela
+  const trCamila=document.createElement('tr');
+  trCamila.onclick=()=>abrirModalFinanceiro('camila');
+  trCamila.style.cursor='pointer';
+  trCamila.innerHTML=`
+    <td>Camila</td>
+    <td class="td-pre-first" id="s-camila-exec">R$ 0,00</td>
+    <td class="td-pre" id="s-camila-res">R$ 0,00</td>
+    <td class="td-pre-last" id="s-camila-objcol">R$ 0,00</td>
+    <td id="s-camila-tot">R$ 0,00</td>`;
+  tbodyEl.appendChild(trCamila);
 }
 
 function recalcFinanceiro() {
+  const el = id => document.getElementById(id);
+
+  // Marco
   const exec   = state.manuais['marco_fin_exec']||0;
   const res    = state.manuais['marco_fin_res']||0;
   const objCol = state.manuais['obj_col_financeiro']||0;
-  const premios = exec + res + objCol;
-  const tot     = premios;
-  const el = id => document.getElementById(id);
-  if(el('total-fin'))    el('total-fin').textContent    = fmt(tot);
-  if(el('fin-com-val'))  el('fin-com-val').textContent  = fmt(0);
-  if(el('fin-pre-val'))  el('fin-pre-val').textContent  = fmt(premios);
-  if(el('fin-exec-val')) el('fin-exec-val').textContent = fmt(exec);
-  if(el('fin-res-val'))  el('fin-res-val').textContent  = fmt(res);
-  if(el('fin-objcol-val'))el('fin-objcol-val').textContent = fmt(objCol);
-  if(el('s-fin-exec'))   el('s-fin-exec').textContent   = fmt(exec);
-  if(el('s-fin-res'))    el('s-fin-res').textContent    = fmt(res);
-  if(el('s-fin-objcol')) el('s-fin-objcol').textContent = fmt(objCol);
-  if(el('s-fin-tot'))    el('s-fin-tot').textContent    = fmt(tot);
+  const tot    = exec + res + objCol;
+  if(el('total-fin'))     el('total-fin').textContent     = fmt(tot);
+  if(el('fin-exec-val'))  el('fin-exec-val').textContent  = fmt(exec);
+  if(el('fin-res-val'))   el('fin-res-val').textContent   = fmt(res);
+  if(el('fin-objcol-val'))el('fin-objcol-val').textContent= fmt(objCol);
+  if(el('s-fin-exec'))    el('s-fin-exec').textContent    = fmt(exec);
+  if(el('s-fin-res'))     el('s-fin-res').textContent     = fmt(res);
+  if(el('s-fin-objcol'))  el('s-fin-objcol').textContent  = fmt(objCol);
+  if(el('s-fin-tot'))     el('s-fin-tot').textContent     = fmt(tot);
+
+  // Camila
+  const cExec   = state.manuais['camila_exec']||0;
+  const cRes    = state.manuais['camila_res']||0;
+  const cObjCol = state.manuais['obj_col_financeiro']||0; // mesmo obj coletivo do time
+  const cTot    = cExec + cRes + cObjCol;
+  if(el('total-camila'))      el('total-camila').textContent      = fmt(cTot);
+  if(el('camila-exec-val'))   el('camila-exec-val').textContent   = fmt(cExec);
+  if(el('camila-res-val'))    el('camila-res-val').textContent    = fmt(cRes);
+  if(el('camila-objcol-val')) el('camila-objcol-val').textContent = fmt(cObjCol);
+  if(el('s-camila-exec'))     el('s-camila-exec').textContent     = fmt(cExec);
+  if(el('s-camila-res'))      el('s-camila-res').textContent      = fmt(cRes);
+  if(el('s-camila-objcol'))   el('s-camila-objcol').textContent   = fmt(cObjCol);
+  if(el('s-camila-tot'))      el('s-camila-tot').textContent      = fmt(cTot);
 }
 
 // ── LIQUIDADOS ────────────────────────────────────────────────────────────
@@ -1080,19 +1118,17 @@ function _recalcCardInternal(tipo, key) {
   const insVal   = insQt * CFG.INSERCAO_VAL;
   const liqVal   = (tipo==='juridico' && !isJohnathan) ? comissaoLiquidados(key) : 0;
   const pVol     = premioVolume(d.volume);
-  const pCamp    = getManual(key,'camp');
-  const pCamp2   = getManual(key,'camp2');
-  const pCamp3   = getManual(key,'camp3');
   const objCol   = state.manuais[`obj_col_${tipo}`] || 0;
   const precQt   = getManual(key,'prec');
   const precQt2  = getManual(key,'prec2');
   const precVal  = (precQt + precQt2) * 20;
-  const total    = comissao + insVal + liqVal + pVol + objCol + pCamp + pCamp2 + pCamp3 + precVal;
+  const trein    = (tipo==='juridico' && (d.nome==='Daniel'||d.nome==='Tarciane')) ? getManual(key,'trein') : 0;
+  const total    = comissao + insVal + liqVal + pVol + objCol + precVal + trein;
 
   const el = id => document.getElementById(id);
   if (el(`total-${tipo}-${sid(key)}`)) el(`total-${tipo}-${sid(key)}`).textContent = fmt(total);
   if (el(`subtot-com-${tipo}-${sid(key)}`)) el(`subtot-com-${tipo}-${sid(key)}`).textContent = fmt(comissao + insVal + liqVal + precVal);
-  if (el(`subtot-pre-${tipo}-${sid(key)}`)) el(`subtot-pre-${tipo}-${sid(key)}`).textContent = fmt(pVol + objCol + pCamp + pCamp2 + pCamp3);
+  if (el(`subtot-pre-${tipo}-${sid(key)}`)) el(`subtot-pre-${tipo}-${sid(key)}`).textContent = fmt(pVol + objCol + trein);
   if (el(`row-objcol-val-${sid(key)}`)) el(`row-objcol-val-${sid(key)}`).textContent = fmt(objCol);
   if (el(`s-ins-${sid(key)}`))  el(`s-ins-${sid(key)}`).textContent  = fmtN(insQt);
   if (el(`s-liq-${sid(key)}`))  el(`s-liq-${sid(key)}`).textContent  = fmt(liqVal);
@@ -1102,13 +1138,8 @@ function _recalcCardInternal(tipo, key) {
   if (el(`prec-sub-${sid(key)}`))      el(`prec-sub-${sid(key)}`).textContent      = `${fmtN(precQt)} × R$ 20,00`;
   if (el(`prec2-sub-${sid(key)}`))     el(`prec2-sub-${sid(key)}`).textContent     = `${fmtN(precQt2)} × R$ 20,00`;
   if (el(`row-prec2-val-${sid(key)}`)) el(`row-prec2-val-${sid(key)}`).textContent = fmt(precQt2 * 20);
-  if (el(`row-camp-val-${sid(key)}`))  el(`row-camp-val-${sid(key)}`).textContent  = fmt(pCamp);
-  if (el(`row-camp-val-${sid(key)}`))    el(`row-camp-val-${sid(key)}`).textContent    = fmt(getManual(key,'camp'));
-  if (el(`row-camp2-val-${sid(key)}`))   el(`row-camp2-val-${sid(key)}`).textContent   = fmt(getManual(key,'camp2'));
-  if (el(`row-camp3-val-${sid(key)}`))   el(`row-camp3-val-${sid(key)}`).textContent   = fmt(getManual(key,'camp3'));
-  if (el(`s-com-${tipo}-${sid(key)}`)) el(`s-com-${tipo}-${sid(key)}`).textContent = fmt(comissao + insVal);
   if (el(`s-pvol-${tipo}-${sid(key)}`)) el(`s-pvol-${tipo}-${sid(key)}`).textContent = fmt(pVol);
-  if (el(`s-pcamp-${tipo}-${sid(key)}`)) el(`s-pcamp-${tipo}-${sid(key)}`).textContent = fmt(pCamp + precVal);
+  if (el(`s-trein-${tipo}-${sid(key)}`)) el(`s-trein-${tipo}-${sid(key)}`).textContent = fmt(trein);
   if (el(`s-tot-${tipo}-${sid(key)}`)) el(`s-tot-${tipo}-${sid(key)}`).textContent = fmt(total);
 }
 
@@ -1158,15 +1189,6 @@ function abrirModalIndividual(tipo, key) {
   _modalIndKey   = key;
   _modalIndDirty = false;
 
-  const d = tipo === 'comercial' ? state.comercial[key] : state.juridico[key];
-  const m = state.manuais[key] || {};
-  const nomeDisp = d.nome;
-  const isJohn = tipo === 'juridico' && d.nome === 'Johnathan';
-  const isNic  = tipo === 'juridico' && d.nome.toLowerCase() === 'nicolli';
-  const execLabel = tipo === 'comercial' ? 'Campanha Execução (Meet)' : 'Campanha Execução (Inserções)';
-
-  document.getElementById('modalIndTitle').textContent = nomeDisp;
-
   const field = (label, id, value, hint='') => `
     <div class="mm-field">
       <label>${label}</label>
@@ -1178,19 +1200,34 @@ function abrirModalIndividual(tipo, key) {
 
   let html = '';
 
-  if (tipo === 'juridico') {
-    html += field('Processos Inseridos', 'ins', m.ins||0, '× R$ 0,50');
-    if (isNic) {
-      html += field('Precatório (qtd.)', 'prec', m.prec||0, '× R$ 20,00');
-      html += field('Precatório Adicional (qtd.)', 'prec2', m.prec2||0, '× R$ 20,00');
+  if (tipo === 'financeiro') {
+    const isMarco = key === 'marco';
+    const nome    = isMarco ? 'Marco Antônio' : 'Camila';
+    const exec    = state.manuais[isMarco ? 'marco_fin_exec' : 'camila_exec'] || 0;
+    const res     = state.manuais[isMarco ? 'marco_fin_res'  : 'camila_res']  || 0;
+    const objCol  = state.manuais['obj_col_financeiro'] || 0;
+    document.getElementById('modalIndTitle').textContent = nome;
+    html += field('Prêmio Execução',  'fin_exec',  exec);
+    html += field('Prêmio Resultado', 'fin_res',   res);
+    html += field('Objetivo Coletivo','fin_objcol', objCol);
+  } else {
+    const d = tipo === 'comercial' ? state.comercial[key] : state.juridico[key];
+    const m = state.manuais[key] || {};
+    const isNic  = tipo === 'juridico' && d.nome.toLowerCase() === 'nicolli';
+    document.getElementById('modalIndTitle').textContent = d.nome;
+
+    if (tipo === 'juridico') {
+      html += field('Processos Inseridos', 'ins', m.ins||0, '× R$ 0,50');
+      if (isNic) {
+        html += field('Precatório (qtd.)', 'prec', m.prec||0, '× R$ 20,00');
+        html += field('Precatório Adicional (qtd.)', 'prec2', m.prec2||0, '× R$ 20,00');
+      }
+      if (d.nome === 'Daniel' || d.nome === 'Tarciane') {
+        html += `<div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mu);margin:14px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--bo)">Prêmios Especiais</div>`;
+        html += field('Prêmio Treinamento', 'trein', m.trein||0);
+      }
     }
   }
-
-  html += `<div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mu);margin:14px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--bo)">Campanhas</div>`;
-  html += field(`${execLabel} — 11/05 a 15/05`, 'camp', m.camp||0);
-  html += field('Campanha Volume — 11/05 a 15/05', 'camp2', m.camp2||0);
-  html += field('Campanha Dupla de Ouro — 11/05 a 15/05', 'camp3', m.camp3||0);
-
 
   document.getElementById('modalIndBody').innerHTML = html;
   document.getElementById('modalIndBackdrop').classList.add('open');
@@ -1199,27 +1236,28 @@ function abrirModalIndividual(tipo, key) {
 function aplicarModalInd() {
   const tipo = _modalIndTipo;
   const key  = _modalIndKey;
-  const d    = tipo === 'comercial' ? state.comercial[key] : state.juridico[key];
-  const isNic = tipo === 'juridico' && d.nome.toLowerCase() === 'nicolli';
+  const get  = id => parseFloat(document.getElementById(`ind-${id}`)?.value) || 0;
 
-  if (!state.manuais[key]) state.manuais[key] = {};
-  const m = state.manuais[key];
-
-  const get = id => parseFloat(document.getElementById(`ind-${id}`)?.value) || 0;
-
-  if (tipo === 'juridico') {
-    m.ins   = get('ins');
-    if (isNic) { m.prec = get('prec'); m.prec2 = get('prec2'); }
+  if (tipo === 'financeiro') {
+    const isMarco = key === 'marco';
+    state.manuais[isMarco ? 'marco_fin_exec' : 'camila_exec'] = get('fin_exec');
+    state.manuais[isMarco ? 'marco_fin_res'  : 'camila_res']  = get('fin_res');
+    state.manuais['obj_col_financeiro'] = get('fin_objcol');
+    recalcFinanceiro();
+  } else {
+    const d    = tipo === 'comercial' ? state.comercial[key] : state.juridico[key];
+    const isNic = tipo === 'juridico' && d.nome.toLowerCase() === 'nicolli';
+    if (!state.manuais[key]) state.manuais[key] = {};
+    const m = state.manuais[key];
+    if (tipo === 'juridico') {
+      m.ins = get('ins');
+      if (isNic) { m.prec = get('prec'); m.prec2 = get('prec2'); }
+      if (d.nome === 'Daniel' || d.nome === 'Tarciane') { m.trein = get('trein'); }
+    }
+    _recalcCardInternal(tipo, key);
+    recalcTotals(tipo);
   }
-  m.camp   = get('camp');
-  m.camp2  = get('camp2');
-  m.camp3  = get('camp3');
-  m.campp2  = 0;
-  m.camp2p2 = 0;
-  m.camp3p2 = 0;
 
-  _recalcCardInternal(tipo, key);
-  recalcTotals(tipo);
   _modalIndDirty = false;
   document.getElementById('modalIndBackdrop').classList.remove('open');
 }
@@ -1292,9 +1330,6 @@ function abrirModalManuais() {
             <span class="mm-input-hint">× R$ 20,00</span>
           </div>
         </div>` : ''}
-        <div class="mm-field"><label>Campanha Execução (Inserções) — 11/05 a 15/05</label><div class="mm-field-right"><input type="number" min="0" step="0.01" class="mm-input" id="mm-camp-jur-${sid(key)}" value="${m.camp||0}" placeholder="0,00"></div></div>
-        <div class="mm-field"><label>Campanha Volume — 11/05 a 15/05</label><div class="mm-field-right"><input type="number" min="0" step="0.01" class="mm-input" id="mm-camp2-jur-${sid(key)}" value="${m.camp2||0}" placeholder="0,00"></div></div>
-        <div class="mm-field"><label>Campanha Dupla de Ouro — 11/05 a 15/05</label><div class="mm-field-right"><input type="number" min="0" step="0.01" class="mm-input" id="mm-camp3-jur-${sid(key)}" value="${m.camp3||0}" placeholder="0,00"></div></div>
         `;
       sec.appendChild(p);
     });
@@ -1324,22 +1359,21 @@ function abrirModalManuais() {
       const p = document.createElement('div');
       p.className = 'mm-person';
       p.innerHTML = `
-        <div class="mm-person-name">${d.nome}</div>
-        <div class="mm-field"><label>Campanha Execução (Meet) — 11/05 a 15/05</label><div class="mm-field-right"><input type="number" min="0" step="0.01" class="mm-input" id="mm-camp-com-${sid(key)}" value="${m.camp||0}" placeholder="0,00"></div></div>
-        <div class="mm-field"><label>Campanha Volume — 11/05 a 15/05</label><div class="mm-field-right"><input type="number" min="0" step="0.01" class="mm-input" id="mm-camp2-com-${sid(key)}" value="${m.camp2||0}" placeholder="0,00"></div></div>
-        <div class="mm-field"><label>Campanha Dupla de Ouro — 11/05 a 15/05</label><div class="mm-field-right"><input type="number" min="0" step="0.01" class="mm-input" id="mm-camp3-com-${sid(key)}" value="${m.camp3||0}" placeholder="0,00"></div></div>`;
+        <div class="mm-person-name">${d.nome}</div>`;
       sec.appendChild(p);
     });
     body.appendChild(sec);
   }
 
   // Financeiro
-  const finExec = state.manuais['marco_fin_exec'] || 0;
-  const finRes  = state.manuais['marco_fin_res']  || 0;
+  const finExec   = state.manuais['marco_fin_exec'] || 0;
+  const finRes    = state.manuais['marco_fin_res']  || 0;
+  const camilaExec= state.manuais['camila_exec']    || 0;
+  const camilaRes = state.manuais['camila_res']     || 0;
   const secFin = document.createElement('div');
   secFin.className = 'mm-team';
   secFin.innerHTML = `
-    <div class="mm-team-label">Financeiro / ADM</div>
+    <div class="mm-team-label">Financeiro e Cálculos Judiciais</div>
     <div class="mm-person">
       <div class="mm-person-name" style="font-size:12px;font-weight:600;color:var(--mu)">Prêmio coletivo do time</div>
       <div class="mm-field">
@@ -1356,6 +1390,17 @@ function abrirModalManuais() {
       <div class="mm-field">
         <label>Prêmio Resultado</label>
         <input type="number" min="0" step="0.01" class="mm-input" id="mm-fin-res" value="${finRes}" placeholder="0,00">
+      </div>
+    </div>
+    <div class="mm-person">
+      <div class="mm-person-name">Camila</div>
+      <div class="mm-field">
+        <label>Prêmio Execução</label>
+        <input type="number" min="0" step="0.01" class="mm-input" id="mm-camila-exec" value="${camilaExec}" placeholder="0,00">
+      </div>
+      <div class="mm-field">
+        <label>Prêmio Resultado</label>
+        <input type="number" min="0" step="0.01" class="mm-input" id="mm-camila-res" value="${camilaRes}" placeholder="0,00">
       </div>
     </div>`;
   body.appendChild(secFin);
@@ -1375,14 +1420,9 @@ function aplicarManuais() {
     const d = state.juridico[key];
     const isNic = d.nome.toLowerCase() === 'nicolli';
     if (!state.manuais[key]) state.manuais[key] = {};
-    state.manuais[key].ins  = parseFloat(document.getElementById(`mm-ins-${sid(key)}`)?.value) || 0;
-    state.manuais[key].camp   = parseFloat(document.getElementById(`mm-camp-jur-${sid(key)}`)?.value)    || 0;
-    state.manuais[key].campp2 = 0;
-    state.manuais[key].camp2  = parseFloat(document.getElementById(`mm-camp2-jur-${sid(key)}`)?.value)   || 0;
-    state.manuais[key].camp2p2 = 0;
-    state.manuais[key].camp3  = parseFloat(document.getElementById(`mm-camp3-jur-${sid(key)}`)?.value)   || 0;
-    state.manuais[key].camp3p2 = 0;
-    state.manuais[key].prec = isNic ? (parseFloat(document.getElementById(`mm-prec-${sid(key)}`)?.value) || 0) : 0;
+    state.manuais[key].ins   = parseFloat(document.getElementById(`mm-ins-${sid(key)}`)?.value) || 0;
+    state.manuais[key].trein = (d.nome==='Daniel'||d.nome==='Tarciane') ? (parseFloat(document.getElementById(`mm-trein-jur-${sid(key)}`)?.value) || 0) : 0;
+    state.manuais[key].prec  = isNic ? (parseFloat(document.getElementById(`mm-prec-${sid(key)}`)?.value) || 0) : 0;
     state.manuais[key].prec2 = isNic ? (parseFloat(document.getElementById(`mm-prec2-${sid(key)}`)?.value) || 0) : 0;
     _recalcCardInternal('juridico', key);
   });
@@ -1392,19 +1432,15 @@ function aplicarManuais() {
   const comRem = state.removedComercial;
   Object.keys(state.comercial).filter(k=>!comRem.includes(k)).forEach(key => {
     if (!state.manuais[key]) state.manuais[key] = {};
-    state.manuais[key].camp   = parseFloat(document.getElementById(`mm-camp-com-${sid(key)}`)?.value)    || 0;
-    state.manuais[key].campp2 = 0;
-    state.manuais[key].camp2  = parseFloat(document.getElementById(`mm-camp2-com-${sid(key)}`)?.value)   || 0;
-    state.manuais[key].camp2p2 = 0;
-    state.manuais[key].camp3  = parseFloat(document.getElementById(`mm-camp3-com-${sid(key)}`)?.value)   || 0;
-    state.manuais[key].camp3p2 = 0;
     _recalcCardInternal('comercial', key);
   });
   recalcTotals('comercial');
 
   // Financeiro
-  state.manuais['marco_fin_exec'] = parseFloat(document.getElementById('mm-fin-exec')?.value) || 0;
-  state.manuais['marco_fin_res']  = parseFloat(document.getElementById('mm-fin-res')?.value)  || 0;
+  state.manuais['marco_fin_exec'] = parseFloat(document.getElementById('mm-fin-exec')?.value)    || 0;
+  state.manuais['marco_fin_res']  = parseFloat(document.getElementById('mm-fin-res')?.value)     || 0;
+  state.manuais['camila_exec']    = parseFloat(document.getElementById('mm-camila-exec')?.value) || 0;
+  state.manuais['camila_res']     = parseFloat(document.getElementById('mm-camila-res')?.value)  || 0;
   recalcFinanceiro();
 
   closeModalManuais();
@@ -1429,7 +1465,7 @@ function recalcTotals(tipo) {
   const nomes   = Object.keys(data).filter(k=>!removed.includes(k));
   const objCol  = state.manuais[`obj_col_${tipo}`] || 0;
 
-  let tCred=0, tAdic=0, tPrec=0, tPrec2=0, tIns=0, tLiq=0, tPv=0, tOc=0, tPc=0, tPc2=0, tPc3=0, tT=0;
+  let tCred=0, tAdic=0, tPrec=0, tPrec2=0, tIns=0, tLiq=0, tPv=0, tOc=0, tTrein=0, tT=0;
 
   nomes.forEach(key=>{
     const d    = data[key];
@@ -1443,16 +1479,14 @@ function recalcTotals(tipo) {
     const insVal  = insQt * CFG.INSERCAO_VAL;
     const liq     = tipo==='juridico' ? comissaoLiquidados(key) : 0;
     const pv      = premioVolume(d.volume);
-    const pc      = getManual(key,'camp');
-    const pc2     = getManual(key,'camp2');
-    const pc3     = getManual(key,'camp3');
     const pr      = (getManual(key,'prec') + getManual(key,'prec2')) * 20;
-    const tot     = credVal + adicVal + insVal + liq + pv + objCol + pc + pc2 + pc3 + pr;
+    const trein   = (tipo==='juridico' && (d.nome==='Daniel'||d.nome==='Tarciane')) ? getManual(key,'trein') : 0;
+    const tot     = credVal + adicVal + insVal + liq + pv + objCol + pr + trein;
 
     const precV  = getManual(key,'prec') * 20;
     const precV2 = getManual(key,'prec2') * 20;
     tCred+=credVal; tAdic+=adicVal; tPrec+=precV; tPrec2+=precV2; tIns+=insVal; tLiq+=liq;
-    tPv+=pv; tOc+=objCol; tPc+=pc; tPc2+=pc2; tPc3+=pc3; tT+=tot;
+    tPv+=pv; tOc+=objCol; tTrein=(tTrein||0)+trein; tT+=tot;
 
     // Atualiza células da linha individual na tabela
     const e2 = id => document.getElementById(id);
@@ -1462,9 +1496,7 @@ function recalcTotals(tipo) {
     if (e2(`s-liq-${sid(key)}`))              e2(`s-liq-${sid(key)}`).textContent              = fmt(liq);
     if (e2(`s-pvol-${tipo}-${sid(key)}`))     e2(`s-pvol-${tipo}-${sid(key)}`).textContent     = fmt(pv);
     if (e2(`s-objcol-${tipo}-${sid(key)}`))   e2(`s-objcol-${tipo}-${sid(key)}`).textContent   = fmt(objCol);
-    if (e2(`s-pcamp-${tipo}-${sid(key)}`))    e2(`s-pcamp-${tipo}-${sid(key)}`).textContent    = fmt(pc);
-    if (e2(`s-pcamp2-${tipo}-${sid(key)}`))   e2(`s-pcamp2-${tipo}-${sid(key)}`).textContent   = fmt(pc2);
-    if (e2(`s-pcamp3-${tipo}-${sid(key)}`))   e2(`s-pcamp3-${tipo}-${sid(key)}`).textContent   = fmt(pc3);
+    if (e2(`s-trein-${tipo}-${sid(key)}`)) e2(`s-trein-${tipo}-${sid(key)}`).textContent = fmt(trein);
     if (e2(`s-tot-${tipo}-${sid(key)}`))      e2(`s-tot-${tipo}-${sid(key)}`).textContent      = fmt(tot);
   });
 
@@ -1478,9 +1510,7 @@ function recalcTotals(tipo) {
   if (el(`st-liq-${tipo}`))    el(`st-liq-${tipo}`).textContent    = fmt(tLiq);
   if (el(`st-pvol-${tipo}`))   el(`st-pvol-${tipo}`).textContent   = fmt(tPv);
   if (el(`st-objcol-${tipo}`)) el(`st-objcol-${tipo}`).textContent = fmt(tOc);
-  if (el(`st-pcamp-${tipo}`))  el(`st-pcamp-${tipo}`).textContent  = fmt(tPc);
-  if (el(`st-pcamp2-${tipo}`)) el(`st-pcamp2-${tipo}`).textContent = fmt(tPc2);
-  if (el(`st-pcamp3-${tipo}`)) el(`st-pcamp3-${tipo}`).textContent = fmt(tPc3);
+  if (el(`st-trein-${tipo}`))  el(`st-trein-${tipo}`).textContent  = fmt(tTrein);
   if (el(`st-tot-${tipo}`))    el(`st-tot-${tipo}`).textContent    = fmt(tT);
 }
 
@@ -1495,14 +1525,12 @@ function abrirModal(tipo, key) {
   const insVal = insQt * CFG.INSERCAO_VAL;
   const liqVal = tipo==='juridico' ? comissaoLiquidados(key) : 0;
   const pVol=premioVolume(d.volume);
-  const pCamp=getManual(key,'camp');
-  const pCamp2=getManual(key,'camp2');
-  const pCamp3=getManual(key,'camp3');
   const objCol=state.manuais[`obj_col_${tipo}`]||0;
   const precQt=getManual(key,'prec');
   const precQt2=getManual(key,'prec2');
   const precVal=(precQt+precQt2)*20;
-  const total=comissao+insVal+liqVal+pVol+objCol+pCamp+pCamp2+pCamp3+precVal;
+  const treinModal = (tipo==='juridico' && (d.nome==='Daniel'||d.nome==='Tarciane')) ? getManual(key,'trein') : 0;
+  const total=comissao+insVal+liqVal+pVol+objCol+precVal+treinModal;
 
   document.getElementById('modal-name').textContent=nomeDisp;
   document.getElementById('modal-tag').innerHTML=`<span class="tag ${tipo}">${tipo==='comercial'?'Comercial':'Jurídico'}</span>`;
@@ -1617,9 +1645,7 @@ function abrirModal(tipo, key) {
     </div>
     <div class="modal-section">
       <div class="modal-section-title">Prêmios manuais</div>
-      <div class="breakdown-row">
-        <span class="blbl">Prêmio campanha</span>
-        <span class="bval gold">${fmt(pCamp)}</span>
+      ${treinModal > 0 ? `<div class="breakdown-row"><span class="blbl">Prêmio Treinamento</span><span class="bval gold">${fmt(treinModal)}</span></div>` : ''}
       </div>`;
   if (d.nome.toLowerCase()==='nicolli') {
     html+=`<div class="breakdown-row">
@@ -1634,19 +1660,23 @@ function abrirModal(tipo, key) {
   document.getElementById('modalBackdrop').classList.add('open');
 }
 
-function abrirModalFinanceiro() {
-  const exec=state.manuais['marco_fin_exec']||0, res=state.manuais['marco_fin_res']||0;
-  const total=exec+res;
-  document.getElementById('modal-name').textContent='Marco Antônio';
-  document.getElementById('modal-tag').innerHTML=`<span class="tag financeiro">Financeiro/ADM</span>`;
-  document.getElementById('modal-body').innerHTML=`
+function abrirModalFinanceiro(pessoa='marco') {
+  const isMarco = pessoa === 'marco';
+  const nome    = isMarco ? 'Marco Antônio' : 'Camila';
+  const exec    = state.manuais[isMarco ? 'marco_fin_exec' : 'camila_exec']||0;
+  const res     = state.manuais[isMarco ? 'marco_fin_res'  : 'camila_res']||0;
+  const objCol  = state.manuais['obj_col_financeiro']||0;
+  const total   = exec + res + objCol;
+  document.getElementById('modal-name').textContent = nome;
+  document.getElementById('modal-tag').innerHTML = `<span class="tag financeiro">Financeiro e Cálculos Judiciais</span>`;
+  document.getElementById('modal-body').innerHTML = `
     <div class="modal-section">
       <div class="modal-section-title">Prêmios</div>
       <div class="breakdown-row"><span class="blbl">Prêmio Execução</span><span class="bval gold">${fmt(exec)}</span></div>
       <div class="breakdown-row"><span class="blbl">Prêmio Resultado</span><span class="bval gold">${fmt(res)}</span></div>
       <div class="breakdown-row"><span class="blbl">Objetivo Coletivo</span><span class="bval gold">${fmt(objCol)}</span></div>
     </div>`;
-  document.getElementById('modal-total').textContent=fmt(total);
+  document.getElementById('modal-total').textContent = fmt(total);
   document.getElementById('modalBackdrop').classList.add('open');
 }
 
@@ -1676,43 +1706,6 @@ function switchTab(tab) {
 }
 
 // ── EXPORT ────────────────────────────────────────────────────────────────
-function exportar(tipo) {
-  const mesRef = (document.getElementById('mes-ref').textContent || '').replace(/[^a-zA-Z0-9]/g,'_').replace(/^_+|_+$/g,'') || 'sem_data';
-  let rows=[], wb=XLSX.utils.book_new();
-
-  if (tipo==='financeiro') {
-    const exec=state.manuais['marco_fin_exec']||0, res=state.manuais['marco_fin_res']||0, objCol=state.manuais['obj_col_financeiro']||0;
-    rows=[['Nome','Prêmio Execução (R$)','Prêmio Resultado (R$)','Objetivo Coletivo (R$)','Total (R$)'],
-          ['Marco Antônio', exec, res, objCol, exec+res+objCol]];
-  } else {
-    const data=tipo==='comercial'?state.comercial:state.juridico;
-    const removed=tipo==='comercial'?state.removedComercial:state.removedJuridico;
-    const nomes=Object.keys(data).filter(k=>!removed.includes(k)).sort((a,b)=>data[b].volume-data[a].volume);
-    const headers=tipo==='comercial'
-      ?['Nome','Créditos','Adicionais','Volume (R$)','Comissão (R$)','Prêmio Objetivo (R$)','Prêmio Campanha (R$)','Total (R$)']
-      :['Nome','Créditos','Adicionais','Inserções','Volume (R$)','Comissão (R$)','Com. Liquidados (R$)','Prêmio Objetivo (R$)','Prêmio Campanha (R$)','Com. Precatório (R$)','Total (R$)'];
-    rows=[headers];
-    nomes.forEach(key=>{
-      const d=data[key];
-      const nD = d.nome;
-      const com = comissaoBase(tipo, d);
-      const ins=tipo==='juridico'?getManual(key,'ins'):0;
-      const insV=ins*CFG.INSERCAO_VAL;
-      const liq=tipo==='juridico'?comissaoLiquidados(key):0;
-      const pv=premioVolume(d.volume);
-      const pc=getManual(key,'camp');
-      const pr=getManual(key,'prec');
-      const tot=com+insV+liq+pv+pc+pr;
-      if (tipo==='comercial') rows.push([nD,d.creditos,d.adicionais,d.volume,com,pv,pc,tot]);
-      else rows.push([nD,d.creditos,d.adicionais,ins,d.volume,com+insV,liq,pv,pc,pr,tot]);
-    });
-  }
-
-  const ws=XLSX.utils.aoa_to_sheet(rows);
-  XLSX.utils.book_append_sheet(wb,ws,tipo==='comercial'?'Comercial':tipo==='juridico'?'Juridico':'Financeiro');
-  XLSX.writeFile(wb,`Comissionamento_${tipo}_${mesRef}.xlsx`);
-}
-
 // ── THEME ─────────────────────────────────────────────────────────────────
 function toggleTheme() {
   const html=document.documentElement;
@@ -1904,15 +1897,17 @@ function exportarPDF() {
     const isFx  = tipo === 'juridico' && d && FAIXA_NOMES.includes(d.nome.toLowerCase());
     const mult  = isFx ? faixaMultiplicador(d.volume) : CFG.CREDITO_VAL;
     const tagClass = tipo === 'comercial' ? 'tag-com' : tipo === 'juridico' ? 'tag-jur' : 'tag-fin';
-    const tagLabel = tipo === 'comercial' ? 'Comercial' : tipo === 'juridico' ? 'Jurídico' : 'Financeiro/ADM';
+    const tagLabel = tipo === 'comercial' ? 'Comercial' : tipo === 'juridico' ? 'Jurídico' : 'Financeiro e Cálculos Judiciais';
 
     if (tipo === 'financeiro') {
-      const exec   = state.manuais['marco_fin_exec']||0;
-      const res    = state.manuais['marco_fin_res']||0;
-      const objCol = state.manuais['obj_col_financeiro']||0;
-      const tot    = exec + res + objCol;
+      const isMarco = key === 'marco';
+      const nome    = isMarco ? 'Marco Antônio' : 'Camila';
+      const exec    = state.manuais[isMarco ? 'marco_fin_exec' : 'camila_exec']||0;
+      const res     = state.manuais[isMarco ? 'marco_fin_res'  : 'camila_res']||0;
+      const objCol  = state.manuais['obj_col_financeiro']||0;
+      const tot     = exec + res + objCol;
       return `<div class="person">
-        <div class="person-header"><span class="person-name">Marco Antônio</span><span class="person-tag ${tagClass}">${tagLabel}</span></div>
+        <div class="person-header"><span class="person-name">${nome}</span><span class="person-tag ${tagClass}">${tagLabel}</span></div>
         <div class="person-body" style="grid-template-columns:1fr">
           <div class="section">
             <div class="section-title">Prêmios</div>
@@ -1943,14 +1938,11 @@ function exportarPDF() {
     const precVal = (precQt+precQt2)*20;
     const pVol    = premioVolume(d.volume);
     const objCol  = state.manuais[`obj_col_${tipo}`]||0;
-    const pc      = getManual(key,'camp');
-    const pc2     = getManual(key,'camp2');
-    const pc3     = getManual(key,'camp3');
+    const treinPDF = (tipo==='juridico' && (d.nome==='Daniel'||d.nome==='Tarciane')) ? getManual(key,'trein') : 0;
     const totCom  = credVal+adicVal+insVal+liqVal+precVal;
-    const totPre  = pVol+objCol+pc+pc2+pc3;
+    const totPre  = pVol+objCol+treinPDF;
     const totGeral= totCom+totPre;
     const nomeDisp = d.nome;
-    const execLabel = tipo==='comercial' ? 'Camp. Execução (Meet)' : 'Camp. Execução (Inserções)';
 
     const statsHTML = isJ
       ? `<div class="stat"><div class="stat-val">${fmtN(d.linhas)}</div><div class="stat-lbl">Processos</div></div>
@@ -1982,9 +1974,7 @@ function exportarPDF() {
           <div class="section-title">Prêmios</div>
           <div class="row"><span class="lbl">Objetivo</span><span class="val">${fmt(pVol)}</span></div>
           <div class="row"><span class="lbl">Objetivo Coletivo</span><span class="val">${fmt(objCol)}</span></div>
-          <div class="row"><span class="lbl">Camp. Volume — 11/05 a 15/05</span><span class="val">${fmt(pc2)}</span></div>
-          <div class="row"><span class="lbl">${execLabel} — 11/05 a 15/05</span><span class="val">${fmt(pc)}</span></div>
-          <div class="row"><span class="lbl">Camp. Dupla de Ouro — 11/05 a 15/05</span><span class="val">${fmt(pc3)}</span></div>
+          ${treinPDF > 0 ? `<div class="row"><span class="lbl">Prêmio Treinamento</span><span class="val">${fmt(treinPDF)}</span></div>` : ''}
         </div>
       </div>
       <div class="totals">
@@ -2012,8 +2002,9 @@ function exportarPDF() {
   }
 
   // Financeiro
-  html += '<div class="team-title new-page">Financeiro / ADM</div>';
-  html += pessoaHTML('financeiro', null);
+  html += '<div class="team-title new-page">Financeiro e Cálculos Judiciais</div>';
+  html += pessoaHTML('financeiro', 'marco');
+  html += pessoaHTML('financeiro', 'camila');
 
   html += '</body></html>';
 
@@ -2053,7 +2044,7 @@ async function registrarMes() {
     'Qtd. Precatório','Com. Precatório (R$)',
     'Qtd. Precatório Adicional','Com. Precatório Adicional (R$)',
     // Prêmios
-    'Prêmio Objetivo (R$)','Prêmio Obj. Coletivo (R$)','Camp. Exec. 11-15/05 (R$)','Camp. Volume 11-15/05 (R$)','Camp. Dupla Ouro 11-15/05 (R$)',
+    'Prêmio Objetivo (R$)','Prêmio Obj. Coletivo (R$)','Prêmio Treinamento (R$)',
     // Prêmios exclusivos Marco
     'Prêmio Execução (R$)','Prêmio Resultado (R$)',
     // Total
@@ -2073,7 +2064,7 @@ async function registrarMes() {
       const pVol    = premioVolume(d.volume);
       const objCol  = state.manuais['obj_col_comercial']||0;
       const totCom  = credVal + adicVal;
-      const totPre  = pVol + objCol + getManual(key,'camp') + getManual(key,'camp2') + getManual(key,'camp3');
+      const totPre  = pVol + objCol;
       rows.push([
         mesRef, 'Comercial', d.nome,      // 0,1,2
         d.volume,                          // 3
@@ -2084,9 +2075,7 @@ async function registrarMes() {
         '—', 0,                            // 14,15 precatório
         '—', 0,                            // 16,17 precatório adicional
         pVol, state.manuais['obj_col_comercial']||0, // 18,19 objetivo, obj coletivo
-        getManual(key,'camp'),             // 20 camp exec
-        getManual(key,'camp2'),            // 21 camp volume
-        getManual(key,'camp3'),            // 22 dupla ouro
+        0,                                           // 20 treinamento (não se aplica)
         0, 0,                              // 23,24 prêmio execução, resultado (só Marco)
         totCom, totPre, totCom + totPre    // 25,26,27
       ]);
@@ -2114,11 +2103,12 @@ async function registrarMes() {
       const precVal2 = precQt2 * 20;
       const precVal  = precVal1 + precVal2;
       const pVol     = premioVolume(d.volume);
-      const pCamp    = getManual(key, 'camp');
       const nomeDisp = d.nome;
       const objColJ  = state.manuais['obj_col_juridico']||0;
+      const treinJ   = (d.nome==='Daniel'||d.nome==='Tarciane') ? getManual(key,'trein') : 0;
       const totCom   = credVal + adicVal + insVal + liqVal + precVal;
-      const totPre   = pVol + objColJ + getManual(key,'camp') + getManual(key,'camp2') + getManual(key,'camp3');
+      const totPre   = pVol + objColJ + treinJ;
+
       rows.push([
         mesRef, 'Jurídico', nomeDisp,
         d.volume,
@@ -2129,31 +2119,39 @@ async function registrarMes() {
         isNic ? precQt  : '—', isNic ? precVal1 : 0,
         isNic ? precQt2 : '—', isNic ? precVal2 : 0,
         pVol, objColJ,
-        getManual(key,'camp'),
-        getManual(key,'camp2'),
-        getManual(key,'camp3'),
+        treinJ,
         0, 0,
         totCom, totPre, totCom + totPre
       ]);
     });
 
-  // Financeiro
+  // Financeiro — Marco
   const exec   = state.manuais['marco_fin_exec'] || 0;
   const res    = state.manuais['marco_fin_res']  || 0;
   const objFin = state.manuais['obj_col_financeiro'] || 0;
   const totFin = exec + res + objFin;
   rows.push([
-    mesRef, 'Financeiro/ADM', 'Marco Antônio',
-    0,        // Volume
-    '—', 0,   // Qtd. Créditos, Com. Créditos
-    '—', 0,   // Qtd. Adicionais, Com. Adicionais
-    '—', 0,   // Qtd. Inseridos, Com. Inseridos
-    '—','—','—', 0,  // Liquidados
-    '—', 0,   // Precatório
-    '—', 0,   // Precatório Adicional
-    0, objFin, 0, 0, 0,  // 18-22: Objetivo, ObjColetivo, camps
-    exec, res,            // 23,24: Prêmio Execução, Resultado
-    0, totFin, totFin     // 25,26,27: Total Comissões, Prêmios, Geral
+    mesRef, 'Financeiro e Cálculos Judiciais', 'Marco Antônio',
+    0,
+    '—', 0, '—', 0, '—', 0,
+    '—','—','—', 0,
+    '—', 0, '—', 0,
+    0, objFin, 0, exec, res,
+    0, totFin, totFin
+  ]);
+
+  // Financeiro — Camila
+  const cExec   = state.manuais['camila_exec'] || 0;
+  const cRes    = state.manuais['camila_res']  || 0;
+  const cTotFin = cExec + cRes + objFin;
+  rows.push([
+    mesRef, 'Financeiro e Cálculos Judiciais', 'Camila',
+    0,
+    '—', 0, '—', 0, '—', 0,
+    '—','—','—', 0,
+    '—', 0, '—', 0,
+    0, objFin, 0, cExec, cRes,
+    0, cTotFin, cTotFin
   ]);
 
   try {
