@@ -637,7 +637,7 @@ function processarPlanilha(data) {
 
     const valor    = parseFloat(row[colP])||0;
     const creditos = parseFloat(row[colI])||0;
-    const adicional = valor>=CFG.ADICIONAL_THRESHOLD ? CFG.ADICIONAL_CREDITOS : 0;
+    const adicional = (valor>=CFG.ADICIONAL_THRESHOLD && creditos > 0) ? CFG.ADICIONAL_CREDITOS : 0;
 
     totalCreditosEmpresa += creditos;
 
@@ -972,6 +972,7 @@ function renderFinanceiro() {
         <span class="person-name">Marco Antônio</span>
         <div class="card-actions">
           <button class="btn-preencher" onclick="event.stopPropagation();abrirModalIndividual('financeiro','marco')">✏️ Preencher</button>
+          <button class="btn-preencher" onclick="event.stopPropagation();exportarCardPNG(this)" title="Exportar como PNG">📷</button>
           <span class="tag financeiro">Financeiro e Cálculos Judiciais</span>
         </div>
       </div>
@@ -1001,6 +1002,7 @@ function renderFinanceiro() {
         <span class="person-name">Camila</span>
         <div class="card-actions">
           <button class="btn-preencher" onclick="event.stopPropagation();abrirModalIndividual('financeiro','camila')">✏️ Preencher</button>
+          <button class="btn-preencher" onclick="event.stopPropagation();exportarCardPNG(this)" title="Exportar como PNG">📷</button>
           <span class="tag financeiro">Financeiro e Cálculos Judiciais</span>
         </div>
       </div>
