@@ -200,40 +200,6 @@ tr:not(.totals-row):hover td{opacity:.85;cursor:pointer}
 
 /* EXPORT */
 .export-row{margin-top:18px;display:flex;gap:10px}
-/* DASHBOARD EXECUTIVO */
-.dash-section{margin-bottom:10px}
-.dash-title{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);margin-bottom:10px}
-.dash-grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
-.dash-grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
-.dash-grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:16px}
-@media(max-width:900px){.dash-grid-4{grid-template-columns:repeat(2,1fr)}.dash-grid-3{grid-template-columns:repeat(2,1fr)}}
-.dash-card{background:var(--bg-solid);border:1px solid var(--bo);border-radius:10px;padding:14px 18px;transition:background .3s}
-.dash-card-label{font-size:11px;color:var(--mu);margin-bottom:4px}
-.dash-card-val{font-size:22px;font-weight:700;color:var(--g);letter-spacing:-.02em}
-.dash-card-sub{font-size:11px;color:var(--mu);margin-top:3px}
-.dash-card-team{border-radius:10px;padding:14px 18px;border:1px solid var(--bo);transition:background .3s}
-.dash-card-team.com{background:rgba(13,74,58,0.05)}
-.dash-card-team.jur{background:rgba(196,154,69,0.06)}
-.dash-card-team.fin{background:rgba(59,89,171,0.05)}
-.dash-team-name{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px}
-.dash-team-name.com{color:var(--g)}
-.dash-team-name.jur{color:var(--gold)}
-.dash-team-name.fin{color:#3b59ab}
-.dash-team-val{font-size:20px;font-weight:700;color:var(--tx);margin-bottom:6px}
-.dash-team-row{display:flex;justify-content:space-between;font-size:11px;color:var(--mu);margin-bottom:2px}
-.dash-bar-wrap{height:6px;background:var(--bo);border-radius:3px;margin-top:8px;overflow:hidden}
-.dash-bar{height:100%;border-radius:3px;transition:width .4s}
-.dash-highlight{display:flex;flex-direction:column;gap:4px}
-.dash-hl-row{display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:5px 0;border-bottom:1px solid var(--bo)}
-.dash-hl-row:last-child{border-bottom:none}
-.dash-hl-lbl{color:var(--mu)}
-.dash-hl-name{font-weight:600;color:var(--tx)}
-.dash-hl-val{font-weight:700;color:var(--g);font-size:13px}
-.dash-dist-bar{display:flex;height:10px;border-radius:5px;overflow:hidden;margin-top:8px}
-.dash-dist-seg{height:100%;transition:width .4s}
-.dash-dist-legend{display:flex;gap:16px;margin-top:8px;flex-wrap:wrap}
-.dash-dist-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0;margin-top:2px}
-.dash-dist-item{display:flex;align-items:flex-start;gap:5px;font-size:11px;color:var(--mu)}
 .btn-export{background:var(--g);color:#fff;border:none;border-radius:7px;padding:10px 22px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:background .15s}
 .btn-export:hover{background:var(--gd)}
 
@@ -396,7 +362,9 @@ tr:not(.totals-row):hover td{opacity:.85;cursor:pointer}
               <th>Nome</th>
               <th>Volume</th>
               <th class="th-com th-com-first">Créditos</th>
-              <th class="th-com th-com-last">Adicionais</th>
+              <th class="th-com">Adicionais</th>
+              <th class="th-com">Créditos Acordos</th>
+              <th class="th-com th-com-last">Créditos Acordos Adic.</th>
               <th class="th-pre th-pre-first">Objetivo</th>
               <th class="th-pre th-pre-last">Obj. Coletivo</th>
               <th>Total</th>
@@ -540,8 +508,7 @@ tr:not(.totals-row):hover td{opacity:.85;cursor:pointer}
 <script>
 // ── NOMES DO JURÍDICO ────────────────────────────────────────────────────
 const JURIDICO_NOMES = [
-  "Nicolli", "Tarciane", "Daniel", "Fernanda", "Fernando",
-  "Eduardo", "Johnathan", "Débora", "Marina", "Raphaelly"
+  "Tarciane", "Daniel", "Fernando", "Eduardo", "Nicolli", "Vitória"
 ];
 
 function semAcento(v) {
@@ -562,7 +529,6 @@ function normalizarNomeJur(nome) {
 // ── CONFIG ────────────────────────────────────────────────────────────────
 const CFG = {
   CREDITO_VAL: 20,
-  JOHNATHAN_VAL: 60,        // R$60 por linha/processo, ignora coluna C
   ADICIONAL_CREDITOS: 2,
   ADICIONAL_THRESHOLD: 20000,
   INSERCAO_VAL: 0.50,
@@ -657,7 +623,7 @@ function processarPlanilha(data) {
       comercial[key].linhas    += 1;
     }
 
-    // Jurídico: agora lê o nome diretamente da coluna JURÍDICO
+    // Jurídico: lê o nome diretamente da coluna JURÍDICO
     if (colD !== -1) {
       const nomeJur = normalizarNomeJur(row[colD]);
       if (nomeJur) {
@@ -666,7 +632,7 @@ function processarPlanilha(data) {
         juridico[key].creditos   += creditos;
         juridico[key].adicionais += adicional;
         juridico[key].volume     += valor;
-        juridico[key].linhas     += 1; // para Johnathan: R$60 por linha
+        juridico[key].linhas     += 1;
       }
     }
   }
@@ -681,7 +647,7 @@ function processarPlanilha(data) {
   JURIDICO_NOMES.forEach(nome => {
     const key = nome.toLowerCase();
     if (!juridico[key]) {
-      juridico[key] = { nome, sigla: null, creditos: 0, adicionais: 0, volume: 0, linhas: 0 };
+      juridico[key] = { nome, creditos: 0, adicionais: 0, volume: 0, linhas: 0 };
     }
   });
 
@@ -706,42 +672,19 @@ function processarPlanilha(data) {
 }
 
 // ── RENDER COMERCIAL / JURIDICO ───────────────────────────────────────────
-function liqQt_hint(val) {
-  const liqQt = getVal('#gc-liq-qt');
-  if (!liqQt) return `<span style="font-size:11px;color:var(--mu);font-style:italic">Preencha os créditos liquidados</span>`;
-  return fmt(val);
-}
-
 function renderAll() {
   renderTime('comercial');
   renderTime('juridico');
 }
 
-// Calcula comissão base de uma pessoa (sem inserções, liquidados, prêmios)
-function faixaMultiplicador(volume) {
-  if (volume <= 100000)  return 5;
-  if (volume <= 250000)  return 10;
-  if (volume <= 400000)  return 15;
-  return 20;
-}
-
-const FAIXA_NOMES = ['fernanda'];
-
 function comissaoBase(tipo, d) {
-  if (tipo === 'juridico' && d.nome === 'Johnathan') {
-    return d.linhas * CFG.JOHNATHAN_VAL;
-  }
-  if (tipo === 'juridico' && FAIXA_NOMES.includes(d.nome.toLowerCase())) {
-    const mult = faixaMultiplicador(d.volume);
-    return (d.creditos + d.adicionais) * mult;
-  }
   return (d.creditos + d.adicionais) * CFG.CREDITO_VAL;
 }
 
 // Comissão liquidados para pessoa do jurídico
 function comissaoLiquidados(key) {
   const d = state.juridico[key];
-  if (!d || d.nome === 'Johnathan') return 0; // Johnathan não participa
+  if (!d) return 0;
   const liqQt = getVal('#gc-liq-qt');
   const liqTotal = liqQt * CFG.LIQ_VAL_UNIT;
   const totalEmpresa = state.totalCreditosEmpresa;
@@ -769,20 +712,15 @@ function renderTime(tipo) {
   nomes.forEach((key,idx)=>{
     const d=data[key];
     const nomeDisp = d.nome;
-    const isJohnathan = tipo==='juridico' && d.nome==='Johnathan';
-    const isFaixa     = tipo==='juridico' && FAIXA_NOMES.includes(d.nome.toLowerCase());
-    const mult        = isFaixa ? faixaMultiplicador(d.volume) : CFG.CREDITO_VAL;
-    const comNormal  = isJohnathan ? 0 : d.creditos * mult;
-    const comAdic    = isJohnathan ? 0 : d.adicionais * mult;
-    const comJohn    = isJohnathan ? d.linhas * CFG.JOHNATHAN_VAL : 0;
+    const comNormal  = d.creditos * CFG.CREDITO_VAL;
+    const comAdic    = d.adicionais * CFG.CREDITO_VAL;
     const comissao   = comissaoBase(tipo, d);
-    const liqVal     = tipo==='juridico' && !isJohnathan ? comissaoLiquidados(key) : 0;
+    const liqVal     = tipo==='juridico' ? comissaoLiquidados(key) : 0;
     const pVol       = premioVolume(d.volume);
     const isNicolli  = d.nome.toLowerCase()==='nicolli';
 
     // Subtítulo de liquidados
     const liqQt      = getVal('#gc-liq-qt');
-    const liqTotal   = liqQt * CFG.LIQ_VAL_UNIT;
     const totalEmp   = state.totalCreditosEmpresa;
     const pct        = totalEmp > 0 ? (d.creditos / totalEmp * 100).toFixed(2) : '0.00';
     const liqSubtitle= liqQt > 0
@@ -795,28 +733,22 @@ function renderTime(tipo) {
     card.style.animationDelay=`${idx*0.04}s`;
 
     // Bloco de comissões
-    let comissoesHTML = '';
-    if (isJohnathan) {
-      comissoesHTML = `
-        <div class="card-group-label">Comissões</div>
-        <div class="row"><span class="lbl">Créditos Comprados<br><span style="font-size:11px;color:var(--mu)">${fmtN(d.linhas)} proc. × R$ 60,00</span></span><span class="val">${fmt(comJohn)}</span></div>
-        <div class="row"><span class="lbl">Processos Inseridos<br><span style="font-size:11px;color:var(--mu)" id="ins-sub-${sid(key)}">0 × R$ 0,50</span></span><span class="val" id="row-ins-val-${sid(key)}">R$ 0,00</span></div>`;
-    } else {
-      const multLabel = `R$ ${mult},00`;
-      const faixaInfo = isFaixa ? ` <span style="font-size:10px;color:var(--gold)">(faixa ativa)</span>` : '';
-      comissoesHTML = `
-        <div class="card-group-label">Comissões</div>
-        <div class="row"><span class="lbl">Créditos Comprados<br><span style="font-size:11px;color:var(--mu)">${fmtN(d.creditos)} × ${multLabel}${faixaInfo}</span></span><span class="val">${fmt(comNormal)}</span></div>
-        <div class="row"><span class="lbl">Créditos Adicionais<br><span style="font-size:11px;color:var(--mu)">${fmtN(d.adicionais)} × ${multLabel}</span></span><span class="val">${fmt(comAdic)}</span></div>
-        ${tipo==='juridico' ? `
-        <div class="row"><span class="lbl">Processos Inseridos<br><span style="font-size:11px;color:var(--mu)" id="ins-sub-${sid(key)}">0 × R$ 0,50</span></span><span class="val" id="row-ins-val-${sid(key)}">R$ 0,00</span></div>
-        <div class="row"><span class="lbl">Processos Liquidados<br><span style="font-size:11px;color:var(--mu)" id="liq-subtitle-${sid(key)}">${liqSubtitle}</span></span><span class="val" id="row-liq-${sid(key)}">${liqQt > 0 ? fmt(liqVal) : '—'}</span></div>
-        ${isNicolli ? `
-        <div class="row"><span class="lbl">Precatório<br><span style="font-size:11px;color:var(--mu)" id="prec-sub-${sid(key)}">0 × R$ 20,00</span></span><span class="val" id="row-prec-val-${sid(key)}">R$ 0,00</span></div>
-        <div class="row"><span class="lbl">Precatório Adicional<br><span style="font-size:11px;color:var(--mu)" id="prec2-sub-${sid(key)}">0 × R$ 20,00</span></span><span class="val" id="row-prec2-val-${sid(key)}">R$ 0,00</span></div>
-        ` : ''}
-        ` : ''}`;
-    }
+    let comissoesHTML = `
+      <div class="card-group-label">Comissões</div>
+      <div class="row"><span class="lbl">Créditos Comprados<br><span style="font-size:11px;color:var(--mu)">${fmtN(d.creditos)} × R$ 20,00</span></span><span class="val">${fmt(comNormal)}</span></div>
+      <div class="row"><span class="lbl">Créditos Comprados Adicionais<br><span style="font-size:11px;color:var(--mu)">${fmtN(d.adicionais)} × R$ 20,00</span></span><span class="val">${fmt(comAdic)}</span></div>
+      ${tipo==='comercial' ? `
+      <div class="row"><span class="lbl">Créditos Acordos<br><span style="font-size:11px;color:var(--mu)" id="acordo-sub-${sid(key)}">0 × R$ 20,00</span></span><span class="val" id="row-acordo-val-${sid(key)}">R$ 0,00</span></div>
+      <div class="row"><span class="lbl">Créditos Acordos Adicionais<br><span style="font-size:11px;color:var(--mu)" id="acordo2-sub-${sid(key)}">0 × R$ 20,00</span></span><span class="val" id="row-acordo2-val-${sid(key)}">R$ 0,00</span></div>
+      ` : ''}
+      ${tipo==='juridico' ? `
+      <div class="row"><span class="lbl">Processos Inseridos<br><span style="font-size:11px;color:var(--mu)" id="ins-sub-${sid(key)}">0 × R$ 0,50</span></span><span class="val" id="row-ins-val-${sid(key)}">R$ 0,00</span></div>
+      <div class="row"><span class="lbl">Processos Liquidados<br><span style="font-size:11px;color:var(--mu)" id="liq-subtitle-${sid(key)}">${liqSubtitle}</span></span><span class="val" id="row-liq-${sid(key)}">${liqQt > 0 ? fmt(liqVal) : '—'}</span></div>
+      ${isNicolli ? `
+      <div class="row"><span class="lbl">Precatório<br><span style="font-size:11px;color:var(--mu)" id="prec-sub-${sid(key)}">0 × R$ 20,00</span></span><span class="val" id="row-prec-val-${sid(key)}">R$ 0,00</span></div>
+      <div class="row"><span class="lbl">Precatório Adicional<br><span style="font-size:11px;color:var(--mu)" id="prec2-sub-${sid(key)}">0 × R$ 20,00</span></span><span class="val" id="row-prec2-val-${sid(key)}">R$ 0,00</span></div>
+      ` : ''}
+      ` : ''}`;
 
     // Bloco de prêmios
     let premiosHTML = `
@@ -827,8 +759,6 @@ function renderTime(tipo) {
         ${(tipo==='juridico' && (d.nome==='Daniel'||d.nome==='Tarciane')) ? `
         <div class="row"><span class="lbl">Prêmio Treinamento</span><span class="val" id="row-trein-val-${sid(key)}">R$ 0,00</span></div>` : ''}
         `;
-
-    if (isNicolli) { /* precatório já está no bloco de comissões */ }
 
     card.innerHTML=`
       <div class="card-top">
@@ -842,13 +772,9 @@ function renderTime(tipo) {
           </div>
         </div>
         <div class="card-stats">
-          ${isJohnathan
-            ? `<div class="stat"><div class="stat-val">${fmtN(d.linhas)}</div><div class="stat-label">Processos</div></div>
-               <div class="stat"><div class="stat-val">${fmt(d.volume).replace('R$\u00a0','').split(',')[0]}</div><div class="stat-label">Volume</div></div>`
-            : `<div class="stat"><div class="stat-val">${fmtN(d.creditos)}</div><div class="stat-label">Créditos</div></div>
-               <div class="stat"><div class="stat-val">${fmtN(d.adicionais)}</div><div class="stat-label">Adicionais</div></div>
-               <div class="stat"><div class="stat-val">${fmt(d.volume).replace('R$\u00a0','').split(',')[0]}</div><div class="stat-label">Volume</div></div>`
-          }
+          <div class="stat"><div class="stat-val">${fmtN(d.creditos)}</div><div class="stat-label">Créditos</div></div>
+          <div class="stat"><div class="stat-val">${fmtN(d.adicionais)}</div><div class="stat-label">Adicionais</div></div>
+          <div class="stat"><div class="stat-val">${fmt(d.volume).replace('R$\u00a0','').split(',')[0]}</div><div class="stat-label">Volume</div></div>
         </div>
       </div>
       <div class="card-body" onclick="abrirModal('${tipo}','${key}')">
@@ -891,8 +817,8 @@ function renderTime(tipo) {
       tr.innerHTML=`
         <td>${nomeDisp}</td>
         <td>${fmt(d.volume)}</td>
-        <td class="td-com-first" id="s-cred-${sid(key)}">${fmt(isJohnathan ? comissao : d.creditos * mult)}</td>
-        <td class="td-com" id="s-adic-${sid(key)}">${isJohnathan ? '—' : fmt(d.adicionais * mult)}</td>
+        <td class="td-com-first" id="s-cred-${sid(key)}">${fmt(d.creditos * CFG.CREDITO_VAL)}</td>
+        <td class="td-com" id="s-adic-${sid(key)}">${fmt(d.adicionais * CFG.CREDITO_VAL)}</td>
         <td class="td-com" id="s-prec-${sid(key)}">${fmt(getManual(key,'prec') * 20)}</td>
         <td class="td-com" id="s-prec2-${sid(key)}">${fmt(getManual(key,'prec2') * 20)}</td>
         <td class="td-com" id="s-ins-${sid(key)}">${fmt(insVal)}</td>
@@ -903,12 +829,18 @@ function renderTime(tipo) {
         <td id="s-tot-${tipo}-${sid(key)}">${fmt(rowTotal)}</td>`;
     } else {
       const objCol   = state.manuais[`obj_col_${tipo}`]||0;
-      const rowTotal = comissao + pVol + objCol;
+      const acordoQt  = getManual(key,'acordo');
+      const acordo2Qt = getManual(key,'acordo2');
+      const acordoVal  = acordoQt * CFG.CREDITO_VAL;
+      const acordo2Val = acordo2Qt * CFG.CREDITO_VAL;
+      const rowTotal = comissao + pVol + objCol + acordoVal + acordo2Val;
       tr.innerHTML=`
         <td>${nomeDisp}</td>
         <td>${fmt(d.volume)}</td>
         <td class="td-com-first">${fmt(d.creditos * CFG.CREDITO_VAL)}</td>
-        <td class="td-com-last">${fmt(d.adicionais * CFG.CREDITO_VAL)}</td>
+        <td class="td-com">${fmt(d.adicionais * CFG.CREDITO_VAL)}</td>
+        <td class="td-com" id="s-acordo-${tipo}-${sid(key)}">${fmt(acordoVal)}</td>
+        <td class="td-com-last" id="s-acordo2-${tipo}-${sid(key)}">${fmt(acordo2Val)}</td>
         <td class="td-pre-first" id="s-pvol-${tipo}-${sid(key)}">${fmt(pVol)}</td>
         <td class="td-pre-last" id="s-objcol-${tipo}-${sid(key)}">${fmt(objCol)}</td>
         <td id="s-tot-${tipo}-${sid(key)}">${fmt(rowTotal)}</td>`;
@@ -916,8 +848,8 @@ function renderTime(tipo) {
     tbodyEl.appendChild(tr);
 
     totCom+=comissao; totLiq+=liqVal; totPvol+=pVol; totTotal+=comissao+liqVal+pVol;
-    totCred += isJohnathan ? comissao : d.creditos * mult;
-    totAdic += isJohnathan ? 0 : d.adicionais * mult;
+    totCred += d.creditos * CFG.CREDITO_VAL;
+    totAdic += d.adicionais * CFG.CREDITO_VAL;
     totIns  += getManual(key,'ins') * CFG.INSERCAO_VAL;
     totVol  += d.volume;
   });
@@ -940,7 +872,9 @@ function renderTime(tipo) {
   } else {
     trT.innerHTML=`<td>Total</td><td>${fmt(totVol)}</td>
       <td class="td-com-first" id="st-cred-${tipo}">${fmt(totCred)}</td>
-      <td class="td-com-last" id="st-adic-${tipo}">${fmt(totAdic)}</td>
+      <td class="td-com" id="st-adic-${tipo}">${fmt(totAdic)}</td>
+      <td class="td-com" id="st-acordo-${tipo}">${fmt(0)}</td>
+      <td class="td-com-last" id="st-acordo2-${tipo}">${fmt(0)}</td>
       <td class="td-pre-first" id="st-pvol-${tipo}">${fmt(totPvol)}</td>
       <td class="td-pre-last" id="st-objcol-${tipo}">${fmt(0)}</td>
       <td id="st-tot-${tipo}">${fmt(totTotal)}</td>`;
@@ -1089,10 +1023,8 @@ function recalcLiquidados() {
   const removed = state.removedJuridico;
   Object.keys(state.juridico).filter(k=>!removed.includes(k)).forEach(key=>{
     const d = state.juridico[key];
-    if (d.nome === 'Johnathan') return;
     const lv = comissaoLiquidados(key);
     const liqQtVal = getVal('#gc-liq-qt');
-    const liqTotalVal = liqQtVal * CFG.LIQ_VAL_UNIT;
     const totalEmp = state.totalCreditosEmpresa;
     const pct = totalEmp > 0 ? (d.creditos / totalEmp * 100).toFixed(2) : '0.00';
     const subtitle = liqQtVal > 0
@@ -1114,22 +1046,25 @@ function recalcLiquidados() {
 function _recalcCardInternal(tipo, key) {
   const d = tipo==='comercial' ? state.comercial[key] : state.juridico[key];
   if (!d) return;
-  const isJohnathan = tipo==='juridico' && d.nome==='Johnathan';
   const comissao = comissaoBase(tipo, d);
   const insQt    = tipo==='juridico' ? getManual(key,'ins') : 0;
   const insVal   = insQt * CFG.INSERCAO_VAL;
-  const liqVal   = (tipo==='juridico' && !isJohnathan) ? comissaoLiquidados(key) : 0;
+  const liqVal   = tipo==='juridico' ? comissaoLiquidados(key) : 0;
   const pVol     = premioVolume(d.volume);
   const objCol   = state.manuais[`obj_col_${tipo}`] || 0;
   const precQt   = getManual(key,'prec');
   const precQt2  = getManual(key,'prec2');
   const precVal  = (precQt + precQt2) * 20;
   const trein    = (tipo==='juridico' && (d.nome==='Daniel'||d.nome==='Tarciane')) ? getManual(key,'trein') : 0;
-  const total    = comissao + insVal + liqVal + pVol + objCol + precVal + trein;
+  const acordoQt  = tipo==='comercial' ? getManual(key,'acordo') : 0;
+  const acordo2Qt = tipo==='comercial' ? getManual(key,'acordo2') : 0;
+  const acordoVal  = acordoQt * CFG.CREDITO_VAL;
+  const acordo2Val = acordo2Qt * CFG.CREDITO_VAL;
+  const total    = comissao + insVal + liqVal + pVol + objCol + precVal + trein + acordoVal + acordo2Val;
 
   const el = id => document.getElementById(id);
   if (el(`total-${tipo}-${sid(key)}`)) el(`total-${tipo}-${sid(key)}`).textContent = fmt(total);
-  if (el(`subtot-com-${tipo}-${sid(key)}`)) el(`subtot-com-${tipo}-${sid(key)}`).textContent = fmt(comissao + insVal + liqVal + precVal);
+  if (el(`subtot-com-${tipo}-${sid(key)}`)) el(`subtot-com-${tipo}-${sid(key)}`).textContent = fmt(comissao + insVal + liqVal + precVal + acordoVal + acordo2Val);
   if (el(`subtot-pre-${tipo}-${sid(key)}`)) el(`subtot-pre-${tipo}-${sid(key)}`).textContent = fmt(pVol + objCol + trein);
   if (el(`row-objcol-val-${sid(key)}`)) el(`row-objcol-val-${sid(key)}`).textContent = fmt(objCol);
   if (el(`s-ins-${sid(key)}`))  el(`s-ins-${sid(key)}`).textContent  = fmtN(insQt);
@@ -1142,6 +1077,10 @@ function _recalcCardInternal(tipo, key) {
   if (el(`row-prec2-val-${sid(key)}`)) el(`row-prec2-val-${sid(key)}`).textContent = fmt(precQt2 * 20);
   if (el(`s-pvol-${tipo}-${sid(key)}`)) el(`s-pvol-${tipo}-${sid(key)}`).textContent = fmt(pVol);
   if (el(`row-trein-val-${sid(key)}`)) el(`row-trein-val-${sid(key)}`).textContent = fmt(trein);
+  if (el(`row-acordo-val-${sid(key)}`))  el(`row-acordo-val-${sid(key)}`).textContent  = fmt(acordoVal);
+  if (el(`acordo-sub-${sid(key)}`))      el(`acordo-sub-${sid(key)}`).textContent      = `${fmtN(acordoQt)} × R$ 20,00`;
+  if (el(`row-acordo2-val-${sid(key)}`)) el(`row-acordo2-val-${sid(key)}`).textContent = fmt(acordo2Val);
+  if (el(`acordo2-sub-${sid(key)}`))     el(`acordo2-sub-${sid(key)}`).textContent     = `${fmtN(acordo2Qt)} × R$ 20,00`;
   if (el(`s-trein-${tipo}-${sid(key)}`)) el(`s-trein-${tipo}-${sid(key)}`).textContent = fmt(trein);
   if (el(`s-tot-${tipo}-${sid(key)}`)) el(`s-tot-${tipo}-${sid(key)}`).textContent = fmt(total);
 }
@@ -1163,7 +1102,6 @@ function confirmarAddPessoa() {
 
   if (!nome) { alert('Informe o nome da pessoa.'); return; }
 
-  // Gerar key única baseada no nome
   const key = nome.toLowerCase().replace(/\s+/g,'_') + '_manual';
 
   if (_addPessoaTipo === 'comercial') {
@@ -1172,12 +1110,10 @@ function confirmarAddPessoa() {
   } else {
     if (state.juridico[key]) { alert('Já existe uma pessoa com esse nome.'); return; }
     state.juridico[key] = { nome, creditos: 0, adicionais: 0, volume: 0, linhas: 0, _manual: true };
-    // Atualizar totalCreditosEmpresa não muda pois créditos = 0
   }
 
   document.getElementById('modalAddBackdrop').classList.remove('open');
 
-  // Renderizar o card novo
   renderTime(_addPessoaTipo);
   recalcTotals(_addPessoaTipo);
 }
@@ -1219,6 +1155,11 @@ function abrirModalIndividual(tipo, key) {
     const isNic  = tipo === 'juridico' && d.nome.toLowerCase() === 'nicolli';
     document.getElementById('modalIndTitle').textContent = d.nome;
 
+    if (tipo === 'comercial') {
+      html += field('Créditos Acordos (qtd.)', 'acordo', m.acordo||0, '× R$ 20,00');
+      html += field('Créditos Acordos Adicionais (qtd.)', 'acordo2', m.acordo2||0, '× R$ 20,00');
+    }
+
     if (tipo === 'juridico') {
       html += field('Processos Inseridos', 'ins', m.ins||0, '× R$ 0,50');
       if (isNic) {
@@ -1252,6 +1193,10 @@ function aplicarModalInd() {
     const isNic = tipo === 'juridico' && d.nome.toLowerCase() === 'nicolli';
     if (!state.manuais[key]) state.manuais[key] = {};
     const m = state.manuais[key];
+    if (tipo === 'comercial') {
+      m.acordo  = get('acordo');
+      m.acordo2 = get('acordo2');
+    }
     if (tipo === 'juridico') {
       m.ins = get('ins');
       if (isNic) { m.prec = get('prec'); m.prec2 = get('prec2'); }
@@ -1282,7 +1227,7 @@ function abrirModalManuais() {
   const body = document.getElementById('mmBody');
   body.innerHTML = '';
 
-  // Jurídico — inseridos, liquidados, precatório (Nicolli), campanha
+  // Jurídico — inseridos, liquidados, precatório (Nicolli), treinamento (Daniel/Tarciane)
   const jurRem = state.removedJuridico;
   const jurNomes = Object.keys(state.juridico)
     .filter(k => !jurRem.includes(k))
@@ -1301,7 +1246,6 @@ function abrirModalManuais() {
     </div>`;
     jurNomes.forEach(key => {
       const d = state.juridico[key];
-      const isJohn = d.nome === 'Johnathan';
       const isNic  = d.nome.toLowerCase() === 'nicolli';
       const m = state.manuais[key] || {};
       const nomeDisp = d.nome;
@@ -1316,8 +1260,6 @@ function abrirModalManuais() {
             <span class="mm-input-hint">× R$ 0,50</span>
           </div>
         </div>
-        ${!isJohn ? `
-        ` : ''}
         ${isNic ? `
         <div class="mm-field">
           <label>Precatório (qtd.)</label>
@@ -1346,7 +1288,7 @@ function abrirModalManuais() {
     body.appendChild(sec);
   }
 
-  // Comercial — apenas campanha
+  // Comercial
   const comRem = state.removedComercial;
   const comNomes = Object.keys(state.comercial)
     .filter(k => !comRem.includes(k))
@@ -1369,7 +1311,21 @@ function abrirModalManuais() {
       const p = document.createElement('div');
       p.className = 'mm-person';
       p.innerHTML = `
-        <div class="mm-person-name">${d.nome}</div>`;
+        <div class="mm-person-name">${d.nome}</div>
+        <div class="mm-field">
+          <label>Créditos Acordos (qtd.)</label>
+          <div class="mm-field-right">
+            <input type="number" min="0" step="1" class="mm-input" id="mm-acordo-${sid(key)}" value="${m.acordo||0}" placeholder="0">
+            <span class="mm-input-hint">× R$ 20,00</span>
+          </div>
+        </div>
+        <div class="mm-field">
+          <label>Créditos Acordos Adicionais (qtd.)</label>
+          <div class="mm-field-right">
+            <input type="number" min="0" step="1" class="mm-input" id="mm-acordo2-${sid(key)}" value="${m.acordo2||0}" placeholder="0">
+            <span class="mm-input-hint">× R$ 20,00</span>
+          </div>
+        </div>`;
       sec.appendChild(p);
     });
     body.appendChild(sec);
@@ -1442,6 +1398,8 @@ function aplicarManuais() {
   const comRem = state.removedComercial;
   Object.keys(state.comercial).filter(k=>!comRem.includes(k)).forEach(key => {
     if (!state.manuais[key]) state.manuais[key] = {};
+    state.manuais[key].acordo  = parseFloat(document.getElementById(`mm-acordo-${sid(key)}`)?.value)  || 0;
+    state.manuais[key].acordo2 = parseFloat(document.getElementById(`mm-acordo2-${sid(key)}`)?.value) || 0;
     _recalcCardInternal('comercial', key);
   });
   recalcTotals('comercial');
@@ -1475,28 +1433,29 @@ function recalcTotals(tipo) {
   const nomes   = Object.keys(data).filter(k=>!removed.includes(k));
   const objCol  = state.manuais[`obj_col_${tipo}`] || 0;
 
-  let tCred=0, tAdic=0, tPrec=0, tPrec2=0, tIns=0, tLiq=0, tPv=0, tOc=0, tTrein=0, tT=0;
+  let tCred=0, tAdic=0, tPrec=0, tPrec2=0, tIns=0, tLiq=0, tPv=0, tOc=0, tTrein=0, tAcordo=0, tAcordo2=0, tT=0;
 
   nomes.forEach(key=>{
     const d    = data[key];
-    const isJ  = tipo==='juridico' && d.nome==='Johnathan';
-    const isFx = tipo==='juridico' && FAIXA_NOMES.includes(d.nome.toLowerCase());
-    const mult = isFx ? faixaMultiplicador(d.volume) : CFG.CREDITO_VAL;
 
-    const credVal = isJ ? comissaoBase(tipo,d) : d.creditos * mult;
-    const adicVal = isJ ? 0 : d.adicionais * mult;
-    const insQt   = (tipo==='juridico' && !isJ) ? getManual(key,'ins') : 0;
+    const credVal = d.creditos * CFG.CREDITO_VAL;
+    const adicVal = d.adicionais * CFG.CREDITO_VAL;
+    const insQt   = tipo==='juridico' ? getManual(key,'ins') : 0;
     const insVal  = insQt * CFG.INSERCAO_VAL;
     const liq     = tipo==='juridico' ? comissaoLiquidados(key) : 0;
     const pv      = premioVolume(d.volume);
     const pr      = (getManual(key,'prec') + getManual(key,'prec2')) * 20;
     const trein   = (tipo==='juridico' && (d.nome==='Daniel'||d.nome==='Tarciane')) ? getManual(key,'trein') : 0;
-    const tot     = credVal + adicVal + insVal + liq + pv + objCol + pr + trein;
+    const acordoQt  = tipo==='comercial' ? getManual(key,'acordo') : 0;
+    const acordo2Qt = tipo==='comercial' ? getManual(key,'acordo2') : 0;
+    const acordoVal  = acordoQt * CFG.CREDITO_VAL;
+    const acordo2Val = acordo2Qt * CFG.CREDITO_VAL;
+    const tot     = credVal + adicVal + insVal + liq + pv + objCol + pr + trein + acordoVal + acordo2Val;
 
     const precV  = getManual(key,'prec') * 20;
     const precV2 = getManual(key,'prec2') * 20;
     tCred+=credVal; tAdic+=adicVal; tPrec+=precV; tPrec2+=precV2; tIns+=insVal; tLiq+=liq;
-    tPv+=pv; tOc+=objCol; tTrein=(tTrein||0)+trein; tT+=tot;
+    tPv+=pv; tOc+=objCol; tTrein=(tTrein||0)+trein; tAcordo+=acordoVal; tAcordo2+=acordo2Val; tT+=tot;
 
     // Atualiza células da linha individual na tabela
     const e2 = id => document.getElementById(id);
@@ -1507,6 +1466,8 @@ function recalcTotals(tipo) {
     if (e2(`s-pvol-${tipo}-${sid(key)}`))     e2(`s-pvol-${tipo}-${sid(key)}`).textContent     = fmt(pv);
     if (e2(`s-objcol-${tipo}-${sid(key)}`))   e2(`s-objcol-${tipo}-${sid(key)}`).textContent   = fmt(objCol);
     if (e2(`s-trein-${tipo}-${sid(key)}`)) e2(`s-trein-${tipo}-${sid(key)}`).textContent = fmt(trein);
+    if (e2(`s-acordo-${tipo}-${sid(key)}`))  e2(`s-acordo-${tipo}-${sid(key)}`).textContent  = fmt(acordoVal);
+    if (e2(`s-acordo2-${tipo}-${sid(key)}`)) e2(`s-acordo2-${tipo}-${sid(key)}`).textContent = fmt(acordo2Val);
     if (e2(`s-tot-${tipo}-${sid(key)}`))      e2(`s-tot-${tipo}-${sid(key)}`).textContent      = fmt(tot);
   });
 
@@ -1528,10 +1489,9 @@ function recalcTotals(tipo) {
 function abrirModal(tipo, key) {
   const d=tipo==='comercial'?state.comercial[key]:state.juridico[key];
   if (!d) return;
-  const isJohnathan = tipo==='juridico' && d.nome==='Johnathan';
   const nomeDisp = d.nome;
   const comissao = comissaoBase(tipo, d);
-  const insQt = (tipo==='juridico' && !isJohnathan) ? getManual(key,'ins') : 0;
+  const insQt = tipo==='juridico' ? getManual(key,'ins') : 0;
   const insVal = insQt * CFG.INSERCAO_VAL;
   const liqVal = tipo==='juridico' ? comissaoLiquidados(key) : 0;
   const pVol=premioVolume(d.volume);
@@ -1540,48 +1500,26 @@ function abrirModal(tipo, key) {
   const precQt2=getManual(key,'prec2');
   const precVal=(precQt+precQt2)*20;
   const treinModal = (tipo==='juridico' && (d.nome==='Daniel'||d.nome==='Tarciane')) ? getManual(key,'trein') : 0;
-  const total=comissao+insVal+liqVal+pVol+objCol+precVal+treinModal;
+  const acordoQtModal  = tipo==='comercial' ? getManual(key,'acordo')  : 0;
+  const acordo2QtModal = tipo==='comercial' ? getManual(key,'acordo2') : 0;
+  const acordoValModal  = acordoQtModal  * CFG.CREDITO_VAL;
+  const acordo2ValModal = acordo2QtModal * CFG.CREDITO_VAL;
+  const total=comissao+insVal+liqVal+pVol+objCol+precVal+treinModal+acordoValModal+acordo2ValModal;
 
   document.getElementById('modal-name').textContent=nomeDisp;
   document.getElementById('modal-tag').innerHTML=`<span class="tag ${tipo}">${tipo==='comercial'?'Comercial':'Jurídico'}</span>`;
 
   let html='';
 
-  if (isJohnathan) {
-    html+=`
+  html+=`
     <div class="modal-section">
-      <div class="modal-section-title">Comissão por processo</div>
+      <div class="modal-section-title">Comissões</div>
       <div class="breakdown-row">
-        <span class="blbl">Processos (linhas) com CONTRATO = PAGO</span>
-        <span class="bval">${fmtN(d.linhas)}</span>
-      </div>
-      <div class="breakdown-row">
-        <span class="blbl">Valor por processo</span>
-        <span class="bval">R$ 60,00</span>
-      </div>
-      <div class="breakdown-row">
-        <span class="blbl">Comissão total<br><span style="font-size:11px;color:var(--mu)">${fmtN(d.linhas)} × R$ 60,00</span></span>
-        <span class="bval green">${fmt(comissao)}</span>
-      </div>
-    </div>`;
-  } else {
-    const isFaixaModal = tipo==='juridico' && FAIXA_NOMES.includes(d.nome.toLowerCase());
-    const multModal = isFaixaModal ? faixaMultiplicador(d.volume) : CFG.CREDITO_VAL;
-    const faixaDetalhe = isFaixaModal ? `
-      <div class="breakdown-row">
-        <span class="blbl">Faixa de volume<br><span style="font-size:11px;color:var(--mu)">0–100k: R$5 · 100–250k: R$10 · 250–400k: R$15 · +400k: R$20</span></span>
-        <span class="bval">R$ ${multModal},00/crédito</span>
-      </div>` : '';
-    html+=`
-    <div class="modal-section">
-      <div class="modal-section-title">Créditos comprados</div>
-      ${faixaDetalhe}
-      <div class="breakdown-row">
-        <span class="blbl">Créditos normais</span>
+        <span class="blbl">Créditos Comprados</span>
         <span class="bval">${fmtN(d.creditos)} créditos</span>
       </div>
       <div class="breakdown-row">
-        <span class="blbl">Créditos adicionais<br><span style="font-size:11px;color:var(--mu)">(compras ≥ R$ 20.000 → +2 créditos cada)</span></span>
+        <span class="blbl">Créditos Comprados Adicionais<br><span style="font-size:11px;color:var(--mu)">(compras ≥ R$ 20.000 → +2 créditos cada)</span></span>
         <span class="bval">${fmtN(d.adicionais)} créditos</span>
       </div>
       <div class="breakdown-row">
@@ -1589,13 +1527,21 @@ function abrirModal(tipo, key) {
         <span class="bval">${fmtN(d.creditos+d.adicionais)} créditos</span>
       </div>
       <div class="breakdown-row">
-        <span class="blbl">Comissão créditos<br><span style="font-size:11px;color:var(--mu)">${fmtN(d.creditos+d.adicionais)} × R$ ${multModal},00</span></span>
+        <span class="blbl">Comissão créditos<br><span style="font-size:11px;color:var(--mu)">${fmtN(d.creditos+d.adicionais)} × R$ 20,00</span></span>
         <span class="bval green">${fmt(comissao)}</span>
       </div>
+      ${tipo==='comercial' ? `
+      <div class="breakdown-row">
+        <span class="blbl">Créditos Acordos<br><span style="font-size:11px;color:var(--mu)">${fmtN(acordoQtModal)} × R$ 20,00</span></span>
+        <span class="bval green">${fmt(acordoValModal)}</span>
+      </div>
+      <div class="breakdown-row">
+        <span class="blbl">Créditos Acordos Adicionais<br><span style="font-size:11px;color:var(--mu)">${fmtN(acordo2QtModal)} × R$ 20,00</span></span>
+        <span class="bval green">${fmt(acordo2ValModal)}</span>
+      </div>` : ''}
     </div>`;
-  }
 
-  if (tipo==='juridico' && !isJohnathan) {
+  if (tipo==='juridico') {
     const totalEmpresa = state.totalCreditosEmpresa;
     const pct = totalEmpresa > 0 ? (d.creditos / totalEmpresa * 100).toFixed(2) : '0.00';
     const liqQt = getVal('#gc-liq-qt');
@@ -1615,7 +1561,7 @@ function abrirModal(tipo, key) {
     <div class="modal-section">
       <div class="modal-section-title">Comissão Processos Liquidados</div>
       <div class="breakdown-row">
-        <span class="blbl">Créditos normais da pessoa</span>
+        <span class="blbl">Créditos Comprados da pessoa</span>
         <span class="bval">${fmtN(d.creditos)}</span>
       </div>
       <div class="breakdown-row">
@@ -1715,14 +1661,12 @@ function switchTab(tab) {
   document.querySelector(`.tab[onclick*="${tab}"]`).classList.add('active');
 }
 
-// ── EXPORT ────────────────────────────────────────────────────────────────
 // ── THEME ─────────────────────────────────────────────────────────────────
 function toggleTheme() {
   const html=document.documentElement;
   const dark=html.getAttribute('data-theme')==='dark';
   html.setAttribute('data-theme', dark?'light':'dark');
   document.getElementById('btnTheme').textContent=dark?'🌙':'☀️';
-  // Atualiza cor das letras do logo
   const color=dark?'#0D4A3A':'#3a9c74';
   document.querySelectorAll('.logo-letter').forEach(el=>el.setAttribute('fill',color));
 }
@@ -1732,7 +1676,6 @@ function exportarCardPNG(btn) {
   const card = btn.closest('.person-card');
   if (!card) return;
 
-  // Esconder botões de ação temporariamente
   const actions = card.querySelector('.card-actions');
   const hint    = card.querySelector('.hint');
   if (actions) actions.style.visibility = 'hidden';
@@ -1779,7 +1722,6 @@ function salvarSessao() {
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
 
-  // Nome do arquivo: sessao_pbl_abril_2026_2026-05-05_18-30.json
   const mes  = sessao.mesRef.replace(/\s/g,'_').replace(/[^a-zA-Z0-9_]/g,'');
   const stamp = agora.toISOString().slice(0,16).replace('T','_').replace(':','-');
   a.href     = url;
@@ -1796,7 +1738,6 @@ function carregarSessao(event) {
     try {
       const sessao = JSON.parse(e.target.result);
 
-      // Restaurar state
       state.comercial              = sessao.comercial || {};
       state.juridico               = sessao.juridico  || {};
       state.manuais                = sessao.manuais   || {};
@@ -1804,10 +1745,8 @@ function carregarSessao(event) {
       state.removedJuridico        = sessao.removedJuridico  || [];
       state.totalCreditosEmpresa   = sessao.totalCreditosEmpresa || 0;
 
-      // Restaurar mês de referência
       if (sessao.mesRef) document.getElementById('mes-ref').textContent = sessao.mesRef;
 
-      // Restaurar cards globais
       const totCredNorm = Object.values(state.comercial).reduce((s,d)=>s+d.creditos,0);
       const totAdic     = Object.values(state.comercial).reduce((s,d)=>s+d.adicionais,0);
       const totVol      = Object.values(state.comercial).reduce((s,d)=>s+d.volume,0);
@@ -1815,13 +1754,11 @@ function carregarSessao(event) {
       document.getElementById('gc-adicionais').textContent = fmtN(totAdic);
       document.getElementById('gc-volume').textContent     = fmt(totVol);
 
-      // Restaurar liquidados
       if (sessao.liquidadosQt) {
         const liqInput = document.getElementById('gc-liq-qt');
         if (liqInput) { liqInput.value = sessao.liquidadosQt; recalcLiquidados(); }
       }
 
-      // Renderizar tudo
       renderAll();
       renderFinanceiro();
       document.getElementById('appContent').style.display = 'block';
@@ -1830,14 +1767,12 @@ function carregarSessao(event) {
       document.getElementById('btnPdf').style.display     = 'block';
       document.getElementById('btnSalvarSessao').style.display = 'block';
 
-      // Aplicar manuais salvos nos cards
       Object.keys(state.juridico).forEach(key => _recalcCardInternal('juridico', key));
       Object.keys(state.comercial).forEach(key => _recalcCardInternal('comercial', key));
       recalcFinanceiro();
       recalcTotals('juridico');
       recalcTotals('comercial');
 
-      // Upload zone feedback
       document.getElementById('uploadZone').classList.add('loaded');
       const dataInfo = sessao.salvoEmFormatado ? ` (salva em ${sessao.salvoEmFormatado})` : '';
       document.getElementById('uploadZone').querySelector('h3').textContent = `Sessão carregada: ${sessao.mesRef}${dataInfo}`;
@@ -1848,7 +1783,7 @@ function carregarSessao(event) {
     }
   };
   reader.readAsText(file);
-  event.target.value = ''; // reset para permitir recarregar o mesmo arquivo
+  event.target.value = '';
 }
 function exportarPDF() {
   const mesRef = document.getElementById('mes-ref').textContent || '—';
@@ -1899,13 +1834,9 @@ function exportarPDF() {
   <h1>Comissionamento PBL</h1>
   <div class="subtitle">Competência: ${mesRef} · Gerado em ${new Date().toLocaleDateString('pt-BR')}</div>`;
 
-  // Função auxiliar para gerar bloco de pessoa
   function pessoaHTML(tipo, key) {
     const d = tipo === 'financeiro' ? null : (tipo === 'comercial' ? state.comercial[key] : state.juridico[key]);
-    const isJ   = tipo === 'juridico' && d?.nome === 'Johnathan';
     const isNic = tipo === 'juridico' && d?.nome?.toLowerCase() === 'nicolli';
-    const isFx  = tipo === 'juridico' && d && FAIXA_NOMES.includes(d.nome.toLowerCase());
-    const mult  = isFx ? faixaMultiplicador(d.volume) : CFG.CREDITO_VAL;
     const tagClass = tipo === 'comercial' ? 'tag-com' : tipo === 'juridico' ? 'tag-jur' : 'tag-fin';
     const tagLabel = tipo === 'comercial' ? 'Comercial' : tipo === 'juridico' ? 'Jurídico' : 'Financeiro e Cálculos Judiciais';
 
@@ -1934,37 +1865,38 @@ function exportarPDF() {
       </div>`;
     }
 
-    const credVal = isJ ? comissaoBase(tipo,d) : d.creditos * mult;
-    const adicVal = isJ ? 0 : d.adicionais * mult;
+    const credVal = d.creditos * CFG.CREDITO_VAL;
+    const adicVal = d.adicionais * CFG.CREDITO_VAL;
     const insQt   = tipo==='juridico' ? getManual(key,'ins') : 0;
     const insVal  = insQt * CFG.INSERCAO_VAL;
     const liqQtG  = getVal('#gc-liq-qt');
-    const liqTot  = liqQtG * CFG.LIQ_VAL_UNIT;
     const totalEmp= state.totalCreditosEmpresa;
     const pct     = totalEmp>0 ? (d.creditos/totalEmp*100).toFixed(2) : '0.00';
-    const liqVal  = tipo==='juridico' && !isJ ? comissaoLiquidados(key) : 0;
+    const liqVal  = tipo==='juridico' ? comissaoLiquidados(key) : 0;
     const precQt  = isNic ? getManual(key,'prec') : 0;
     const precQt2 = isNic ? getManual(key,'prec2') : 0;
     const precVal = (precQt+precQt2)*20;
     const pVol    = premioVolume(d.volume);
     const objCol  = state.manuais[`obj_col_${tipo}`]||0;
+    const acordoQt  = tipo==='comercial' ? getManual(key,'acordo') : 0;
+    const acordo2Qt = tipo==='comercial' ? getManual(key,'acordo2') : 0;
+    const acordoVal  = acordoQt * CFG.CREDITO_VAL;
+    const acordo2Val = acordo2Qt * CFG.CREDITO_VAL;
     const treinPDF = (tipo==='juridico' && (d.nome==='Daniel'||d.nome==='Tarciane')) ? getManual(key,'trein') : 0;
-    const totCom  = credVal+adicVal+insVal+liqVal+precVal;
+    const totCom  = credVal+adicVal+insVal+liqVal+precVal+acordoVal+acordo2Val;
     const totPre  = pVol+objCol+treinPDF;
     const totGeral= totCom+totPre;
     const nomeDisp = d.nome;
 
-    const statsHTML = isJ
-      ? `<div class="stat"><div class="stat-val">${fmtN(d.linhas)}</div><div class="stat-lbl">Processos</div></div>
-         <div class="stat"><div class="stat-val">${fmt(d.volume)}</div><div class="stat-lbl">Volume</div></div>`
-      : `<div class="stat"><div class="stat-val">${fmtN(d.creditos)}</div><div class="stat-lbl">Créditos</div></div>
+    const statsHTML = `<div class="stat"><div class="stat-val">${fmtN(d.creditos)}</div><div class="stat-lbl">Créditos</div></div>
          <div class="stat"><div class="stat-val">${fmtN(d.adicionais)}</div><div class="stat-lbl">Adicionais</div></div>
          <div class="stat"><div class="stat-val">${fmt(d.volume)}</div><div class="stat-lbl">Volume</div></div>`;
 
-    const comHTML = isJ
-      ? `<div class="row"><span class="lbl">Créditos Comprados<span class="sub">${fmtN(d.linhas)} proc. × R$ 60,00</span></span><span class="val">${fmt(credVal)}</span></div>`
-      : `<div class="row"><span class="lbl">Créditos Comprados<span class="sub">${fmtN(d.creditos)} × R$ ${mult},00</span></span><span class="val">${fmt(credVal)}</span></div>
-         <div class="row"><span class="lbl">Créditos Adicionais<span class="sub">${fmtN(d.adicionais)} × R$ ${mult},00</span></span><span class="val">${fmt(adicVal)}</span></div>`;
+    const comHTML = `<div class="row"><span class="lbl">Créditos Comprados<span class="sub">${fmtN(d.creditos)} × R$ 20,00</span></span><span class="val">${fmt(credVal)}</span></div>
+         <div class="row"><span class="lbl">Créditos Comprados Adicionais<span class="sub">${fmtN(d.adicionais)} × R$ 20,00</span></span><span class="val">${fmt(adicVal)}</span></div>
+         ${tipo==='comercial' ? `
+         <div class="row"><span class="lbl">Créditos Acordos<span class="sub">${fmtN(acordoQt)} × R$ 20,00</span></span><span class="val">${fmt(acordoVal)}</span></div>
+         <div class="row"><span class="lbl">Créditos Acordos Adicionais<span class="sub">${fmtN(acordo2Qt)} × R$ 20,00</span></span><span class="val">${fmt(acordo2Val)}</span></div>` : ''}`;
 
     const jurExtra = tipo==='juridico' ? `
       <div class="row"><span class="lbl">Proc. Inseridos<span class="sub">${fmtN(insQt)} × R$ 0,50</span></span><span class="val">${fmt(insVal)}</span></div>
@@ -1995,7 +1927,6 @@ function exportarPDF() {
     </div>`;
   }
 
-  // Comercial
   const comRem = state.removedComercial;
   const comNomes = Object.keys(state.comercial).filter(k=>!comRem.includes(k)).sort((a,b)=>state.comercial[b].volume-state.comercial[a].volume);
   if (comNomes.length) {
@@ -2003,7 +1934,6 @@ function exportarPDF() {
     comNomes.forEach(k => html += pessoaHTML('comercial', k));
   }
 
-  // Jurídico
   const jurRem = state.removedJuridico;
   const jurNomes = Object.keys(state.juridico).filter(k=>!jurRem.includes(k)).sort((a,b)=>state.juridico[b].volume-state.juridico[a].volume);
   if (jurNomes.length) {
@@ -2011,7 +1941,6 @@ function exportarPDF() {
     jurNomes.forEach(k => html += pessoaHTML('juridico', k));
   }
 
-  // Financeiro
   html += '<div class="team-title new-page">Financeiro e Cálculos Judiciais</div>';
   html += pessoaHTML('financeiro', 'marco');
   html += pessoaHTML('financeiro', 'camila');
@@ -2034,30 +1963,23 @@ async function registrarMes() {
   btn.disabled = true;
   btn.textContent = 'Registrando...';
 
-  // Dados globais de liquidados
   const liqQt    = getVal('#gc-liq-qt');
   const liqTotal = liqQt * CFG.LIQ_VAL_UNIT;
   const totalEmp = state.totalCreditosEmpresa;
 
   const headers = [
     'Competência','Time','Nome',
-    // Volume
     'Volume (R$)',
-    // Créditos comprados
     'Qtd. Créditos','Com. Créditos (R$)',
     'Qtd. Adicionais','Com. Adicionais (R$)',
-    // Inseridos
+    'Qtd. Créditos Acordos','Com. Créditos Acordos (R$)',
+    'Qtd. Créditos Acordos Adicionais','Com. Créditos Acordos Adicionais (R$)',
     'Qtd. Inseridos','Com. Inseridos (R$)',
-    // Liquidados
     '% Liquidados','Qtd. Liq. Global','Valor Total Liq. (R$)','Com. Liquidados (R$)',
-    // Precatório (Nicolli)
     'Qtd. Precatório','Com. Precatório (R$)',
     'Qtd. Precatório Adicional','Com. Precatório Adicional (R$)',
-    // Prêmios
     'Prêmio Objetivo (R$)','Prêmio Obj. Coletivo (R$)','Prêmio Treinamento (R$)',
-    // Prêmios exclusivos Marco
     'Prêmio Execução (R$)','Prêmio Resultado (R$)',
-    // Total
     'Total Comissões (R$)','Total Prêmios (R$)','Total Geral (R$)'
   ];
 
@@ -2071,23 +1993,29 @@ async function registrarMes() {
       const d       = state.comercial[key];
       const credVal = d.creditos * CFG.CREDITO_VAL;
       const adicVal = d.adicionais * CFG.CREDITO_VAL;
+      const acordoQt  = getManual(key, 'acordo');
+      const acordo2Qt = getManual(key, 'acordo2');
+      const acordoVal  = acordoQt * CFG.CREDITO_VAL;
+      const acordo2Val = acordo2Qt * CFG.CREDITO_VAL;
       const pVol    = premioVolume(d.volume);
       const objCol  = state.manuais['obj_col_comercial']||0;
-      const totCom  = credVal + adicVal;
+      const totCom  = credVal + adicVal + acordoVal + acordo2Val;
       const totPre  = pVol + objCol;
       rows.push([
-        mesRef, 'Comercial', d.nome,      // 0,1,2
-        d.volume,                          // 3
-        d.creditos, credVal,               // 4,5
-        d.adicionais, adicVal,             // 6,7
-        '—', 0,                            // 8,9 inseridos
-        '—', '—', '—', 0,                  // 10,11,12,13 liquidados
-        '—', 0,                            // 14,15 precatório
-        '—', 0,                            // 16,17 precatório adicional
-        pVol, state.manuais['obj_col_comercial']||0, // 18,19 objetivo, obj coletivo
-        0,                                           // 20 treinamento (não se aplica)
-        0, 0,                              // 23,24 prêmio execução, resultado (só Marco)
-        totCom, totPre, totCom + totPre    // 25,26,27
+        mesRef, 'Comercial', d.nome,
+        d.volume,
+        d.creditos, credVal,
+        d.adicionais, adicVal,
+        acordoQt, acordoVal,
+        acordo2Qt, acordo2Val,
+        '—', 0,
+        '—', '—', '—', 0,
+        '—', 0,
+        '—', 0,
+        pVol, state.manuais['obj_col_comercial']||0,
+        0,
+        0, 0,
+        totCom, totPre, totCom + totPre
       ]);
     });
 
@@ -2097,12 +2025,9 @@ async function registrarMes() {
     .sort((a,b)=>state.juridico[b].volume-state.juridico[a].volume)
     .forEach(key=>{
       const d        = state.juridico[key];
-      const isJ      = d.nome === 'Johnathan';
       const isNic    = d.nome.toLowerCase() === 'nicolli';
-      const isFx     = FAIXA_NOMES.includes(d.nome.toLowerCase());
-      const mult     = isFx ? faixaMultiplicador(d.volume) : CFG.CREDITO_VAL;
-      const credVal  = isJ ? comissaoBase('juridico', d) : d.creditos * mult;
-      const adicVal  = isJ ? 0 : d.adicionais * mult;
+      const credVal  = d.creditos * CFG.CREDITO_VAL;
+      const adicVal  = d.adicionais * CFG.CREDITO_VAL;
       const insQt    = getManual(key, 'ins');
       const insVal   = insQt * CFG.INSERCAO_VAL;
       const pct      = totalEmp > 0 ? (d.creditos / totalEmp * 100).toFixed(2) + '%' : '0%';
@@ -2122,8 +2047,10 @@ async function registrarMes() {
       rows.push([
         mesRef, 'Jurídico', nomeDisp,
         d.volume,
-        isJ ? d.linhas : d.creditos, credVal,
-        isJ ? '—' : d.adicionais, adicVal,
+        d.creditos, credVal,
+        d.adicionais, adicVal,
+        '—', 0,
+        '—', 0,
         insQt, insVal,
         pct, liqQt, liqTotal, liqVal,
         isNic ? precQt  : '—', isNic ? precVal1 : 0,
@@ -2143,7 +2070,9 @@ async function registrarMes() {
   rows.push([
     mesRef, 'Financeiro e Cálculos Judiciais', 'Marco Antônio',
     0,
-    '—', 0, '—', 0, '—', 0,
+    '—', 0, '—', 0,
+    '—', 0, '—', 0,
+    '—', 0,
     '—','—','—', 0,
     '—', 0, '—', 0,
     0, objFin, 0, exec, res,
@@ -2157,7 +2086,9 @@ async function registrarMes() {
   rows.push([
     mesRef, 'Financeiro e Cálculos Judiciais', 'Camila',
     0,
-    '—', 0, '—', 0, '—', 0,
+    '—', 0, '—', 0,
+    '—', 0, '—', 0,
+    '—', 0,
     '—','—','—', 0,
     '—', 0, '—', 0,
     0, objFin, 0, cExec, cRes,
