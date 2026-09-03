@@ -20,6 +20,7 @@
   --tag-c-bg: #dff0e9; --tag-c-tx: #0D4A3A;
   --tag-j-bg: #fdf3e0; --tag-j-tx: #9c7a34;
   --tag-f-bg: #e8eaf6; --tag-f-tx: #3949ab;
+  --tag-k-bg: #fbe4e8; --tag-k-tx: #a13a52;
   --overlay: rgba(0,0,0,0.35);
   --header-border: #C49A45;
   --gold-tint: rgba(196,154,69,0.07);
@@ -37,6 +38,7 @@
   --tag-c-bg: #1a3028; --tag-c-tx: #3a9c74;
   --tag-j-bg: #2a2010; --tag-j-tx: #d4a84e;
   --tag-f-bg: #1a1c30; --tag-f-tx: #7986cb;
+  --tag-k-bg: #301a20; --tag-k-tx: #d47d92;
   --overlay: rgba(0,0,0,0.6);
   --header-border: #2a4a40;
   --gold-tint: rgba(212,168,78,0.05);
@@ -131,6 +133,7 @@ body{background:var(--bg);background-color:var(--bg-solid);color:var(--tx);font-
 .tag.comercial{background:var(--tag-c-bg);color:var(--tag-c-tx)}
 .tag.juridico{background:var(--tag-j-bg);color:var(--tag-j-tx)}
 .tag.financeiro{background:var(--tag-f-bg);color:var(--tag-f-tx)}
+.tag.contencioso{background:var(--tag-k-bg);color:var(--tag-k-tx)}
 .btn-remove{background:none;border:1px solid var(--bo);border-radius:5px;padding:3px 8px;font-size:11px;color:var(--mu);cursor:pointer;transition:all .15s;font-family:inherit}
 .btn-remove:hover{border-color:var(--danger);color:var(--danger);background:var(--danger-bg)}
 .btn-preencher{background:none;border:1px solid var(--bo);border-radius:5px;color:var(--mu);cursor:pointer;font-size:11px;font-family:inherit;font-weight:500;padding:3px 8px;transition:all .15s}
@@ -341,6 +344,7 @@ tr:not(.totals-row):hover td{opacity:.85;cursor:pointer}
         <button class="tab active" onclick="switchTab('comercial')">Comercial</button>
         <button class="tab" onclick="switchTab('juridico')">Jurídico</button>
         <button class="tab" onclick="switchTab('financeiro')">Financeiro e Cálculos Judiciais</button>
+        <button class="tab" onclick="switchTab('contencioso')">Contencioso</button>
       </div>
     </div>
 
@@ -428,6 +432,27 @@ tr:not(.totals-row):hover td{opacity:.85;cursor:pointer}
               <th>Total</th>
             </tr></thead>
             <tbody id="tbody-financeiro"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- CONTENCIOSO -->
+    <div id="tab-contencioso" style="display:none">
+      <div class="people-grid" id="cards-contencioso"></div>
+      <div class="summary-section">
+        <div class="summary-label">Resumo Contencioso</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>Nome</th>
+              <th class="th-pre th-pre-first">Prêmio Execução</th>
+              <th class="th-pre">Prêmio Resultado</th>
+              <th class="th-pre th-pre-last">Obj. Coletivo</th>
+              <th>Total</th>
+            </tr></thead>
+            <tbody id="tbody-contencioso"></tbody>
           </table>
         </div>
       </div>
@@ -665,6 +690,7 @@ function processarPlanilha(data) {
 
   renderAll();
   renderFinanceiro();
+  renderContencioso();
   document.getElementById('appContent').style.display='block';
   document.getElementById('btnFill').style.display='block';
   document.getElementById('btnRegistrar').style.display='block';
@@ -991,6 +1017,71 @@ function renderFinanceiro() {
   tbodyEl.appendChild(trCamila);
 }
 
+// ── CONTENCIOSO ───────────────────────────────────────────────────────────
+function renderContencioso() {
+  const cardsEl=document.getElementById('cards-contencioso');
+  const tbodyEl=document.getElementById('tbody-contencioso');
+  cardsEl.innerHTML=''; tbodyEl.innerHTML='';
+
+  // Card Raphaelly
+  const cardRaphaelly=document.createElement('div');
+  cardRaphaelly.className='person-card';
+  cardRaphaelly.innerHTML=`
+    <div class="card-top">
+      <div class="card-top-row">
+        <span class="person-name">Raphaelly</span>
+        <div class="card-actions">
+          <button class="btn-preencher" onclick="event.stopPropagation();abrirModalIndividual('contencioso','raphaelly')">✏️ Preencher</button>
+          <button class="btn-preencher" onclick="event.stopPropagation();exportarCardPNG(this)" title="Exportar como PNG">📷</button>
+          <span class="tag contencioso">Contencioso</span>
+        </div>
+      </div>
+    </div>
+    <div class="card-body" onclick="abrirModalFinanceiro('raphaelly','contencioso')">
+      <div class="card-group-label">Prêmios</div>
+      <div class="row"><span class="lbl">Prêmio Execução</span><span class="val" id="raphaelly-exec-val">R$ 0,00</span></div>
+      <div class="row"><span class="lbl">Prêmio Resultado</span><span class="val" id="raphaelly-res-val">R$ 0,00</span></div>
+      <div class="row"><span class="lbl">Objetivo Coletivo</span><span class="val" id="raphaelly-objcol-val">R$ 0,00</span></div>
+      <p class="hint">Clique para ver o detalhamento</p>
+    </div>
+    <div class="card-total">
+      <div class="card-total-col" style="grid-column:1/-1">
+        <span class="total-lbl">Total</span>
+        <span class="total-val total-main" id="total-raphaelly">R$ 0,00</span>
+      </div>
+    </div>`;
+  cardsEl.appendChild(cardRaphaelly);
+  cardRaphaelly.querySelector('.card-body').querySelectorAll('input').forEach(i=>i.addEventListener('click',e=>e.stopPropagation()));
+
+  // Linha Raphaelly na tabela
+  const trRaphaelly=document.createElement('tr');
+  trRaphaelly.onclick=()=>abrirModalFinanceiro('raphaelly','contencioso');
+  trRaphaelly.style.cursor='pointer';
+  trRaphaelly.innerHTML=`
+    <td>Raphaelly</td>
+    <td class="td-pre-first" id="s-raphaelly-exec">R$ 0,00</td>
+    <td class="td-pre" id="s-raphaelly-res">R$ 0,00</td>
+    <td class="td-pre-last" id="s-raphaelly-objcol">R$ 0,00</td>
+    <td id="s-raphaelly-tot">R$ 0,00</td>`;
+  tbodyEl.appendChild(trRaphaelly);
+}
+
+function recalcContencioso() {
+  const el = id => document.getElementById(id);
+  const exec   = state.manuais['raphaelly_exec']||0;
+  const res    = state.manuais['raphaelly_res']||0;
+  const objCol = state.manuais['obj_col_contencioso']||0;
+  const tot    = exec + res + objCol;
+  if(el('total-raphaelly'))      el('total-raphaelly').textContent      = fmt(tot);
+  if(el('raphaelly-exec-val'))   el('raphaelly-exec-val').textContent   = fmt(exec);
+  if(el('raphaelly-res-val'))    el('raphaelly-res-val').textContent    = fmt(res);
+  if(el('raphaelly-objcol-val')) el('raphaelly-objcol-val').textContent = fmt(objCol);
+  if(el('s-raphaelly-exec'))     el('s-raphaelly-exec').textContent     = fmt(exec);
+  if(el('s-raphaelly-res'))      el('s-raphaelly-res').textContent      = fmt(res);
+  if(el('s-raphaelly-objcol'))   el('s-raphaelly-objcol').textContent   = fmt(objCol);
+  if(el('s-raphaelly-tot'))      el('s-raphaelly-tot').textContent      = fmt(tot);
+}
+
 function recalcFinanceiro() {
   const el = id => document.getElementById(id);
 
@@ -1160,6 +1251,14 @@ function abrirModalIndividual(tipo, key) {
     html += field('Prêmio Execução',  'fin_exec',  exec);
     html += field('Prêmio Resultado', 'fin_res',   res);
     html += field('Objetivo Coletivo','fin_objcol', objCol);
+  } else if (tipo === 'contencioso') {
+    const exec    = state.manuais['raphaelly_exec'] || 0;
+    const res     = state.manuais['raphaelly_res']  || 0;
+    const objCol  = state.manuais['obj_col_contencioso'] || 0;
+    document.getElementById('modalIndTitle').textContent = 'Raphaelly';
+    html += field('Prêmio Execução',  'cont_exec',  exec);
+    html += field('Prêmio Resultado', 'cont_res',   res);
+    html += field('Objetivo Coletivo','cont_objcol', objCol);
   } else {
     const d = tipo === 'comercial' ? state.comercial[key] : state.juridico[key];
     const m = state.manuais[key] || {};
@@ -1201,6 +1300,11 @@ function aplicarModalInd() {
     state.manuais[isMarco ? 'marco_fin_res'  : 'camila_res']  = get('fin_res');
     state.manuais['obj_col_financeiro'] = get('fin_objcol');
     recalcFinanceiro();
+  } else if (tipo === 'contencioso') {
+    state.manuais['raphaelly_exec'] = get('cont_exec');
+    state.manuais['raphaelly_res']  = get('cont_res');
+    state.manuais['obj_col_contencioso'] = get('cont_objcol');
+    recalcContencioso();
   } else {
     const d    = tipo === 'comercial' ? state.comercial[key] : state.juridico[key];
     const isNic = tipo === 'juridico' && d.nome.toLowerCase() === 'nicolli';
@@ -1397,6 +1501,33 @@ function abrirModalManuais() {
     </div>`;
   body.appendChild(secFin);
 
+  // Contencioso
+  const contExec = state.manuais['raphaelly_exec'] || 0;
+  const contRes  = state.manuais['raphaelly_res']  || 0;
+  const secCont = document.createElement('div');
+  secCont.className = 'mm-team';
+  secCont.innerHTML = `
+    <div class="mm-team-label">Contencioso</div>
+    <div class="mm-person">
+      <div class="mm-person-name" style="font-size:12px;font-weight:600;color:var(--mu)">Prêmio coletivo do time</div>
+      <div class="mm-field">
+        <label>Prêmio Objetivo Coletivo</label>
+        <input type="number" min="0" step="0.01" class="mm-input" id="mm-obj-col-contencioso" value="${state.manuais['obj_col_contencioso']||0}" placeholder="0,00">
+      </div>
+    </div>
+    <div class="mm-person">
+      <div class="mm-person-name">Raphaelly</div>
+      <div class="mm-field">
+        <label>Prêmio Execução</label>
+        <input type="number" min="0" step="0.01" class="mm-input" id="mm-cont-exec" value="${contExec}" placeholder="0,00">
+      </div>
+      <div class="mm-field">
+        <label>Prêmio Resultado</label>
+        <input type="number" min="0" step="0.01" class="mm-input" id="mm-cont-res" value="${contRes}" placeholder="0,00">
+      </div>
+    </div>`;
+  body.appendChild(secCont);
+
   document.getElementById('modalManuaisBackdrop').classList.add('open');
 }
 
@@ -1438,6 +1569,12 @@ function aplicarManuais() {
   state.manuais['camila_exec']    = parseFloat(document.getElementById('mm-camila-exec')?.value) || 0;
   state.manuais['camila_res']     = parseFloat(document.getElementById('mm-camila-res')?.value)  || 0;
   recalcFinanceiro();
+
+  // Contencioso
+  state.manuais['obj_col_contencioso'] = parseFloat(document.getElementById('mm-obj-col-contencioso')?.value) || 0;
+  state.manuais['raphaelly_exec'] = parseFloat(document.getElementById('mm-cont-exec')?.value) || 0;
+  state.manuais['raphaelly_res']  = parseFloat(document.getElementById('mm-cont-res')?.value)  || 0;
+  recalcContencioso();
 
   closeModalManuais();
 }
@@ -1648,15 +1785,29 @@ function abrirModal(tipo, key) {
   document.getElementById('modalBackdrop').classList.add('open');
 }
 
-function abrirModalFinanceiro(pessoa='marco') {
-  const isMarco = pessoa === 'marco';
-  const nome    = isMarco ? 'Marco Antônio' : 'Camila';
-  const exec    = state.manuais[isMarco ? 'marco_fin_exec' : 'camila_exec']||0;
-  const res     = state.manuais[isMarco ? 'marco_fin_res'  : 'camila_res']||0;
-  const objCol  = state.manuais['obj_col_financeiro']||0;
+function abrirModalFinanceiro(pessoa='marco', setor='financeiro') {
+  let nome, exec, res, objCol, tagClass, tagLabel;
+
+  if (setor === 'contencioso') {
+    nome    = 'Raphaelly';
+    exec    = state.manuais['raphaelly_exec']||0;
+    res     = state.manuais['raphaelly_res']||0;
+    objCol  = state.manuais['obj_col_contencioso']||0;
+    tagClass= 'contencioso';
+    tagLabel= 'Contencioso';
+  } else {
+    const isMarco = pessoa === 'marco';
+    nome    = isMarco ? 'Marco Antônio' : 'Camila';
+    exec    = state.manuais[isMarco ? 'marco_fin_exec' : 'camila_exec']||0;
+    res     = state.manuais[isMarco ? 'marco_fin_res'  : 'camila_res']||0;
+    objCol  = state.manuais['obj_col_financeiro']||0;
+    tagClass= 'financeiro';
+    tagLabel= 'Financeiro e Cálculos Judiciais';
+  }
+
   const total   = exec + res + objCol;
   document.getElementById('modal-name').textContent = nome;
-  document.getElementById('modal-tag').innerHTML = `<span class="tag financeiro">Financeiro e Cálculos Judiciais</span>`;
+  document.getElementById('modal-tag').innerHTML = `<span class="tag ${tagClass}">${tagLabel}</span>`;
   document.getElementById('modal-body').innerHTML = `
     <div class="modal-section">
       <div class="modal-section-title">Prêmios</div>
@@ -1686,7 +1837,7 @@ function restaurar(tipo,key) {
 
 // ── TABS ──────────────────────────────────────────────────────────────────
 function switchTab(tab) {
-  ['comercial','juridico','financeiro'].forEach(t=>{
+  ['comercial','juridico','financeiro','contencioso'].forEach(t=>{
     document.getElementById(`tab-${t}`).style.display=t===tab?'block':'none';
   });
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
@@ -1793,6 +1944,7 @@ function carregarSessao(event) {
 
       renderAll();
       renderFinanceiro();
+  renderContencioso();
       document.getElementById('appContent').style.display = 'block';
       document.getElementById('btnFill').style.display    = 'block';
       document.getElementById('btnRegistrar').style.display = 'block';
@@ -1802,6 +1954,7 @@ function carregarSessao(event) {
       Object.keys(state.juridico).forEach(key => _recalcCardInternal('juridico', key));
       Object.keys(state.comercial).forEach(key => _recalcCardInternal('comercial', key));
       recalcFinanceiro();
+      recalcContencioso();
       recalcTotals('juridico');
       recalcTotals('comercial');
 
@@ -1842,6 +1995,7 @@ function exportarPDF() {
     .tag-com{background:#dff0e9;color:#0D4A3A}
     .tag-jur{background:#fdf3e0;color:#9c7a34}
     .tag-fin{background:#e8eaf6;color:#3949ab}
+    .tag-cont{background:#fbe4e8;color:#a13a52}
     .person-stats{display:flex;border-bottom:1px solid #c2d9d1}
     .stat{flex:1;text-align:center;padding:8px 4px;border-right:1px solid #c2d9d1}
     .stat:last-child{border-right:none}
@@ -1867,10 +2021,33 @@ function exportarPDF() {
   <div class="subtitle">Competência: ${mesRef} · Gerado em ${new Date().toLocaleDateString('pt-BR')}</div>`;
 
   function pessoaHTML(tipo, key) {
-    const d = tipo === 'financeiro' ? null : (tipo === 'comercial' ? state.comercial[key] : state.juridico[key]);
+    const d = (tipo === 'financeiro' || tipo === 'contencioso') ? null : (tipo === 'comercial' ? state.comercial[key] : state.juridico[key]);
     const isNic = tipo === 'juridico' && d?.nome?.toLowerCase() === 'nicolli';
-    const tagClass = tipo === 'comercial' ? 'tag-com' : tipo === 'juridico' ? 'tag-jur' : 'tag-fin';
-    const tagLabel = tipo === 'comercial' ? 'Comercial' : tipo === 'juridico' ? 'Jurídico' : 'Financeiro e Cálculos Judiciais';
+    const tagClass = tipo === 'comercial' ? 'tag-com' : tipo === 'juridico' ? 'tag-jur' : tipo === 'contencioso' ? 'tag-cont' : 'tag-fin';
+    const tagLabel = tipo === 'comercial' ? 'Comercial' : tipo === 'juridico' ? 'Jurídico' : tipo === 'contencioso' ? 'Contencioso' : 'Financeiro e Cálculos Judiciais';
+
+    if (tipo === 'contencioso') {
+      const exec    = state.manuais['raphaelly_exec']||0;
+      const res     = state.manuais['raphaelly_res']||0;
+      const objCol  = state.manuais['obj_col_contencioso']||0;
+      const tot     = exec + res + objCol;
+      return `<div class="person">
+        <div class="person-header"><span class="person-name">Raphaelly</span><span class="person-tag ${tagClass}">${tagLabel}</span></div>
+        <div class="person-body" style="grid-template-columns:1fr">
+          <div class="section">
+            <div class="section-title">Prêmios</div>
+            <div class="row"><span class="lbl">Prêmio Execução</span><span class="val">${fmt(exec)}</span></div>
+            <div class="row"><span class="lbl">Prêmio Resultado</span><span class="val">${fmt(res)}</span></div>
+            <div class="row"><span class="lbl">Objetivo Coletivo</span><span class="val">${fmt(objCol)}</span></div>
+          </div>
+        </div>
+        <div class="totals">
+          <div class="tot-col"><div class="tot-lbl">Comissões</div><div class="tot-val">${fmt(0)}</div></div>
+          <div class="tot-col"><div class="tot-lbl">Prêmios</div><div class="tot-val">${fmt(tot)}</div></div>
+          <div class="tot-col"><div class="tot-lbl">Total</div><div class="tot-val">${fmt(tot)}</div></div>
+        </div>
+      </div>`;
+    }
 
     if (tipo === 'financeiro') {
       const isMarco = key === 'marco';
@@ -1978,6 +2155,9 @@ function exportarPDF() {
   html += '<div class="team-title new-page">Financeiro e Cálculos Judiciais</div>';
   html += pessoaHTML('financeiro', 'marco');
   html += pessoaHTML('financeiro', 'camila');
+
+  html += '<div class="team-title new-page">Contencioso</div>';
+  html += pessoaHTML('contencioso', 'raphaelly');
 
   html += '</body></html>';
 
@@ -2129,6 +2309,23 @@ async function registrarMes() {
     '—', 0, '—', 0,
     0, objFin, 0, 0, cExec, cRes,
     0, cTotFin, cTotFin
+  ]);
+
+  // Contencioso — Raphaelly
+  const contExecSheets = state.manuais['raphaelly_exec'] || 0;
+  const contResSheets  = state.manuais['raphaelly_res']  || 0;
+  const objCont = state.manuais['obj_col_contencioso'] || 0;
+  const totCont = contExecSheets + contResSheets + objCont;
+  rows.push([
+    mesRef, 'Contencioso', 'Raphaelly',
+    0,
+    '—', 0, '—', 0,
+    '—', 0, '—', 0,
+    '—', 0,
+    '—','—','—', 0,
+    '—', 0, '—', 0,
+    0, objCont, 0, 0, contExecSheets, contResSheets,
+    0, totCont, totCont
   ]);
 
   try {
