@@ -2052,6 +2052,13 @@ function exportarPDF() {
     .resumo th{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#546860;text-align:right;padding:6px 10px;border-bottom:2px solid #c2d9d1}
     .resumo td{font-size:12px;text-align:right;padding:7px 10px;border-bottom:1px solid #e3eee9}
     .resumo th:first-child,.resumo td:first-child{text-align:left}
+    .resumo table.tt th,.resumo table.tt td{padding:7px 6px;font-size:10.5px}
+    .resumo table.tt th{font-size:8px}
+    .resumo table.pp td,.resumo table.pp th{padding:5px 10px}
+    .resumo table.pp td{font-size:11px}
+    .resumo tr.grp td{background:#f4f9f7;font-weight:700;color:#0D4A3A;border-top:1px solid #c2d9d1}
+    .resumo tr.pes td:first-child{padding-left:26px}
+    .resumo tr.pes{page-break-inside:avoid}
     .resumo tr.total td{font-weight:700;background:#dff0e9;border-top:2px solid #0D4A3A}
   </style></head><body>
   <h1>Comissionamento PBL</h1>
@@ -2177,15 +2184,28 @@ function exportarPDF() {
     <div class="stack">${resumo.times.filter(t => t.part > 0).map(t => `<div style="width:${t.part}%;background:${t.cor}">${t.part >= 7 ? pct(t.part) : ''}</div>`).join('') || '<div style="width:100%;background:#e3eee9"></div>'}</div>
     <div class="legend">${resumo.times.map(t => `<span><i style="background:${t.cor}"></i>${t.label} <b>${pct(t.part)}</b></span>`).join('')}</div>
 
-    <table>
-      <thead><tr><th>Time</th><th>Pessoas</th><th>Comissões</th><th>Prêmios</th><th>Total</th><th>% do total</th></tr></thead>
+    <table class="tt">
+      <thead><tr><th>Time</th><th>Pessoas</th><th>Volume</th><th>Comissões</th><th>Prêmios</th><th>Total</th><th>% do total</th><th>Rem. ÷ volume</th></tr></thead>
       <tbody>
-        ${resumo.times.map(t => `<tr><td><i class="dot" style="background:${t.cor}"></i>${t.label}</td><td>${t.pessoas}</td><td>${fmt(t.com)}</td><td>${fmt(t.pre)}</td><td>${fmt(t.total)}</td><td><b>${pct(t.part)}</b></td></tr>`).join('')}
-        <tr class="total"><td>Total geral</td><td>${resumo.pessoas}</td><td>${fmt(resumo.com)}</td><td>${fmt(resumo.pre)}</td><td>${fmt(totG)}</td><td>${totG > 0 ? pct(100) : pct(0)}</td></tr>
+        ${resumo.times.map(t => `<tr><td><i class="dot" style="background:${t.cor}"></i>${t.label}</td><td>${t.pessoas}</td><td>${t.volume === null ? '—' : fmt(t.volume)}</td><td>${fmt(t.com)}</td><td>${fmt(t.pre)}</td><td>${fmt(t.total)}</td><td><b>${pct(t.part)}</b></td><td>${t.remVol === null ? '—' : '<b>' + pct(t.remVol) + '</b>'}</td></tr>`).join('')}
+        <tr class="total"><td>Total geral</td><td>${resumo.pessoas}</td><td>—</td><td>${fmt(resumo.com)}</td><td>${fmt(resumo.pre)}</td><td>${fmt(totG)}</td><td>${totG > 0 ? pct(100) : pct(0)}</td><td>${resumo.volume > 0 ? pct(totG / resumo.volume * 100) : '—'}</td></tr>
       </tbody>
     </table>
-    <div class="rnote"><b>Comissões</b>: créditos, adicionais, acordos, inseridos, liquidados e precatório. <b>Prêmios</b>: objetivo de volume, objetivo coletivo, execução, resultado, treinamento e campanha.</div>
+    <div class="rnote"><b>Comissões</b>: créditos, adicionais, acordos, inseridos, liquidados e precatório. <b>Prêmios</b>: objetivo de volume, objetivo coletivo, execução, resultado, treinamento e campanha. <b>Rem. ÷ volume</b>: remuneração variável do time sobre o volume de compras atribuído a ele (Comercial e Jurídico)${state.conferencia && Math.abs(state.conferencia.volume.empresa - state.conferencia.volume.juridico) > 0.005 ? '; o Jurídico considera apenas compras com Jurídico da lista' : ''}. No total geral, o volume é o total pago da empresa.</div>
     ${atencao.length ? `<div class="alert"><b>Pontos de atenção na base de dados</b><ul>${atencao.map(x => `<li>${x.item}: ${x.valor}</li>`).join('')}</ul></div>` : ''}
+  </div>
+  <div class="resumo">
+    <h2>Remuneração por pessoa</h2>
+    <div class="rsub">Competência: <b>${mesRef}</b> · ordenado pelo maior total dentro de cada time · valores em reais (R$)</div>
+    <table class="pp">
+      <thead><tr><th>Pessoa</th><th>Volume</th><th>Comissões</th><th>Prêmios</th><th>Total</th><th>% do total</th></tr></thead>
+      <tbody>
+        ${resumo.times.map(t => `<tr class="grp"><td><i class="dot" style="background:${t.cor}"></i>${t.label}</td><td>${t.volume === null ? '' : fmt(t.volume)}</td><td>${fmt(t.com)}</td><td>${fmt(t.pre)}</td><td>${fmt(t.total)}</td><td>${pct(t.part)}</td></tr>`
+          + t.lista.map(x => `<tr class="pes"><td>${x.nome}</td><td>${x.volume === null ? '—' : fmt(x.volume)}</td><td>${fmt(x.com)}</td><td>${fmt(x.pre)}</td><td>${fmt(x.total)}</td><td>${pct(x.part)}</td></tr>`).join('')).join('')}
+        <tr class="total"><td>Total geral</td><td></td><td>${fmt(resumo.com)}</td><td>${fmt(resumo.pre)}</td><td>${fmt(totG)}</td><td>${totG > 0 ? pct(100) : pct(0)}</td></tr>
+      </tbody>
+    </table>
+    <div class="rnote">As linhas em destaque são o subtotal de cada time. A composição de cada valor está nas páginas individuais a seguir.</div>
   </div>`;
 
   const comRem = state.removedComercial;
@@ -2394,17 +2414,30 @@ function resumoPorTime() {
   [['Comercial','comercial',state.comercial,state.removedComercial],
    ['Jurídico','juridico',state.juridico,state.removedJuridico]].forEach(([label,tipo,data,rem]) => {
     const ks = Object.keys(data).filter(k => !rem.includes(k));
-    let com = 0, pre = 0;
-    ks.forEach(k => { const t = totaisPessoa(tipo,k); com += t.com; pre += t.pre; });
-    times.push({ label, cor: tipo === 'comercial' ? '#0D4A3A' : '#C49A45', pessoas: ks.length, com, pre, total: com + pre });
+    let com = 0, pre = 0, volume = 0;
+    const lista = ks.map(k => {
+      const d = data[k], t = totaisPessoa(tipo,k);
+      com += t.com; pre += t.pre; volume += d.volume;
+      return { nome: d.nome, volume: d.volume, com: t.com, pre: t.pre, total: t.total };
+    });
+    times.push({ label, cor: tipo === 'comercial' ? '#0D4A3A' : '#C49A45', pessoas: ks.length, volume, com, pre, total: com + pre, lista });
   });
   Object.entries(TIMES_PREMIO).forEach(([t,T]) => {
-    const pre = T.pessoas.reduce((a,pe) => a + totalPremioPessoa(t,pe), 0);
-    times.push({ label: T.label, cor: T.cor, pessoas: T.pessoas.length, com: 0, pre, total: pre });
+    const lista = T.pessoas.map(pe => {
+      const tot = totalPremioPessoa(t,pe);
+      return { nome: pe.nome, volume: null, com: 0, pre: tot, total: tot };
+    });
+    const pre = lista.reduce((a,x) => a + x.total, 0);
+    times.push({ label: T.label, cor: T.cor, pessoas: T.pessoas.length, volume: null, com: 0, pre, total: pre, lista });
   });
   const soma = campo => times.reduce((a,x) => a + x[campo], 0);
   const totalGeral = soma('total');
-  times.forEach(t => { t.part = totalGeral > 0 ? t.total / totalGeral * 100 : 0; });
+  const pc = v => totalGeral > 0 ? v / totalGeral * 100 : 0;
+  times.forEach(t => {
+    t.part = pc(t.total);
+    t.remVol = t.volume > 0 ? t.total / t.volume * 100 : null;   // só Comercial e Jurídico
+    t.lista.sort((a,b) => b.total - a.total).forEach(x => { x.part = pc(x.total); });
+  });
   const volume = state.conferencia?.volume?.empresa ?? Object.values(state.comercial).reduce((a,d) => a + d.volume, 0);
   return { times, pessoas: soma('pessoas'), com: soma('com'), pre: soma('pre'), total: totalGeral, volume };
 }
@@ -2427,14 +2460,14 @@ function exportarExcel() {
   XLSX.utils.book_append_sheet(wb, wsCom, 'Comissões');
 
   const res = resumoPorTime();
-  const aoaRes = [['Time','Pessoas','Comissões (R$)','Prêmios (R$)','Total (R$)','% do total'],
-    ...res.times.map(t => [t.label, t.pessoas, t.com, t.pre, t.total, t.part / 100]),
-    ['Total geral', res.pessoas, res.com, res.pre, res.total, res.total > 0 ? 1 : 0],
+  const aoaRes = [['Time','Pessoas','Comissões (R$)','Prêmios (R$)','Total (R$)','% do total','Volume atribuído (R$)','Rem. ÷ volume'],
+    ...res.times.map(t => [t.label, t.pessoas, t.com, t.pre, t.total, t.part / 100, t.volume === null ? '—' : t.volume, t.remVol === null ? '—' : t.remVol / 100]),
+    ['Total geral', res.pessoas, res.com, res.pre, res.total, res.total > 0 ? 1 : 0, res.volume, res.volume > 0 ? res.total / res.volume : 0],
     [],
     ['Volume total PAGO (R$)', '', '', '', res.volume],
     ['Total geral ÷ volume', '', '', '', res.volume > 0 ? res.total / res.volume : 0]];
   const wsRes = XLSX.utils.aoa_to_sheet(aoaRes);
-  wsRes['!cols'] = [{ wch: 32 }, { wch: 10 }, { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 12 }];
+  wsRes['!cols'] = [{ wch: 32 }, { wch: 10 }, { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 12 }, { wch: 22 }, { wch: 14 }];
   for (let r = 1; r < aoaRes.length; r++) for (let c = 2; c <= 4; c++) {
     const cell = wsRes[XLSX.utils.encode_cell({ r, c })];
     if (cell && cell.t === 'n') cell.z = (r === aoaRes.length - 1) ? '0.00%' : MOEDA;
@@ -2442,8 +2475,22 @@ function exportarExcel() {
   for (let r = 1; r <= res.times.length + 1; r++) {
     const cell = wsRes[XLSX.utils.encode_cell({ r, c: 5 })];
     if (cell && cell.t === 'n') cell.z = '0.00%';
+    const cv = wsRes[XLSX.utils.encode_cell({ r, c: 6 })];
+    if (cv && cv.t === 'n') cv.z = MOEDA;
+    const cr = wsRes[XLSX.utils.encode_cell({ r, c: 7 })];
+    if (cr && cr.t === 'n') cr.z = '0.00%';
   }
   XLSX.utils.book_append_sheet(wb, wsRes, 'Resumo');
+
+  const aoaPes = [['Time','Pessoa','Volume (R$)','Comissões (R$)','Prêmios (R$)','Total (R$)','% do total']];
+  res.times.forEach(t => t.lista.forEach(x => aoaPes.push([t.label, x.nome, x.volume === null ? '—' : x.volume, x.com, x.pre, x.total, x.part / 100])));
+  const wsPes = XLSX.utils.aoa_to_sheet(aoaPes);
+  wsPes['!cols'] = [{ wch: 32 }, { wch: 22 }, { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 12 }];
+  for (let r = 1; r < aoaPes.length; r++) for (let c = 2; c <= 6; c++) {
+    const cell = wsPes[XLSX.utils.encode_cell({ r, c })];
+    if (cell && cell.t === 'n') cell.z = c === 6 ? '0.00%' : MOEDA;
+  }
+  XLSX.utils.book_append_sheet(wb, wsPes, 'Por pessoa');
 
   const conf = conferenciaLinhas();
   if (conf.length) {
