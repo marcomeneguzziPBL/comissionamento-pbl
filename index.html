@@ -2031,29 +2031,28 @@ function exportarPDF() {
       @bottom-right{content:"Página " counter(page) " de " counter(pages);font:9px 'Segoe UI',Arial,sans-serif;color:#546860}}
     .resumo{page-break-after:always}
     .resumo h2{font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#fff;background:#0D4A3A;padding:8px 14px;margin:0 0 12px;border-radius:4px}
-    .resumo .rsub{font-size:11px;color:#546860;margin:-4px 0 14px}
-    .resumo .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
-    .resumo .kpi{border:1px solid #c2d9d1;border-radius:8px;padding:10px 14px;background:#f4f9f7}
-    .resumo .kpi-main{grid-column:1/-1;background:#0D4A3A;border-color:#0D4A3A}
-    .resumo .kpi .k{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#546860}
-    .resumo .kpi .v{font-size:16px;font-weight:700;color:#0D4A3A;margin-top:3px}
-    .resumo .kpi .s{font-size:10px;color:#7aaa9a;margin-top:2px}
+    .resumo h2{margin:0 0 14px;padding:10px 16px}
+    .resumo .rsub{font-size:11px;color:#546860;margin:0 0 22px}
+    .resumo .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:30px}
+    .resumo .kpi{border:1px solid #c2d9d1;border-radius:8px;padding:14px 16px;background:#f4f9f7}
+    .resumo .kpi-main{grid-column:1/-1;background:#0D4A3A;border-color:#0D4A3A;padding:18px 20px}
+    .resumo .kpi .k{font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#546860;white-space:nowrap}
+    .resumo .kpi .v{font-size:17px;font-weight:700;color:#0D4A3A;margin-top:5px}
+    .resumo .kpi .s{font-size:10px;color:#7aaa9a;margin-top:3px}
     .resumo .kpi-main .k,.resumo .kpi-main .s{color:#a9d3c3}
-    .resumo .kpi-main .v{font-size:26px;color:#fff}
-    .resumo .rsec{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#546860;margin:0 0 8px}
-    .resumo .stack{display:flex;height:26px;border-radius:5px;overflow:hidden;margin-bottom:8px;background:#e3eee9}
+    .resumo .kpi-main .v{font-size:28px;color:#fff;margin-top:6px}
+    .resumo .rsec{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#546860;margin:0 0 10px}
+    .resumo .stack{display:flex;height:30px;border-radius:5px;overflow:hidden;margin-bottom:12px;background:#e3eee9}
     .resumo .stack div{color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;white-space:nowrap}
-    .resumo .legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:10px;color:#546860;margin-bottom:16px}
+    .resumo .legend{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:10px;color:#546860;margin-bottom:28px}
     .resumo .legend i,.resumo .dot{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px}
-    .resumo .rnote{font-size:10px;color:#546860;line-height:1.5;margin-bottom:14px}
-    .resumo .alert{border:1px solid #e6c98a;background:#fdf3e0;border-radius:8px;padding:10px 14px;font-size:11px;color:#7a5c1e}
-    .resumo .alert ul{margin:6px 0 0 16px}
-    .resumo table{width:100%;border-collapse:collapse;margin-bottom:12px}
-    .resumo th{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#546860;text-align:right;padding:6px 10px;border-bottom:2px solid #c2d9d1}
+    .resumo .rnote{font-size:10px;color:#546860;line-height:1.6;margin-bottom:14px}
+    .resumo .rnote.obs{margin-top:14px;padding:10px 14px;border-left:3px solid #C49A45;background:#fdf8ec;color:#5f4a1a}
+    .resumo table{width:100%;border-collapse:collapse;margin-bottom:16px}
+    .resumo th{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#546860;text-align:right;padding:8px 12px;border-bottom:2px solid #c2d9d1}
     .resumo td{font-size:12px;text-align:right;padding:7px 10px;border-bottom:1px solid #e3eee9}
     .resumo th:first-child,.resumo td:first-child{text-align:left}
-    .resumo table.tt th,.resumo table.tt td{padding:7px 6px;font-size:10.5px}
-    .resumo table.tt th{font-size:8px}
+    .resumo table.tt td{padding:11px 12px;font-size:12.5px}
     .resumo table.pp td,.resumo table.pp th{padding:5px 10px}
     .resumo table.pp td{font-size:11px}
     .resumo tr.grp td{background:#f4f9f7;font-weight:700;color:#0D4A3A;border-top:1px solid #c2d9d1}
@@ -2166,7 +2165,6 @@ function exportarPDF() {
   const mixCom = totG > 0 ? resumo.com / totG * 100 : 0;
   const mixPre = totG > 0 ? resumo.pre / totG * 100 : 0;
   const media  = resumo.pessoas > 0 ? totG / resumo.pessoas : 0;
-  const atencao = conferenciaLinhas().filter(x => x.status === 'warn');
   const baseLinhas = state.conferencia ? `${fmtN(state.conferencia.linhasPagas)} linhas pagas na planilha` : '';
   html += `<div class="resumo">
     <h2>Resumo gerencial · Remuneração variável</h2>
@@ -2185,14 +2183,13 @@ function exportarPDF() {
     <div class="legend">${resumo.times.map(t => `<span><i style="background:${t.cor}"></i>${t.label} <b>${pct(t.part)}</b></span>`).join('')}</div>
 
     <table class="tt">
-      <thead><tr><th>Time</th><th>Pessoas</th><th>Volume</th><th>Comissões</th><th>Prêmios</th><th>Total</th><th>% do total</th><th>Rem. ÷ volume</th></tr></thead>
+      <thead><tr><th>Time</th><th>Pessoas</th><th>Comissões</th><th>Prêmios</th><th>Total</th><th>% do total</th></tr></thead>
       <tbody>
-        ${resumo.times.map(t => `<tr><td><i class="dot" style="background:${t.cor}"></i>${t.label}</td><td>${t.pessoas}</td><td>${t.volume === null ? '—' : fmt(t.volume)}</td><td>${fmt(t.com)}</td><td>${fmt(t.pre)}</td><td>${fmt(t.total)}</td><td><b>${pct(t.part)}</b></td><td>${t.remVol === null ? '—' : '<b>' + pct(t.remVol) + '</b>'}</td></tr>`).join('')}
-        <tr class="total"><td>Total geral</td><td>${resumo.pessoas}</td><td>—</td><td>${fmt(resumo.com)}</td><td>${fmt(resumo.pre)}</td><td>${fmt(totG)}</td><td>${totG > 0 ? pct(100) : pct(0)}</td><td>${resumo.volume > 0 ? pct(totG / resumo.volume * 100) : '—'}</td></tr>
+        ${resumo.times.map(t => `<tr><td><i class="dot" style="background:${t.cor}"></i>${t.label}</td><td>${t.pessoas}</td><td>${fmt(t.com)}</td><td>${fmt(t.pre)}</td><td>${fmt(t.total)}</td><td><b>${pct(t.part)}</b></td></tr>`).join('')}
+        <tr class="total"><td>Total geral</td><td>${resumo.pessoas}</td><td>${fmt(resumo.com)}</td><td>${fmt(resumo.pre)}</td><td>${fmt(totG)}</td><td>${totG > 0 ? pct(100) : pct(0)}</td></tr>
       </tbody>
     </table>
-    <div class="rnote"><b>Comissões</b>: créditos, adicionais, acordos, inseridos, liquidados e precatório. <b>Prêmios</b>: objetivo de volume, objetivo coletivo, execução, resultado, treinamento e campanha. <b>Rem. ÷ volume</b>: remuneração variável do time sobre o volume de compras atribuído a ele (Comercial e Jurídico)${state.conferencia && Math.abs(state.conferencia.volume.empresa - state.conferencia.volume.juridico) > 0.005 ? '; o Jurídico considera apenas compras com Jurídico da lista' : ''}. No total geral, o volume é o total pago da empresa.</div>
-    ${atencao.length ? `<div class="alert"><b>Pontos de atenção na base de dados</b><ul>${atencao.map(x => `<li>${x.item}: ${x.valor}</li>`).join('')}</ul></div>` : ''}
+    <div class="rnote"><b>Comissões</b>: créditos, adicionais, acordos, inseridos, liquidados e precatório. <b>Prêmios</b>: objetivo de volume, objetivo coletivo, execução, resultado, treinamento e campanha.</div>
   </div>
   <div class="resumo">
     <h2>Remuneração por pessoa</h2>
@@ -2206,6 +2203,7 @@ function exportarPDF() {
       </tbody>
     </table>
     <div class="rnote">As linhas em destaque são o subtotal de cada time. A composição de cada valor está nas páginas individuais a seguir.</div>
+    <div class="rnote obs">${obsComercialJuridico(resumo)}</div>
   </div>`;
 
   const comRem = state.removedComercial;
@@ -2440,6 +2438,26 @@ function resumoPorTime() {
   });
   const volume = state.conferencia?.volume?.empresa ?? Object.values(state.comercial).reduce((a,d) => a + d.volume, 0);
   return { times, pessoas: soma('pessoas'), com: soma('com'), pre: soma('pre'), total: totalGeral, volume };
+}
+
+// Observação do PDF: por que o volume do Comercial pode diferir do Jurídico
+function obsComercialJuridico(resumo) {
+  const c = state.conferencia;
+  const tCom = resumo.times.find(t => t.label === 'Comercial');
+  const tJur = resumo.times.find(t => t.label === 'Jurídico');
+  const base = '<b>Observação — Comercial × Jurídico:</b> cada compra paga é atribuída a um Comercial e a um Jurídico; por isso os dois times são medidos sobre as mesmas compras.';
+  if (!c || !tCom || !tJur) return base;
+  const difVol = c.volume.empresa - c.volume.juridico;
+  const difCred = c.creditos.empresa - c.creditos.juridico;
+  if (Math.abs(difVol) <= 0.005 && Math.abs(difCred) <= 0.005) {
+    return base + ' Neste mês todas as compras têm Jurídico da lista, e o volume dos dois times coincide.';
+  }
+  const fora = Object.entries(c.jurDesconhecidos || {}).map(([n,u]) => `"${n}" (${u.linhas} linha${u.linhas>1?'s':''})`);
+  const semJur = c.semJuridico.linhas.length;
+  const origem = [fora.length ? 'compras com Jurídico fora da lista: ' + fora.join(', ') : '', semJur ? `${semJur} linha(s) sem Jurídico preenchido` : ''].filter(Boolean).join('; ');
+  return `${base} Neste mês o volume do Comercial (${fmt(tCom.volume)}) é maior que o do Jurídico (${fmt(tJur.volume)}) em ${fmt(difVol)}` +
+    `${difCred ? ' e em ' + fmtN(difCred) + ' crédito(s)' : ''}: ${origem || 'compras sem Jurídico da lista'}. ` +
+    `Essas compras geram remuneração para o Comercial, mas não para o Jurídico, e por isso não entram nos valores acima. O % de liquidados do Jurídico usa como base o total de créditos da empresa.`;
 }
 
 // ── EXPORTAR EXCEL (local) ────────────────────────────────────────────────
