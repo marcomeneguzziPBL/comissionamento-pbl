@@ -173,6 +173,9 @@ body{background:var(--bg);background-color:var(--bg-solid);color:var(--tx);font-
 .total-lbl{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mu);margin-bottom:3px;display:block}
 .total-val{font-size:14px;font-weight:700;color:var(--g);display:block}
 .total-val.total-main{font-size:16px;color:var(--g)}
+.rankline{font-size:11px;color:var(--mu);margin:-2px 0 8px}.rankline b{color:var(--tx)}
+.mixbar{display:flex;height:6px;background:var(--bo)}
+.row.z .lbl,.row.z .val{opacity:.5;font-weight:400}
 .hint{font-size:10px;color:var(--mu);text-align:center;padding:6px 0 2px;opacity:.7}
 .card-group-label{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mu);margin:8px 0 6px;padding-bottom:4px;border-bottom:1px solid var(--bo)}
 
@@ -950,10 +953,7 @@ function renderTime(tipo) {
     // Subtítulo de liquidados
     const liqQt      = getVal('#gc-liq-qt');
     const totalEmp   = state.totalCreditosEmpresa;
-    const pct        = totalEmp > 0 ? (d.creditos / totalEmp * 100).toFixed(2) : '0.00';
-    const liqSubtitle= liqQt > 0
-      ? `${fmtN(liqQt)} créditos liq. × ${TXT.liq} · sua part.: ${pct}%`
-      : `Preencha os créditos liquidados`;
+    const liqSubtitle= subLiquidados(d);
 
     const card=document.createElement('div');
     card.className='person-card';
@@ -963,18 +963,18 @@ function renderTime(tipo) {
     // Bloco de comissões
     let comissoesHTML = `
       <div class="card-group-label">Comissões</div>
-      <div class="row"><span class="lbl">Créditos Comprados<br><span style="font-size:11px;color:var(--mu)">${fmtN(d.creditos)} × ${TXT.cred}</span></span><span class="val">${fmt(comNormal)}</span></div>
-      <div class="row"><span class="lbl">Créditos Comprados Adicionais<br><span style="font-size:11px;color:var(--mu)">${fmtN(d.adicionais)} × ${TXT.cred}</span></span><span class="val">${fmt(comAdic)}</span></div>
+      <div class="row"><span class="lbl">Créditos comprados<br><span style="font-size:11px;color:var(--mu)">${fmtN(d.creditos)} × ${TXT.cred}</span></span><span class="val">${fmt(comNormal)}</span></div>
+      <div class="row"><span class="lbl">Créditos adicionais<br><span style="font-size:11px;color:var(--mu)">${fmtN(d.adicionais)} × ${TXT.cred}</span></span><span class="val">${fmt(comAdic)}</span></div>
       ${tipo==='comercial' ? `
-      <div class="row"><span class="lbl">Créditos Acordos<br><span style="font-size:11px;color:var(--mu)" id="acordo-sub-${sid(key)}">0 × ${TXT.cred}</span></span><span class="val" id="row-acordo-val-${sid(key)}">R$ 0,00</span></div>
-      <div class="row"><span class="lbl">Créditos Acordos Adicionais<br><span style="font-size:11px;color:var(--mu)" id="acordo2-sub-${sid(key)}">0 × ${TXT.cred}</span></span><span class="val" id="row-acordo2-val-${sid(key)}">R$ 0,00</span></div>
+      <div class="row"><span class="lbl">Créditos acordos<br><span style="font-size:11px;color:var(--mu)" id="acordo-sub-${sid(key)}">0 × ${TXT.cred}</span></span><span class="val" id="row-acordo-val-${sid(key)}">R$ 0,00</span></div>
+      <div class="row"><span class="lbl">Créditos acordos adicionais<br><span style="font-size:11px;color:var(--mu)" id="acordo2-sub-${sid(key)}">0 × ${TXT.cred}</span></span><span class="val" id="row-acordo2-val-${sid(key)}">R$ 0,00</span></div>
       ` : ''}
       ${tipo==='juridico' ? `
-      <div class="row"><span class="lbl">Processos Inseridos<br><span style="font-size:11px;color:var(--mu)" id="ins-sub-${sid(key)}">0 × ${TXT.ins}</span></span><span class="val" id="row-ins-val-${sid(key)}">R$ 0,00</span></div>
-      <div class="row"><span class="lbl">Processos Liquidados<br><span style="font-size:11px;color:var(--mu)" id="liq-subtitle-${sid(key)}">${liqSubtitle}</span></span><span class="val" id="row-liq-${sid(key)}">${liqQt > 0 ? fmt(liqVal) : '—'}</span></div>
+      <div class="row"><span class="lbl">Processos inseridos<br><span style="font-size:11px;color:var(--mu)" id="ins-sub-${sid(key)}">0 × ${TXT.ins}</span></span><span class="val" id="row-ins-val-${sid(key)}">R$ 0,00</span></div>
+      <div class="row"><span class="lbl">Processos liquidados<br><span style="font-size:11px;color:var(--mu)" id="liq-subtitle-${sid(key)}">${liqSubtitle}</span></span><span class="val" id="row-liq-${sid(key)}">${liqQt > 0 ? fmt(liqVal) : '—'}</span></div>
       ${isNicolli ? `
       <div class="row"><span class="lbl">Precatório<br><span style="font-size:11px;color:var(--mu)" id="prec-sub-${sid(key)}">0 × ${TXT.prec}</span></span><span class="val" id="row-prec-val-${sid(key)}">R$ 0,00</span></div>
-      <div class="row"><span class="lbl">Precatório Adicional<br><span style="font-size:11px;color:var(--mu)" id="prec2-sub-${sid(key)}">0 × ${TXT.prec}</span></span><span class="val" id="row-prec2-val-${sid(key)}">R$ 0,00</span></div>
+      <div class="row"><span class="lbl">Precatório adicional<br><span style="font-size:11px;color:var(--mu)" id="prec2-sub-${sid(key)}">0 × ${TXT.prec}</span></span><span class="val" id="row-prec2-val-${sid(key)}">R$ 0,00</span></div>
       ` : ''}
       ` : ''}`;
 
@@ -982,11 +982,11 @@ function renderTime(tipo) {
     let premiosHTML = `
         <div class="card-divider"></div>
         <div class="card-group-label">Prêmios</div>
-        <div class="row"><span class="lbl">Objetivo</span><span class="val">${fmt(pVol)}</span></div>
-        <div class="row"><span class="lbl">Objetivo Coletivo</span><span class="val" id="row-objcol-val-${sid(key)}">R$ 0,00</span></div>
-        <div class="row"><span class="lbl">Prêmio Campanha</span><span class="val" id="row-camp-val-${sid(key)}">R$ 0,00</span></div>
+        <div class="row"><span class="lbl">Objetivo de volume<br><span style="font-size:11px;color:var(--mu)">${textoDegrau(d.volume)}</span></span><span class="val">${fmt(pVol)}</span></div>
+        <div class="row"><span class="lbl">Objetivo coletivo</span><span class="val" id="row-objcol-val-${sid(key)}">R$ 0,00</span></div>
+        <div class="row"><span class="lbl">Campanha</span><span class="val" id="row-camp-val-${sid(key)}">R$ 0,00</span></div>
         ${(tipo==='juridico' && temTrein(d)) ? `
-        <div class="row"><span class="lbl">Prêmio Treinamento</span><span class="val" id="row-trein-val-${sid(key)}">R$ 0,00</span></div>` : ''}
+        <div class="row"><span class="lbl">Treinamento</span><span class="val" id="row-trein-val-${sid(key)}">R$ 0,00</span></div>` : ''}
         `;
 
     card.innerHTML=`
@@ -1000,10 +1000,12 @@ function renderTime(tipo) {
             <button class="btn-remove" onclick="event.stopPropagation();remover('${tipo}','${key}')">✕</button>
           </div>
         </div>
+        <div class="rankline" id="posicao-${tipo}-${sid(key)}"></div>
         <div class="card-stats">
           <div class="stat"><div class="stat-val">${fmtN(d.creditos)}</div><div class="stat-label">Créditos</div></div>
           <div class="stat"><div class="stat-val">${fmtN(d.adicionais)}</div><div class="stat-label">Adicionais</div></div>
-          <div class="stat"><div class="stat-val" style="font-size:15px;white-space:nowrap">${fmt(d.volume)}</div><div class="stat-label">Volume</div></div>
+          <div class="stat"><div class="stat-val">${fmtN(d.linhas)}</div><div class="stat-label">Compras</div></div>
+          <div class="stat"><div class="stat-val" style="font-size:14px;white-space:nowrap">${fmt(d.volume)}</div><div class="stat-label">Volume</div></div>
         </div>
       </div>
       <div class="card-body" onclick="abrirModal('${tipo}','${key}')">
@@ -1011,6 +1013,7 @@ function renderTime(tipo) {
         ${premiosHTML}
         <p class="hint">Clique para ver o detalhamento</p>
       </div>
+      <div class="mixbar" id="mix-${tipo}-${sid(key)}"><div style="background:var(--g)"></div><div style="background:var(--gold)"></div></div>
       <div class="card-total">
         <div class="card-total-col">
           <span class="total-lbl">Comissões</span>
@@ -1026,6 +1029,8 @@ function renderTime(tipo) {
         </div>
       </div>`;
     cardsEl.appendChild(card);
+    setMix(tipo, key, comissao+liqVal, pVol);
+    atenuarZeros(card);
 
     card.querySelectorAll('input').forEach(inp=>{
       inp.addEventListener('click', e=>e.stopPropagation());
@@ -1116,6 +1121,8 @@ function renderTime(tipo) {
   }
   tbodyEl.appendChild(trT);
 
+  atualizarPosicoes();
+
   removed.forEach(key=>{
     const d=tipo==='comercial'?state.comercial[key]:state.juridico[key];
     const chip=document.createElement('div');
@@ -1141,6 +1148,7 @@ function renderTimePremio(t) {
     const k=`${t}-${pe.key}`;
     const card=document.createElement('div');
     card.className='person-card';
+    card.dataset.tipo=t; card.dataset.key=pe.key;
     card.innerHTML=`
     <div class="card-top">
       <div class="card-top-row">
@@ -1192,6 +1200,7 @@ function recalcTimePremio(t) {
     set(`s-${k}-exec`, exec);    set(`s-${k}-res`, res);    set(`s-${k}-objcol`, objCol);
     set(`s-${k}-tot`, exec + res + objCol);
   });
+  atualizarPosicoes();
 }
 
 // ── LIQUIDADOS ────────────────────────────────────────────────────────────
@@ -1206,10 +1215,7 @@ function recalcLiquidados() {
     const lv = comissaoLiquidados(key);
     const liqQtVal = getVal('#gc-liq-qt');
     const totalEmp = state.totalCreditosEmpresa;
-    const pct = totalEmp > 0 ? (d.creditos / totalEmp * 100).toFixed(2) : '0.00';
-    const subtitle = liqQtVal > 0
-      ? `${fmtN(liqQtVal)} créditos liq. × ${TXT.liq} · sua part.: ${pct}%`
-      : `Preencha os créditos liquidados`;
+    const subtitle = subLiquidados(d);
 
     const elR = document.getElementById(`row-liq-${sid(key)}`);
     if (elR) elR.textContent = liqQtVal > 0 ? fmt(lv) : '—';
@@ -1265,6 +1271,8 @@ function _recalcCardInternal(tipo, key) {
   if (el(`acordo2-sub-${sid(key)}`))     el(`acordo2-sub-${sid(key)}`).textContent     = `${fmtN(acordo2Qt)} × ${TXT.cred}`;
   if (el(`s-trein-${tipo}-${sid(key)}`)) el(`s-trein-${tipo}-${sid(key)}`).textContent = fmt(trein);
   if (el(`s-tot-${tipo}-${sid(key)}`)) el(`s-tot-${tipo}-${sid(key)}`).textContent = fmt(total);
+  setMix(tipo, key, comissao + insVal + liqVal + precVal + acordoVal + acordo2Val, pVol + objCol + trein + camp);
+  atenuarZeros(cardDe(tipo, key));
 }
 
 
@@ -1672,6 +1680,7 @@ function recalcTotals(tipo) {
   if (el(`st-trein-${tipo}`))  el(`st-trein-${tipo}`).textContent  = fmt(tTrein);
   if (el(`st-camp-${tipo}`))   el(`st-camp-${tipo}`).textContent   = fmt(tCamp);
   if (el(`st-tot-${tipo}`))    el(`st-tot-${tipo}`).textContent    = fmt(tT);
+  atualizarPosicoes();
 }
 
 // ── MODAL BREAKDOWN ───────────────────────────────────────────────────────
@@ -1860,32 +1869,90 @@ function toggleTheme() {
 }
 
 // ── EXPORTAR CARD COMO PNG ────────────────────────────────────────────────
+// Card em PNG: feito para enviar ao colaborador conferir a própria remuneração.
+// Não inclui posição no time nem participação na folha (dados de gestão).
+function cardPNGHTML(tipo, key) {
+  const det = detalheDe(tipo, key);
+  if (!det) return '';
+  const mesRef = document.getElementById('mes-ref').textContent || '—';
+  const linha = x => `<div class="pc-row${ehZero(x.val) ? ' z' : ''}"><span class="pc-lbl">${x.lbl}${x.sub && !/próximo degrau|1º degrau/.test(x.sub) ? `<span class="pc-sub">${x.sub}</span>` : ''}</span><span class="pc-val">${ehZero(x.val) ? '—' : fmt(x.val)}</span></div>`;
+  const dois = det.com.length > 0;
+  const tot = det.totCom + det.totPre, pc = tot > 0 ? det.totCom / tot * 100 : 0;
+  return `<div class="pc-wrap">
+  <style>
+    .pc-wrap{width:440px;background:#fff;padding:18px;font-family:'Space Grotesk','Segoe UI',Arial,sans-serif;color:#111;box-sizing:border-box}
+    .pc-wrap *{box-sizing:border-box;margin:0}
+    .pc-h{display:flex;justify-content:space-between;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#0D4A3A;margin:0 4px 10px}
+    .pc-card{border:1px solid #c2d9d1;border-radius:12px;overflow:hidden}
+    .pc-top{padding:16px 18px 6px;display:flex;justify-content:space-between;align-items:center}
+    .pc-name{font-size:18px;font-weight:700}
+    .pc-tag{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:4px}
+    .tag-com{background:#dff0e9;color:#0D4A3A}.tag-jur{background:#fdf3e0;color:#9c7a34}.tag-fin{background:#e8eaf6;color:#3949ab}.tag-cont{background:#fbe4e8;color:#a13a52}.tag-calc{background:#e0f2f1;color:#00796b}
+    .pc-stats{display:flex;border-bottom:1px solid #c2d9d1;margin-top:8px}
+    .pc-stat{flex:1;text-align:center;padding:8px 4px 12px}
+    .pc-stat+.pc-stat{border-left:1px solid #c2d9d1}
+    .pc-sv{font-size:17px;font-weight:700;color:#0D4A3A;line-height:1}
+    .pc-sl{font-size:10px;color:#546860;margin-top:3px}
+    .pc-body{padding:12px 18px 8px}
+    .pc-grp{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#546860;border-bottom:1px solid #c2d9d1;padding:4px 0 6px;margin:2px 0 6px}
+    .pc-grp.g2{margin-top:12px}
+    .pc-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;font-size:13px}
+    .pc-lbl{color:#546860}.pc-sub{display:block;font-size:11px;color:#7aaa9a}
+    .pc-val{font-weight:600}
+    .pc-row.z .pc-lbl,.pc-row.z .pc-val{opacity:.5;font-weight:400}
+    .pc-mix{display:flex;height:6px;background:#e3eee9}
+    .pc-tot{display:flex;background:#dff0e9;border-top:1px solid #c2d9d1}
+    .pc-tc{flex:1;text-align:center;padding:10px 8px}
+    .pc-tc+.pc-tc{border-left:1px solid #c2d9d1}
+    .pc-tl{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#546860;display:block;margin-bottom:3px}
+    .pc-tv{font-size:14px;font-weight:700;color:#0D4A3A;display:block}.pc-tv.pc-big{font-size:17px}
+    .pc-note{font-size:11px;color:#546860;line-height:1.5;margin:12px 4px 0;padding:9px 12px;background:#f4f9f7;border-left:3px solid #C49A45;border-radius:0 6px 6px 0}
+    .pc-f{font-size:10px;color:#7aaa9a;text-align:right;margin:8px 4px 0}
+  </style>
+  <div class="pc-h"><span>Comissionamento PBL</span><span>${mesRef}</span></div>
+  <div class="pc-card">
+    <div class="pc-top"><span class="pc-name">${det.nome}</span><span class="pc-tag ${det.tagCls}">${det.tag}</span></div>
+    ${det.stats ? `<div class="pc-stats">${det.stats.map(x => `<div class="pc-stat"><div class="pc-sv"${x.pequeno ? ' style="font-size:14px;white-space:nowrap"' : ''}>${x.v}</div><div class="pc-sl">${x.l}</div></div>`).join('')}</div>` : '<div style="height:8px;border-bottom:1px solid #c2d9d1"></div>'}
+    <div class="pc-body">
+      ${dois ? `<div class="pc-grp">Comissões</div>${det.com.map(linha).join('')}` : ''}
+      <div class="pc-grp${dois ? ' g2' : ''}">Prêmios</div>${det.pre.map(linha).join('')}
+    </div>
+    ${dois ? `<div class="pc-mix"><div style="width:${pc}%;background:#0D4A3A"></div><div style="width:${tot > 0 ? 100 - pc : 0}%;background:#C49A45"></div></div>` : ''}
+    <div class="pc-tot">
+      ${dois ? `<div class="pc-tc"><span class="pc-tl">Comissões</span><span class="pc-tv">${fmt(det.totCom)}</span></div><div class="pc-tc"><span class="pc-tl">Prêmios</span><span class="pc-tv">${fmt(det.totPre)}</span></div>` : ''}
+      <div class="pc-tc"><span class="pc-tl">Total</span><span class="pc-tv pc-big">${fmt(det.total)}</span></div>
+    </div>
+  </div>
+  <div class="pc-note">Confira os valores acima. Se estiver de acordo, responda <b>“De acordo”</b>. Se tiver alguma dúvida, informe qual item deseja revisar.</div>
+  <div class="pc-f">Gerado em ${new Date().toLocaleDateString('pt-BR')}</div>
+</div>`;
+}
+
 function exportarCardPNG(btn) {
   const card = btn.closest('.person-card');
-  if (!card) return;
+  if (!card || !card.dataset.tipo) return;
+  const html = cardPNGHTML(card.dataset.tipo, card.dataset.key);
+  if (!html) return;
 
-  const actions = card.querySelector('.card-actions');
-  const hint    = card.querySelector('.hint');
-  if (actions) actions.style.visibility = 'hidden';
-  if (hint)    hint.style.visibility    = 'hidden';
+  const host = document.createElement('div');
+  host.style.cssText = 'position:fixed;left:-10000px;top:0;z-index:-1';
+  host.innerHTML = html;
+  document.body.appendChild(host);
 
   const mesRef = (document.getElementById('mes-ref').textContent || 'pbl').replace(/\s/g,'_');
-  const nome   = card.querySelector('.person-name')?.textContent?.replace(/\s/g,'_') || 'card';
+  const nome   = (card.querySelector('.person-name')?.textContent || 'card').replace(/\s/g,'_');
 
-  html2canvas(card, {
+  html2canvas(host.firstElementChild, {
     scale: 2,
     useCORS: true,
-    backgroundColor: null,
+    backgroundColor: '#ffffff',
     logging: false,
   }).then(canvas => {
     const a = document.createElement('a');
     a.download = `${nome}_${mesRef}.png`;
     a.href = canvas.toDataURL('image/png');
     a.click();
-  }).finally(() => {
-    if (actions) actions.style.visibility = '';
-    if (hint)    hint.style.visibility    = '';
-  });
+  }).finally(() => host.remove());
 }
 function salvarSessao() {
   const agora = new Date();
@@ -2019,6 +2086,10 @@ function exportarPDF() {
     .row .lbl{color:#546860}
     .row .val{font-weight:600}
     .row .sub{font-size:9px;color:#7aaa9a;display:block}
+    .row.z .lbl,.row.z .val{color:#9db3ab;font-weight:400}
+    .rankp{font-size:10px;color:#546860;padding:7px 16px;border-bottom:1px solid #c2d9d1}.rankp b{color:#111}
+    .pmix{display:flex;height:5px;background:#e3eee9}
+    .person .row .lbl{max-width:68%}
     .totals{display:grid;grid-template-columns:1fr 1fr 1fr;border-top:1px solid #c2d9d1;background:#dff0e9}
     .tot-col{text-align:center;padding:8px;border-right:1px solid #c2d9d1}
     .tot-col:last-child{border-right:none}
@@ -2064,96 +2135,24 @@ function exportarPDF() {
   <div class="subtitle">Competência: ${mesRef} · Gerado em ${new Date().toLocaleDateString('pt-BR')}</div>`;
 
   function pessoaHTML(tipo, key) {
-    const d = TIMES_PREMIO[tipo] ? null : (tipo === 'comercial' ? state.comercial[key] : state.juridico[key]);
-    const isNic = tipo === 'juridico' && temPrec(d);
-    const tagClass = tipo === 'comercial' ? 'tag-com' : tipo === 'juridico' ? 'tag-jur' : tipo === 'contencioso' ? 'tag-cont' : 'tag-fin';
-    const tagLabel = tipo === 'comercial' ? 'Comercial' : tipo === 'juridico' ? 'Jurídico' : tipo === 'contencioso' ? 'Contencioso' : 'Financeiro e Cálculos Judiciais';
-
-    if (TIMES_PREMIO[tipo]) {
-      const T       = TIMES_PREMIO[tipo];
-      const pe      = premioPessoa(tipo, key);
-      const exec    = premioVal(pe,'exec');
-      const res     = premioVal(pe,'res');
-      const objCol  = objTime(tipo);
-      const tot     = exec + res + objCol;
-      return `<div class="person">
-        <div class="person-header"><span class="person-name">${pe.nome}</span><span class="person-tag ${T.pdfTag}">${T.label}</span></div>
-        <div class="person-body" style="grid-template-columns:1fr">
-          <div class="section">
-            <div class="section-title">Prêmios</div>
-            <div class="row"><span class="lbl">Prêmio Execução</span><span class="val">${fmt(exec)}</span></div>
-            <div class="row"><span class="lbl">Prêmio Resultado</span><span class="val">${fmt(res)}</span></div>
-            <div class="row"><span class="lbl">Objetivo Coletivo</span><span class="val">${fmt(objCol)}</span></div>
-          </div>
-        </div>
-        <div class="totals">
-          <div class="tot-col"><div class="tot-lbl">Comissões</div><div class="tot-val">${fmt(0)}</div></div>
-          <div class="tot-col"><div class="tot-lbl">Prêmios</div><div class="tot-val">${fmt(tot)}</div></div>
-          <div class="tot-col"><div class="tot-lbl">Total</div><div class="tot-val">${fmt(tot)}</div></div>
-        </div>
-      </div>`;
-    }
-
-    const credVal = d.creditos * CFG.CREDITO_VAL;
-    const adicVal = d.adicionais * CFG.CREDITO_VAL;
-    const insQt   = tipo==='juridico' ? getManual(key,'ins') : 0;
-    const insVal  = insQt * CFG.INSERCAO_VAL;
-    const liqQtG  = getVal('#gc-liq-qt');
-    const totalEmp= state.totalCreditosEmpresa;
-    const pct     = totalEmp>0 ? (d.creditos/totalEmp*100).toFixed(2) : '0.00';
-    const liqVal  = tipo==='juridico' ? comissaoLiquidados(key) : 0;
-    const precQt  = isNic ? getManual(key,'prec') : 0;
-    const precQt2 = isNic ? getManual(key,'prec2') : 0;
-    const precVal = (precQt+precQt2)* CFG.PRECATORIO_VAL;
-    const pVol    = premioVolume(d.volume);
-    const objCol  = state.manuais[`obj_col_${tipo}`]||0;
-    const acordoQt  = tipo==='comercial' ? getManual(key,'acordo') : 0;
-    const acordo2Qt = tipo==='comercial' ? getManual(key,'acordo2') : 0;
-    const acordoVal  = acordoQt * CFG.CREDITO_VAL;
-    const acordo2Val = acordo2Qt * CFG.CREDITO_VAL;
-    const treinPDF = (tipo==='juridico' && temTrein(d)) ? getManual(key,'trein') : 0;
-    const campPDF = getManual(key,'camp');
-    const totCom  = credVal+adicVal+insVal+liqVal+precVal+acordoVal+acordo2Val;
-    const totPre  = pVol+objCol+treinPDF+campPDF;
-    const totGeral= totCom+totPre;
-    const nomeDisp = d.nome;
-
-    const statsHTML = `<div class="stat"><div class="stat-val">${fmtN(d.creditos)}</div><div class="stat-lbl">Créditos</div></div>
-         <div class="stat"><div class="stat-val">${fmtN(d.adicionais)}</div><div class="stat-lbl">Adicionais</div></div>
-         <div class="stat"><div class="stat-val">${fmt(d.volume)}</div><div class="stat-lbl">Volume</div></div>`;
-
-    const comHTML = `<div class="row"><span class="lbl">Créditos Comprados<span class="sub">${fmtN(d.creditos)} × ${TXT.cred}</span></span><span class="val">${fmt(credVal)}</span></div>
-         <div class="row"><span class="lbl">Créditos Comprados Adicionais<span class="sub">${fmtN(d.adicionais)} × ${TXT.cred}</span></span><span class="val">${fmt(adicVal)}</span></div>
-         ${tipo==='comercial' ? `
-         <div class="row"><span class="lbl">Créditos Acordos<span class="sub">${fmtN(acordoQt)} × ${TXT.cred}</span></span><span class="val">${fmt(acordoVal)}</span></div>
-         <div class="row"><span class="lbl">Créditos Acordos Adicionais<span class="sub">${fmtN(acordo2Qt)} × ${TXT.cred}</span></span><span class="val">${fmt(acordo2Val)}</span></div>` : ''}`;
-
-    const jurExtra = tipo==='juridico' ? `
-      <div class="row"><span class="lbl">Proc. Inseridos<span class="sub">${fmtN(insQt)} × ${TXT.ins}</span></span><span class="val">${fmt(insVal)}</span></div>
-      <div class="row"><span class="lbl">Proc. Liquidados<span class="sub">${fmtN(liqQtG)} créditos liq. × ${TXT.liq} · sua part.: ${pct}%</span></span><span class="val">${fmt(liqVal)}</span></div>
-      ${isNic ? `<div class="row"><span class="lbl">Precatório<span class="sub">${fmtN(precQt)} × ${TXT.prec}</span></span><span class="val">${fmt(precQt* CFG.PRECATORIO_VAL)}</span></div>
-      <div class="row"><span class="lbl">Precatório Adicional<span class="sub">${fmtN(precQt2)} × ${TXT.prec}</span></span><span class="val">${fmt(precQt2* CFG.PRECATORIO_VAL)}</span></div>` : ''}` : '';
-
+    const det = detalheDe(tipo, key);
+    const linha = x => `<div class="row${ehZero(x.val) ? ' z' : ''}"><span class="lbl">${x.lbl}${x.sub ? `<span class="sub">${x.sub}</span>` : ''}</span><span class="val">${ehZero(x.val) ? '—' : fmt(x.val)}</span></div>`;
+    const tot = det.totCom + det.totPre;
+    const pc  = tot > 0 ? det.totCom / tot * 100 : 0;
+    const dois = det.com.length > 0;
     return `<div class="person">
-      <div class="person-header"><span class="person-name">${nomeDisp}</span><span class="person-tag ${tagClass}">${tagLabel}</span></div>
-      <div class="person-stats">${statsHTML}</div>
-      <div class="person-body">
-        <div class="section">
-          <div class="section-title">Comissões</div>
-          ${comHTML}${jurExtra}
-        </div>
-        <div class="section">
-          <div class="section-title">Prêmios</div>
-          <div class="row"><span class="lbl">Objetivo</span><span class="val">${fmt(pVol)}</span></div>
-          <div class="row"><span class="lbl">Objetivo Coletivo</span><span class="val">${fmt(objCol)}</span></div>
-          ${treinPDF > 0 ? `<div class="row"><span class="lbl">Prêmio Treinamento</span><span class="val">${fmt(treinPDF)}</span></div>` : ''}
-          ${campPDF > 0 ? `<div class="row"><span class="lbl">Prêmio Campanha</span><span class="val">${fmt(campPDF)}</span></div>` : ''}
-        </div>
+      <div class="person-header"><span class="person-name">${det.nome}</span><span class="person-tag ${det.tagCls}">${det.tag}</span></div>
+      ${det.pos ? `<div class="rankp">${posicaoTexto(det.pos)}</div>` : ''}
+      ${det.stats ? `<div class="person-stats">${det.stats.map(x => `<div class="stat"><div class="stat-val"${x.pequeno ? ' style="font-size:12px"' : ''}>${x.v}</div><div class="stat-lbl">${x.l}</div></div>`).join('')}</div>` : ''}
+      <div class="person-body"${dois ? '' : ' style="grid-template-columns:1fr"'}>
+        ${dois ? `<div class="section"><div class="section-title">Comissões</div>${det.com.map(linha).join('')}</div>` : ''}
+        <div class="section"><div class="section-title">Prêmios</div>${det.pre.map(linha).join('')}</div>
       </div>
+      <div class="pmix"><div style="width:${dois ? pc : 0}%;background:#0D4A3A"></div><div style="width:${tot > 0 ? 100 - (dois ? pc : 0) : 0}%;background:#C49A45"></div></div>
       <div class="totals">
-        <div class="tot-col"><div class="tot-lbl">Comissões</div><div class="tot-val">${fmt(totCom)}</div></div>
-        <div class="tot-col"><div class="tot-lbl">Prêmios</div><div class="tot-val">${fmt(totPre)}</div></div>
-        <div class="tot-col"><div class="tot-lbl">Total</div><div class="tot-val">${fmt(totGeral)}</div></div>
+        <div class="tot-col"><div class="tot-lbl">Comissões</div><div class="tot-val">${fmt(det.totCom)}</div></div>
+        <div class="tot-col"><div class="tot-lbl">Prêmios</div><div class="tot-val">${fmt(det.totPre)}</div></div>
+        <div class="tot-col"><div class="tot-lbl">Total</div><div class="tot-val">${fmt(det.total)}</div></div>
       </div>
     </div>`;
   }
@@ -2390,6 +2389,123 @@ async function registrarMes() {
   btn.disabled = false;
   btn.textContent = 'Registrar mês';
 }
+// ── DETALHE DE UMA PESSOA (base do card do PDF e do PNG) ──────────────────
+const fmtPct1 = v => Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%';
+const ehZero  = v => Math.abs(v) < 0.005;
+
+// "17,39% de 100 créditos liquidados"
+function subLiquidados(d, paraRelatorio=false) {
+  const liqQt = getVal('#gc-liq-qt'), tot = state.totalCreditosEmpresa;
+  if (liqQt <= 0) return paraRelatorio ? 'créditos liquidados não informados' : 'Preencha os créditos liquidados';
+  return `${fmtPct(tot > 0 ? d.creditos / tot * 100 : 0)} de ${fmtN(liqQt)} créditos liquidados`;
+}
+
+// "próximo degrau R$ 1.200.000,00 · faltam R$ 42.300,00 (+R$ 100,00)"
+function textoDegrau(volume) {
+  if (volume < CFG.PREMIO_BASE_VOL) return `faltam ${fmt(CFG.PREMIO_BASE_VOL - volume)} para o 1º degrau (${fmt(CFG.PREMIO_BASE_VAL)})`;
+  const prox = CFG.PREMIO_BASE_VOL + (Math.floor((volume - CFG.PREMIO_BASE_VOL) / CFG.PREMIO_INC_VOL) + 1) * CFG.PREMIO_INC_VOL;
+  return `próximo degrau ${fmt(prox)} · faltam ${fmt(prox - volume)} (+${fmt(CFG.PREMIO_INC_VAL)})`;
+}
+
+// posição da pessoa no time e participação no time e na folha
+function posicaoPessoa(tipo, key, res=resumoPorTime()) {
+  const time = res.times.find(x => x.id === tipo);
+  const i = time ? time.lista.findIndex(x => x.key === key) : -1;
+  if (i < 0) return null;
+  const x = time.lista[i];
+  return { rank: i + 1, n: time.lista.length, partTime: time.total > 0 ? x.total / time.total * 100 : 0, partFolha: x.part };
+}
+const posicaoTexto = p => !p ? '' :
+  (p.n > 1 ? `<b>${p.rank}º de ${p.n}</b> no time · ${fmtPct1(p.partTime)} do time · ` : '') + `${fmtPct1(p.partFolha)} da folha`;
+
+// Atualiza a linha de posição dos cards da tela (Comercial e Jurídico)
+function atualizarPosicoes() {
+  if (!state.comercial || !document.getElementById('appContent')) return;
+  const res = resumoPorTime();
+  ['comercial','juridico'].forEach(tipo => {
+    const time = res.times.find(x => x.id === tipo);
+    if (!time) return;
+    time.lista.forEach(x => {
+      const el = document.getElementById(`posicao-${tipo}-${sid(x.key)}`);
+      if (el) el.innerHTML = posicaoTexto(posicaoPessoa(tipo, x.key, res));
+    });
+  });
+}
+
+// Barra Comissões × Prêmios e valores zerados em cinza (cards da tela)
+function setMix(tipo, key, com, pre) {
+  const el = document.getElementById(`mix-${tipo}-${sid(key)}`);
+  if (!el) return;
+  const tot = com + pre, pc = tot > 0 ? com / tot * 100 : 0;
+  el.children[0].style.width = (tot > 0 ? pc : 0) + '%';
+  el.children[1].style.width = (tot > 0 ? 100 - pc : 0) + '%';
+}
+function atenuarZeros(card) {
+  if (!card) return;
+  card.querySelectorAll('.card-body .row').forEach(row => {
+    const val = row.querySelector('.val');
+    if (!val) return;
+    const v = val.textContent.replace(/\s/g, ' ').trim();
+    const zero = /^R\$ 0,00$/.test(v) || v === '—';
+    if (zero && v !== '—') val.textContent = '—';
+    row.classList.toggle('z', zero);
+  });
+}
+function cardDe(tipo, key) {
+  return [...document.querySelectorAll('.person-card')].find(c => c.dataset.tipo === tipo && c.dataset.key === key);
+}
+
+function detalhePessoa(tipo, key) {
+  const jur = tipo === 'juridico';
+  const d = jur ? state.juridico[key] : state.comercial[key];
+  const com = [], pre = [];
+  const add = (arr, lbl, sub, val) => arr.push({ lbl, sub, val });
+  add(com, 'Créditos comprados',  `${fmtN(d.creditos)} × ${TXT.cred}`,   d.creditos * CFG.CREDITO_VAL);
+  add(com, 'Créditos adicionais', `${fmtN(d.adicionais)} × ${TXT.cred}`, d.adicionais * CFG.CREDITO_VAL);
+  if (jur) {
+    const ins = getManual(key,'ins');
+    add(com, 'Processos inseridos',  `${fmtN(ins)} × ${TXT.ins}`, ins * CFG.INSERCAO_VAL);
+    add(com, 'Processos liquidados', subLiquidados(d, true), comissaoLiquidados(key));
+    if (temPrec(d)) {
+      const p1 = getManual(key,'prec'), p2 = getManual(key,'prec2');
+      add(com, 'Precatório',           `${fmtN(p1)} × ${TXT.prec}`, p1 * CFG.PRECATORIO_VAL);
+      add(com, 'Precatório adicional', `${fmtN(p2)} × ${TXT.prec}`, p2 * CFG.PRECATORIO_VAL);
+    }
+  } else {
+    const a1 = getManual(key,'acordo'), a2 = getManual(key,'acordo2');
+    add(com, 'Créditos acordos',           `${fmtN(a1)} × ${TXT.cred}`, a1 * CFG.CREDITO_VAL);
+    add(com, 'Créditos acordos adicionais',`${fmtN(a2)} × ${TXT.cred}`, a2 * CFG.CREDITO_VAL);
+  }
+  add(pre, 'Objetivo de volume', textoDegrau(d.volume), premioVolume(d.volume));
+  add(pre, 'Objetivo coletivo',  '', state.manuais[`obj_col_${tipo}`] || 0);
+  add(pre, 'Campanha',           '', getManual(key,'camp'));
+  if (jur && temTrein(d)) add(pre, 'Treinamento', '', getManual(key,'trein'));
+  const t = totaisPessoa(tipo, key);
+  return {
+    nome: d.nome, tag: jur ? 'Jurídico' : 'Comercial', tagCls: jur ? 'tag-jur' : 'tag-com', tipo,
+    stats: [
+      { v: fmtN(d.creditos), l: 'Créditos' }, { v: fmtN(d.adicionais), l: 'Adicionais' },
+      { v: fmtN(d.linhas), l: 'Compras' }, { v: fmt(d.volume), l: 'Volume', pequeno: true },
+    ],
+    com, pre, totCom: t.com, totPre: t.pre, total: t.total, pos: posicaoPessoa(tipo, key),
+  };
+}
+
+function detalhePremio(t, pe) {
+  const T = TIMES_PREMIO[t];
+  const exec = premioVal(pe,'exec'), res = premioVal(pe,'res'), obj = objTime(t);
+  const res0 = resumoPorTime();
+  const tm = res0.times.find(x => x.id === t);
+  const it = tm && tm.lista.find(x => x.key === pe.key);
+  return {
+    nome: pe.nome, tag: T.label, tagCls: T.pdfTag, tipo: t, stats: null, com: [],
+    pre: [{ lbl: 'Prêmio execução', sub: '', val: exec }, { lbl: 'Prêmio resultado', sub: '', val: res }, { lbl: 'Objetivo coletivo', sub: '', val: obj }],
+    totCom: 0, totPre: exec + res + obj, total: exec + res + obj,
+    pos: it ? { rank: 1, n: 1, partTime: 100, partFolha: it.part } : null,
+  };
+}
+const detalheDe = (tipo, key) => TIMES_PREMIO[tipo] ? detalhePremio(tipo, premioPessoa(tipo, key)) : detalhePessoa(tipo, key);
+
 // ── RESUMO POR TIME (PDF e Excel) ─────────────────────────────────────────
 // Comissões / prêmios / total de uma pessoa do Comercial ou Jurídico (mesmas regras dos cards)
 function totaisPessoa(tipo, key) {
@@ -2416,17 +2532,17 @@ function resumoPorTime() {
     const lista = ks.map(k => {
       const d = data[k], t = totaisPessoa(tipo,k);
       com += t.com; pre += t.pre; volume += d.volume;
-      return { nome: d.nome, volume: d.volume, com: t.com, pre: t.pre, total: t.total };
+      return { key: k, nome: d.nome, volume: d.volume, com: t.com, pre: t.pre, total: t.total };
     });
-    times.push({ label, cor: tipo === 'comercial' ? '#0D4A3A' : '#C49A45', pessoas: ks.length, volume, com, pre, total: com + pre, lista });
+    times.push({ id: tipo, label, cor: tipo === 'comercial' ? '#0D4A3A' : '#C49A45', pessoas: ks.length, volume, com, pre, total: com + pre, lista });
   });
   Object.entries(TIMES_PREMIO).forEach(([t,T]) => {
     const lista = T.pessoas.map(pe => {
       const tot = totalPremioPessoa(t,pe);
-      return { nome: pe.nome, volume: null, com: 0, pre: tot, total: tot };
+      return { key: pe.key, nome: pe.nome, volume: null, com: 0, pre: tot, total: tot };
     });
     const pre = lista.reduce((a,x) => a + x.total, 0);
-    times.push({ label: T.label, cor: T.cor, pessoas: T.pessoas.length, volume: null, com: 0, pre, total: pre, lista });
+    times.push({ id: t, label: T.label, cor: T.cor, pessoas: T.pessoas.length, volume: null, com: 0, pre, total: pre, lista });
   });
   const soma = campo => times.reduce((a,x) => a + x[campo], 0);
   const totalGeral = soma('total');
