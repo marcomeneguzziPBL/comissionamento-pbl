@@ -2392,6 +2392,15 @@ function montarRegistro() {
   return { mesRef, headers, rows };
 }
 
+// Envia ao Apps Script e lê a resposta. Sem cabeçalho "Content-Type" o navegador não faz pré-verificação (CORS),
+// e o Apps Script devolve JSON legível: { ok, aba, linhas, substituiu } ou { ok:false, jaRegistrado, ... } ou { ok:false, erro }.
+async function enviarRegistro(payload) {
+  const resp = await fetch(SHEETS_URL, { method: 'POST', body: JSON.stringify({ chave: SHEETS_CHAVE, ...payload }) });
+  const texto = await resp.text();
+  try { return JSON.parse(texto); }
+  catch (_) { throw new Error('Resposta inesperada do Google (verifique se a implantação do script está como "Qualquer pessoa").'); }
+}
+
 async function registrarMes() {
   const btn = document.getElementById('btnRegistrar');
   if (!confirmarConsistencia('registrar o mês')) return;
@@ -2403,24 +2412,32 @@ async function registrarMes() {
   btn.textContent = 'Registrando...';
 
   try {
-    await fetch(SHEETS_URL, {
-  method: 'POST',
-  mode: 'no-cors',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ 
-    chave: SHEETS_CHAVE, 
-    mesRef, 
-    headers, 
-    rows 
-  })
-});
-    alert(`✓ Dados do mês "${mesRef}" enviados! Verifique a aba "${mesRef}" no Google Sheets.`);
-  } catch(err) {
-    alert('Erro: ' + err.message);
-  }
+    let r = await enviarRegistro({ mesRef, headers, rows });
 
-  btn.disabled = false;
-  btn.textContent = 'Registrar mês';
+    // Mês já registrado: pergunta antes de substituir (evita linhas duplicadas)
+    if (!r.ok && r.jaRegistrado) {
+      const substituir = confirm(`O mês "${mesRef}" já está registrado (${r.linhas} linhas na aba "${r.aba}").\n\nDeseja SUBSTITUIR os dados dessa aba pelos dados atuais?`);
+      if (!substituir) {
+        alert('Registro cancelado. Nenhum dado foi alterado no Google Sheets.');
+        return;
+      }
+      btn.textContent = 'Substituindo...';
+      r = await enviarRegistro({ mesRef, headers, rows, substituir: true });
+    }
+
+    if (r.ok) {
+      alert(`✓ ${r.linhas} linhas ${r.substituiu ? 'substituídas' : 'gravadas'} na aba "${r.aba}" do Google Sheets.`);
+    } else {
+      alert('O mês NÃO foi registrado.\n\nMotivo: ' + (r.erro || 'erro desconhecido'));
+    }
+  } catch (err) {
+    const motivo = err instanceof TypeError ? 'o navegador não conseguiu ler a resposta do Google (o envio pode ter sido feito ou não)' : err.message;
+    alert('Não foi possível confirmar o registro: ' + motivo +
+          '\n\nConfira na planilha se a aba "' + mesRef + '" foi criada antes de tentar novamente, para não duplicar dados.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Registrar mês';
+  }
 }
 // ── DETALHE DE UMA PESSOA (base do card do PDF e do PNG) ──────────────────
 const fmtPct1 = v => Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%';
