@@ -2416,12 +2416,13 @@ function posicaoPessoa(tipo, key, res=resumoPorTime()) {
   const x = time.lista[i];   // empates recebem a mesma posição (ex.: dois com volume zero ficam ambos em 7º)
   return { rank: x.rank, rankVol: x.rankVol, n: time.lista.length, partTime: x.partTime, partFolha: x.part, partVolTime: x.partVolTime, partVolTotal: x.partVolTotal };
 }
+// Mesma regra da página 2 do PDF: remuneração → % sobre o total de todos os times; volume → % sobre o time
 // Linha 1: posição e participação pela remuneração · Linha 2: posição e participação pelo volume de compras
 function posicaoTexto(p) {
   if (!p) return '';
   if (p.n <= 1) return `${fmtPct1(p.partFolha)} da folha`;
-  const l1 = `Remuneração <b>${p.rank}º de ${p.n}</b> · ${fmtPct1(p.partTime)} do time · ${fmtPct1(p.partFolha)} da folha`;
-  const l2 = p.rankVol === null ? '' : `<br>Volume de compras <b>${p.rankVol}º de ${p.n}</b> · ${fmtPct1(p.partVolTime)} do time · ${fmtPct1(p.partVolTotal)} do volume total`;
+  const l1 = `Remuneração <b>${p.rank}º de ${p.n}</b> · ${fmtPct1(p.partFolha)} da folha`;
+  const l2 = p.rankVol === null ? '' : `<br>Volume de compras <b>${p.rankVol}º de ${p.n}</b> · ${fmtPct1(p.partVolTime)} do volume do time`;
   return l1 + l2;
 }
 
