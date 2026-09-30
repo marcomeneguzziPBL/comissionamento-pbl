@@ -2130,7 +2130,11 @@ function exportarPDF() {
     .resumo th:first-child,.resumo td:first-child{text-align:left}
     .resumo table.tt td{padding:11px 12px;font-size:12.5px}
     .resumo table.pp td,.resumo table.pp th{padding:5px 10px}
-    .resumo table.pp td{font-size:11px}
+    .resumo table.pp td{font-size:10.5px}
+    .resumo table.pp td,.resumo table.pp th{padding:5px 8px}
+    .resumo table.pp td:first-child{white-space:nowrap}
+    .resumo th.pos,.resumo td.pos{text-align:center}
+    .resumo td.pos.dif{color:#9c7a34;font-weight:700}
     .resumo tr.grp td{background:#f4f9f7;font-weight:700;color:#0D4A3A;border-top:1px solid #c2d9d1}
     .resumo tr.pes td:first-child{padding-left:26px}
     .resumo tr.pes{page-break-inside:avoid}
@@ -2199,14 +2203,23 @@ function exportarPDF() {
     <h2>Remuneração por pessoa</h2>
     <div class="rsub">Competência: <b>${mesRef}</b> · ordenado pelo maior total dentro de cada time · valores em reais (R$)</div>
     <table class="pp">
-      <thead><tr><th>Pessoa</th><th>Volume</th><th>Comissões</th><th>Prêmios</th><th>Total</th><th>% do total</th></tr></thead>
+      <thead><tr><th>Pessoa</th><th>Volume</th><th>Comissões</th><th>Prêmios</th><th>Total</th><th>% do total</th><th class="pos">Pos. remuneração</th><th class="pos">Pos. volume</th></tr></thead>
       <tbody>
-        ${resumo.times.map(t => `<tr class="grp"><td><i class="dot" style="background:${t.cor}"></i>${t.label}</td><td>${t.volume === null ? '' : fmt(t.volume)}</td><td>${fmt(t.com)}</td><td>${fmt(t.pre)}</td><td>${fmt(t.total)}</td><td>${pct(t.part)}</td></tr>`
-          + t.lista.map(x => `<tr class="pes"><td>${x.nome}</td><td>${x.volume === null ? '—' : fmt(x.volume)}</td><td>${fmt(x.com)}</td><td>${fmt(x.pre)}</td><td>${fmt(x.total)}</td><td>${pct(x.part)}</td></tr>`).join('')).join('')}
-        <tr class="total"><td>Total geral</td><td></td><td>${fmt(resumo.com)}</td><td>${fmt(resumo.pre)}</td><td>${fmt(totG)}</td><td>${totG > 0 ? pct(100) : pct(0)}</td></tr>
+        ${resumo.times.map(t => `<tr class="grp"><td><i class="dot" style="background:${t.cor}"></i>${t.label}</td><td>${t.volume === null ? '' : fmt(t.volume)}</td><td>${fmt(t.com)}</td><td>${fmt(t.pre)}</td><td>${fmt(t.total)}</td><td>${pct(t.part)}</td><td></td><td></td></tr>`
+          + t.lista.map(x => {
+            // posições só para Comercial e Jurídico (e apenas se o time tiver movimento)
+            const ranq = (t.id === 'comercial' || t.id === 'juridico') && t.total > 0;
+            const dif  = ranq && Math.abs(x.rank - x.rankVol) >= 2;
+            return `<tr class="pes"><td>${x.nome}</td><td>${x.volume === null ? '—' : fmt(x.volume)}</td><td>${fmt(x.com)}</td><td>${fmt(x.pre)}</td><td>${fmt(x.total)}</td><td>${pct(x.part)}</td>`
+              + (t.id === 'comercial' || t.id === 'juridico'
+                  ? `<td class="pos">${ranq ? x.rank + 'º' : '—'}</td><td class="pos${dif ? ' dif' : ''}">${ranq ? x.rankVol + 'º' : '—'}</td>`
+                  : '<td></td><td></td>')
+              + '</tr>';
+          }).join('')).join('')}
+        <tr class="total"><td>Total geral</td><td></td><td>${fmt(resumo.com)}</td><td>${fmt(resumo.pre)}</td><td>${fmt(totG)}</td><td>${totG > 0 ? pct(100) : pct(0)}</td><td></td><td></td></tr>
       </tbody>
     </table>
-    <div class="rnote">As linhas em destaque são o subtotal de cada time. A composição de cada valor está nas páginas individuais a seguir.</div>
+    <div class="rnote">As linhas em destaque são o subtotal de cada time. Posições (Comercial e Jurídico) são dentro de cada time; empates dividem a mesma posição. Em âmbar: posição por volume que difere 2 ou mais posições da posição por remuneração. A composição de cada valor está nas páginas individuais a seguir.</div>
     <div class="rnote obs">${obsComercialJuridico(resumo)}</div>
   </div>`;
 
