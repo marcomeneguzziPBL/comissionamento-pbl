@@ -2457,7 +2457,7 @@ function obsComercialJuridico(resumo) {
   const origem = [fora.length ? 'compras com Jurídico fora da lista: ' + fora.join(', ') : '', semJur ? `${semJur} linha(s) sem Jurídico preenchido` : ''].filter(Boolean).join('; ');
   return `${base} Neste mês o volume do Comercial (${fmt(tCom.volume)}) é maior que o do Jurídico (${fmt(tJur.volume)}) em ${fmt(difVol)}` +
     `${difCred ? ' e em ' + fmtN(difCred) + ' crédito(s)' : ''}: ${origem || 'compras sem Jurídico da lista'}. ` +
-    `Essas compras geram remuneração para o Comercial, mas não para o Jurídico, e por isso não entram nos valores acima. O % de liquidados do Jurídico usa como base o total de créditos da empresa.`;
+    `Essas compras geram remuneração para o Comercial, mas não para o Jurídico, e por isso não entram nos valores acima.`;
 }
 
 // ── EXPORTAR EXCEL (local) ────────────────────────────────────────────────
