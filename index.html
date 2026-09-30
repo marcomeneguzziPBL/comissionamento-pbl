@@ -930,9 +930,12 @@ function pessoasAtivas() {
   return out;
 }
 function progressoManuais() {
-  const todas = pessoasAtivas();
-  const pendentes = todas.filter(x => !temLancamento(x.tipo, x.key));
-  return { feitos: todas.length - pendentes.length, total: todas.length, pendentes };
+  // uma pessoa em mais de um time só conta como concluída quando todas as funções estão concluídas
+  const grupos = {};
+  pessoasAtivas().forEach(x => { (grupos[chaveNome(x.nome)] = grupos[chaveNome(x.nome)] || { nome: x.nome, itens: [] }).itens.push(x); });
+  const lista = Object.values(grupos);
+  const pendentes = lista.filter(g => !g.itens.every(x => temLancamento(x.tipo, x.key)));
+  return { feitos: lista.length - pendentes.length, total: lista.length, pendentes };
 }
 
 // Barra fixa no topo: total da remuneração variável, total por time e progresso dos lançamentos manuais
@@ -1650,16 +1653,22 @@ function montarAbasManuais(body) {
 }
 // pessoa "com lançamento" = algum campo > 0 ou marcada como "nada a lançar" (lendo os campos abertos no modal)
 function atualizarProgressoManuais() {
-  let feitos = 0, total = 0;
+  const grupos = {};   // pessoa única → todas as funções concluídas?
   document.querySelectorAll('#mmBody .mm-team').forEach(sec => {
     const pessoas = [...sec.querySelectorAll('.mm-person[data-key]')];
-    const f = pessoas.filter(p => p.querySelector('.mm-okbox')?.checked || [...p.querySelectorAll('input.mm-input')].some(i => numPos(i.value) > 0)).length;
-    feitos += f; total += pessoas.length;
+    const feito = p => !!(p.querySelector('.mm-okbox')?.checked || [...p.querySelectorAll('input.mm-input')].some(i => numPos(i.value) > 0));
+    const f = pessoas.filter(feito).length;
+    pessoas.forEach(p => {
+      const nome = p.dataset.tipo === 'comercial' || p.dataset.tipo === 'juridico' ? (state[p.dataset.tipo][p.dataset.key]?.nome || p.dataset.key) : (premioPessoa(p.dataset.tipo, p.dataset.key)?.nome || p.dataset.key);
+      const id = chaveNome(nome);
+      grupos[id] = (grupos[id] !== undefined ? grupos[id] : true) && feito(p);
+    });
     const badge = document.querySelector(`#mmBody .mm-tab[data-team="${sec.dataset.team}"] .mm-tab-n`);
     if (badge) badge.textContent = `${f}/${pessoas.length}`;
   });
   const el = document.getElementById('mmProg');
-  if (el) el.textContent = `${feitos} de ${total} com lançamentos`;
+  const ids = Object.values(grupos);
+  if (el) el.textContent = `${ids.filter(Boolean).length} de ${ids.length} pessoas com lançamentos`;
 }
 
 function abrirModalManuais() {
@@ -2345,14 +2354,14 @@ function exportarPDF() {
   const totG = resumo.total;
   const mixCom = totG > 0 ? resumo.com / totG * 100 : 0;
   const mixPre = totG > 0 ? resumo.pre / totG * 100 : 0;
-  const media  = resumo.pessoas > 0 ? totG / resumo.pessoas : 0;
+  const media  = resumo.pessoasUnicas > 0 ? totG / resumo.pessoasUnicas : 0;
   const baseLinhas = state.conferencia ? `${fmtN(state.conferencia.linhasPagas)} linhas pagas na planilha` : '';
   html += `<div class="resumo">
     <h2>Resumo gerencial · Remuneração variável</h2>
     <div class="rsub">Competência: <b>${mesRef}</b>${baseLinhas ? ' · base: ' + baseLinhas : ''} · valores em reais (R$)</div>
 
     <div class="kpis">
-      <div class="kpi kpi-main"><div class="k">Total da remuneração variável</div><div class="v">${fmt(totG)}</div><div class="s">${resumo.pessoas} pessoas · média ${fmt(media)} por pessoa</div></div>
+      <div class="kpi kpi-main"><div class="k">Total da remuneração variável</div><div class="v">${fmt(totG)}</div><div class="s">${resumo.pessoasUnicas} pessoas · média ${fmt(media)} por pessoa</div></div>
       <div class="kpi"><div class="k">Comissões</div><div class="v">${fmt(resumo.com)}</div><div class="s">${pct(mixCom)} do total</div></div>
       <div class="kpi"><div class="k">Prêmios</div><div class="v">${fmt(resumo.pre)}</div><div class="s">${pct(mixPre)} do total</div></div>
       <div class="kpi"><div class="k">Volume total (PAGO)</div><div class="v">${fmt(resumo.volume)}</div><div class="s">compras pagas no mês</div></div>
@@ -2367,10 +2376,10 @@ function exportarPDF() {
       <thead><tr><th>Time</th><th>Pessoas</th><th>Comissões</th><th>Prêmios</th><th>Total</th><th>% do total</th></tr></thead>
       <tbody>
         ${resumo.times.map(t => `<tr><td><i class="dot" style="background:${t.cor}"></i>${t.label}</td><td>${t.pessoas}</td><td>${fmt(t.com)}</td><td>${fmt(t.pre)}</td><td>${fmt(t.total)}</td><td><b>${pct(t.part)}</b></td></tr>`).join('')}
-        <tr class="total"><td>Total geral</td><td>${resumo.pessoas}</td><td>${fmt(resumo.com)}</td><td>${fmt(resumo.pre)}</td><td>${fmt(totG)}</td><td>${totG > 0 ? pct(100) : pct(0)}</td></tr>
+        <tr class="total"><td>Total geral</td><td>${resumo.pessoasUnicas}</td><td>${fmt(resumo.com)}</td><td>${fmt(resumo.pre)}</td><td>${fmt(totG)}</td><td>${totG > 0 ? pct(100) : pct(0)}</td></tr>
       </tbody>
     </table>
-    <div class="rnote"><b>Comissões</b>: créditos, adicionais, acordos, inseridos, liquidados e precatório. <b>Prêmios</b>: objetivo de volume, objetivo coletivo, execução, resultado, treinamento e campanha.</div>
+    <div class="rnote"><b>Comissões</b>: créditos, adicionais, acordos, inseridos, liquidados e precatório. <b>Prêmios</b>: objetivo de volume, objetivo coletivo, execução, resultado, treinamento e campanha.${resumo.multiFuncao.length ? ` O total de pessoas conta uma vez quem atua em mais de um time (${resumo.multiFuncao.join(', ')}).` : ''}</div>
   </div>
   <div class="resumo">
     <h2>Remuneração por pessoa</h2>
@@ -2605,13 +2614,14 @@ function posicaoPessoa(tipo, key, res=resumoPorTime()) {
   const i = time ? time.lista.findIndex(x => x.key === key) : -1;
   if (i < 0) return null;
   const x = time.lista[i];   // empates recebem a mesma posição (ex.: dois com volume zero ficam ambos em 7º)
-  return { rank: x.rankGeral, nGeral: res.pessoas, rankVol: x.rankVol, n: time.lista.length, partTime: x.partTime, partFolha: x.part, partVolTime: x.partVolTime, partVolTotal: x.partVolTotal };
+  const multi = x.funcoes.length > 1;
+  return { rank: x.rankGeral, nGeral: res.pessoasUnicas, funcoes: multi ? x.funcoes : null, rankVol: x.rankVol, n: time.lista.length, partTime: x.partTime, partFolha: multi ? x.partFolhaPessoa : x.part, partVolTime: x.partVolTime, partVolTotal: x.partVolTotal };
 }
 // Mesma regra da página 2 do PDF: remuneração → posição e % sobre todos os times; volume → posição e % sobre o time
 // Linha 1: posição e participação pela remuneração · Linha 2: posição e participação pelo volume de compras
 function posicaoTexto(p) {
   if (!p) return '';
-  const l1 = `Remuneração <b>${p.rank}º de ${p.nGeral}</b> · ${fmtPct(p.partFolha)} da folha`;
+  const l1 = `Remuneração <b>${p.rank}º de ${p.nGeral}</b> · ${fmtPct(p.partFolha)} da folha` + (p.funcoes ? ` (soma de ${p.funcoes.join(' + ')})` : '');
   const l2 = (p.rankVol === null || p.n <= 1) ? '' : `<br>Volume de compras <b>${p.rankVol}º de ${p.n}</b> · ${fmtPct(p.partVolTime)} do volume do time`;
   return l1 + l2;
 }
@@ -2758,9 +2768,24 @@ function resumoPorTime() {
     });
   });
   // posição na remuneração entre todas as pessoas de todos os times (mesma base do % da folha)
+  // Quem atua em mais de um time (ex.: Amanda no Jurídico e no Contencioso) conta uma vez, com a soma das funções
   const todos = times.flatMap(t => t.lista);
-  todos.forEach(x => { x.rankGeral = 1 + todos.filter(y => y.total > x.total + 0.004).length; });
-  return { times, pessoas: soma('pessoas'), com: soma('com'), pre: soma('pre'), total: totalGeral, volume };
+  const porPessoa = {};
+  todos.forEach(x => {
+    const id = chaveNome(x.nome);
+    const P = porPessoa[id] || (porPessoa[id] = { nome: x.nome, total: 0, funcoes: [] });
+    P.total += x.total;
+    P.funcoes.push(times.find(t => t.lista.includes(x)).label);
+  });
+  const unicas = Object.values(porPessoa);
+  todos.forEach(x => {
+    const P = porPessoa[chaveNome(x.nome)];
+    x.rankGeral    = 1 + unicas.filter(y => y.total > P.total + 0.004).length;   // posição entre pessoas únicas
+    x.funcoes      = P.funcoes;                                                   // times em que a pessoa atua
+    x.partFolhaPessoa = pc(P.total);                                              // % da folha somando as funções
+  });
+  const multiFuncao = unicas.filter(P => P.funcoes.length > 1).map(P => P.nome);
+  return { times, pessoas: soma('pessoas'), pessoasUnicas: unicas.length, multiFuncao, com: soma('com'), pre: soma('pre'), total: totalGeral, volume };
 }
 
 // Observação do PDF: por que o volume do Comercial pode diferir do Jurídico
@@ -2803,14 +2828,14 @@ function exportarExcel() {
   XLSX.utils.book_append_sheet(wb, wsCom, 'Comissões');
 
   const res = resumoPorTime();
-  const aoaRes = [['Time','Pessoas','Comissões (R$)','Prêmios (R$)','Total (R$)','% do total','Volume atribuído (R$)','Rem. ÷ volume'],
-    ...res.times.map(t => [t.label, t.pessoas, t.com, t.pre, t.total, t.part / 100, t.volume === null ? '—' : t.volume, t.remVol === null ? '—' : t.remVol / 100]),
-    ['Total geral', res.pessoas, res.com, res.pre, res.total, res.total > 0 ? 1 : 0, res.volume, res.volume > 0 ? res.total / res.volume : 0],
+  const aoaRes = [['Time','Pessoas','Comissões (R$)','Prêmios (R$)','Total (R$)','% do total'],
+    ...res.times.map(t => [t.label, t.pessoas, t.com, t.pre, t.total, t.part / 100]),
+    ['Total geral', res.pessoasUnicas, res.com, res.pre, res.total, res.total > 0 ? 1 : 0],
     [],
     ['Volume total PAGO (R$)', '', '', '', res.volume],
     ['Total geral ÷ volume', '', '', '', res.volume > 0 ? res.total / res.volume : 0]];
   const wsRes = XLSX.utils.aoa_to_sheet(aoaRes);
-  wsRes['!cols'] = [{ wch: 32 }, { wch: 10 }, { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 12 }, { wch: 22 }, { wch: 14 }];
+  wsRes['!cols'] = [{ wch: 32 }, { wch: 10 }, { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 12 }];
   for (let r = 1; r < aoaRes.length; r++) for (let c = 2; c <= 4; c++) {
     const cell = wsRes[XLSX.utils.encode_cell({ r, c })];
     if (cell && cell.t === 'n') cell.z = (r === aoaRes.length - 1) ? '0.00%' : MOEDA;
@@ -2818,10 +2843,6 @@ function exportarExcel() {
   for (let r = 1; r <= res.times.length + 1; r++) {
     const cell = wsRes[XLSX.utils.encode_cell({ r, c: 5 })];
     if (cell && cell.t === 'n') cell.z = '0.00%';
-    const cv = wsRes[XLSX.utils.encode_cell({ r, c: 6 })];
-    if (cv && cv.t === 'n') cv.z = MOEDA;
-    const cr = wsRes[XLSX.utils.encode_cell({ r, c: 7 })];
-    if (cr && cr.t === 'n') cr.z = '0.00%';
   }
   XLSX.utils.book_append_sheet(wb, wsRes, 'Resumo');
 
