@@ -2134,7 +2134,6 @@ function exportarPDF() {
     .resumo table.pp td,.resumo table.pp th{padding:5px 8px}
     .resumo table.pp td:first-child{white-space:nowrap}
     .resumo th.pos,.resumo td.pos{text-align:center}
-    .resumo td.pos.dif{color:#9c7a34;font-weight:700}
     .resumo tr.grp td{background:#f4f9f7;font-weight:700;color:#0D4A3A;border-top:1px solid #c2d9d1}
     .resumo tr.pes td:first-child{padding-left:26px}
     .resumo tr.pes{page-break-inside:avoid}
@@ -2203,23 +2202,22 @@ function exportarPDF() {
     <h2>Remuneração por pessoa</h2>
     <div class="rsub">Competência: <b>${mesRef}</b> · ordenado pelo maior total dentro de cada time · valores em reais (R$)</div>
     <table class="pp">
-      <thead><tr><th>Pessoa</th><th>Volume</th><th>Comissões</th><th>Prêmios</th><th>Total</th><th>% do total</th><th class="pos">Pos. remuneração</th><th class="pos">Pos. volume</th></tr></thead>
+      <thead><tr><th>Pessoa</th><th>Volume</th><th>Comissões</th><th>Prêmios</th><th>Total</th><th>% do total</th><th class="pos">% remuneração no time</th><th class="pos">% volume no time</th></tr></thead>
       <tbody>
         ${resumo.times.map(t => `<tr class="grp"><td><i class="dot" style="background:${t.cor}"></i>${t.label}</td><td>${t.volume === null ? '' : fmt(t.volume)}</td><td>${fmt(t.com)}</td><td>${fmt(t.pre)}</td><td>${fmt(t.total)}</td><td>${pct(t.part)}</td><td></td><td></td></tr>`
           + t.lista.map(x => {
-            // posições só para Comercial e Jurídico (e apenas se o time tiver movimento)
-            const ranq = (t.id === 'comercial' || t.id === 'juridico') && t.total > 0;
-            const dif  = ranq && Math.abs(x.rank - x.rankVol) >= 2;
+            // percentuais só para Comercial e Jurídico (e apenas se o time tiver movimento)
+            const compara = (t.id === 'comercial' || t.id === 'juridico');
             return `<tr class="pes"><td>${x.nome}</td><td>${x.volume === null ? '—' : fmt(x.volume)}</td><td>${fmt(x.com)}</td><td>${fmt(x.pre)}</td><td>${fmt(x.total)}</td><td>${pct(x.part)}</td>`
-              + (t.id === 'comercial' || t.id === 'juridico'
-                  ? `<td class="pos">${ranq ? x.rank + 'º' : '—'}</td><td class="pos${dif ? ' dif' : ''}">${ranq ? x.rankVol + 'º' : '—'}</td>`
+              + (compara
+                  ? `<td class="pos">${t.total > 0 ? pct(x.partTime) : '—'}</td><td class="pos">${t.volume > 0 ? pct(x.partVolTime) : '—'}</td>`
                   : '<td></td><td></td>')
               + '</tr>';
           }).join('')).join('')}
         <tr class="total"><td>Total geral</td><td></td><td>${fmt(resumo.com)}</td><td>${fmt(resumo.pre)}</td><td>${fmt(totG)}</td><td>${totG > 0 ? pct(100) : pct(0)}</td><td></td><td></td></tr>
       </tbody>
     </table>
-    <div class="rnote">As linhas em destaque são o subtotal de cada time. Posições (Comercial e Jurídico) são dentro de cada time; empates dividem a mesma posição. Em âmbar: posição por volume que difere 2 ou mais posições da posição por remuneração. A composição de cada valor está nas páginas individuais a seguir.</div>
+    <div class="rnote">As linhas em destaque são o subtotal de cada time. <b>% remuneração no time</b> e <b>% volume no time</b> (Comercial e Jurídico): participação de cada pessoa na remuneração e no volume do próprio time, para comparar quem mais recebe com quem mais comprou. <b>% do total</b>: participação na remuneração variável de todos os times. A composição de cada valor está nas páginas individuais a seguir.</div>
     <div class="rnote obs">${obsComercialJuridico(resumo)}</div>
   </div>`;
 
@@ -2424,14 +2422,14 @@ function posicaoPessoa(tipo, key, res=resumoPorTime()) {
   const i = time ? time.lista.findIndex(x => x.key === key) : -1;
   if (i < 0) return null;
   const x = time.lista[i];   // empates recebem a mesma posição (ex.: dois com volume zero ficam ambos em 7º)
-  return { rank: x.rank, rankVol: x.rankVol, n: time.lista.length, partTime: time.total > 0 ? x.total / time.total * 100 : 0, partFolha: x.part };
+  return { rank: x.rank, rankVol: x.rankVol, n: time.lista.length, partTime: x.partTime, partFolha: x.part, partVolTime: x.partVolTime, partVolTotal: x.partVolTotal };
 }
-// Linha 1: posição pela remuneração + participação · Linha 2: posição pelo volume de compras
+// Linha 1: posição e participação pela remuneração · Linha 2: posição e participação pelo volume de compras
 function posicaoTexto(p) {
   if (!p) return '';
   if (p.n <= 1) return `${fmtPct1(p.partFolha)} da folha`;
   const l1 = `Remuneração <b>${p.rank}º de ${p.n}</b> · ${fmtPct1(p.partTime)} do time · ${fmtPct1(p.partFolha)} da folha`;
-  const l2 = p.rankVol === null ? '' : `<br>Volume de compras <b>${p.rankVol}º de ${p.n}</b>`;
+  const l2 = p.rankVol === null ? '' : `<br>Volume de compras <b>${p.rankVol}º de ${p.n}</b> · ${fmtPct1(p.partVolTime)} do time · ${fmtPct1(p.partVolTotal)} do volume total`;
   return l1 + l2;
 }
 
@@ -2564,17 +2562,20 @@ function resumoPorTime() {
   const soma = campo => times.reduce((a,x) => a + x[campo], 0);
   const totalGeral = soma('total');
   const pc = v => totalGeral > 0 ? v / totalGeral * 100 : 0;
+  const volume = state.conferencia?.volume?.empresa ?? Object.values(state.comercial).reduce((a,d) => a + d.volume, 0);
   times.forEach(t => {
     t.part = pc(t.total);
     t.remVol = t.volume > 0 ? t.total / t.volume * 100 : null;   // só Comercial e Jurídico
     t.lista.sort((a,b) => b.total - a.total);
     t.lista.forEach(x => {
       x.part    = pc(x.total);
+      x.partTime     = t.total > 0 ? x.total / t.total * 100 : 0;                       // % da remuneração do time
+      x.partVolTime  = x.volume === null ? null : (t.volume > 0 ? x.volume / t.volume * 100 : 0);  // % do volume do time
+      x.partVolTotal = x.volume === null ? null : (volume > 0 ? x.volume / volume * 100 : 0);      // % do volume total (pago)
       x.rank    = 1 + t.lista.filter(y => y.total > x.total + 0.004).length;
       x.rankVol = x.volume === null ? null : 1 + t.lista.filter(y => y.volume > x.volume + 0.004).length;
     });
   });
-  const volume = state.conferencia?.volume?.empresa ?? Object.values(state.comercial).reduce((a,d) => a + d.volume, 0);
   return { times, pessoas: soma('pessoas'), com: soma('com'), pre: soma('pre'), total: totalGeral, volume };
 }
 
@@ -2638,13 +2639,13 @@ function exportarExcel() {
   }
   XLSX.utils.book_append_sheet(wb, wsRes, 'Resumo');
 
-  const aoaPes = [['Time','Pessoa','Volume (R$)','Comissões (R$)','Prêmios (R$)','Total (R$)','% do total']];
-  res.times.forEach(t => [...t.lista].sort((a,b) => porNome(a.nome, b.nome)).forEach(x => aoaPes.push([t.label, x.nome, x.volume === null ? '—' : x.volume, x.com, x.pre, x.total, x.part / 100])));
+  const aoaPes = [['Time','Pessoa','Volume (R$)','Comissões (R$)','Prêmios (R$)','Total (R$)','% do total','% remuneração no time','% volume no time']];
+  res.times.forEach(t => [...t.lista].sort((a,b) => porNome(a.nome, b.nome)).forEach(x => aoaPes.push([t.label, x.nome, x.volume === null ? '—' : x.volume, x.com, x.pre, x.total, x.part / 100, x.volume === null ? '—' : x.partTime / 100, x.volume === null ? '—' : x.partVolTime / 100])));
   const wsPes = XLSX.utils.aoa_to_sheet(aoaPes);
-  wsPes['!cols'] = [{ wch: 32 }, { wch: 22 }, { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 12 }];
-  for (let r = 1; r < aoaPes.length; r++) for (let c = 2; c <= 6; c++) {
+  wsPes['!cols'] = [{ wch: 32 }, { wch: 22 }, { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 12 }, { wch: 22 }, { wch: 20 }];
+  for (let r = 1; r < aoaPes.length; r++) for (let c = 2; c <= 8; c++) {
     const cell = wsPes[XLSX.utils.encode_cell({ r, c })];
-    if (cell && cell.t === 'n') cell.z = c === 6 ? '0.00%' : MOEDA;
+    if (cell && cell.t === 'n') cell.z = c >= 6 ? '0.00%' : MOEDA;
   }
   XLSX.utils.book_append_sheet(wb, wsPes, 'Por pessoa');
 
