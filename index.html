@@ -2414,15 +2414,15 @@ function posicaoPessoa(tipo, key, res=resumoPorTime()) {
   const i = time ? time.lista.findIndex(x => x.key === key) : -1;
   if (i < 0) return null;
   const x = time.lista[i];   // empates recebem a mesma posição (ex.: dois com volume zero ficam ambos em 7º)
-  return { rank: x.rank, rankVol: x.rankVol, n: time.lista.length, partTime: x.partTime, partFolha: x.part, partVolTime: x.partVolTime, partVolTotal: x.partVolTotal };
+  return { rank: x.rankGeral, nGeral: res.pessoas, rankVol: x.rankVol, n: time.lista.length, partTime: x.partTime, partFolha: x.part, partVolTime: x.partVolTime, partVolTotal: x.partVolTotal };
 }
-// Mesma regra da página 2 do PDF: remuneração → % sobre o total de todos os times; volume → % sobre o time
+// Mesma regra da página 2 do PDF: remuneração → posição e % sobre todos os times; volume → posição e % sobre o time
 // Linha 1: posição e participação pela remuneração · Linha 2: posição e participação pelo volume de compras
 function posicaoTexto(p) {
   if (!p) return '';
-  if (p.n <= 1) return `${fmtPct1(p.partFolha)} da folha`;
-  const l1 = `Remuneração <b>${p.rank}º de ${p.n}</b> · ${fmtPct1(p.partFolha)} da folha`;
-  const l2 = p.rankVol === null ? '' : `<br>Volume de compras <b>${p.rankVol}º de ${p.n}</b> · ${fmtPct1(p.partVolTime)} do volume do time`;
+  if (p.soFolha) return `${fmtPct1(p.partFolha)} da folha`;
+  const l1 = `Remuneração <b>${p.rank}º de ${p.nGeral}</b> · ${fmtPct1(p.partFolha)} da folha`;
+  const l2 = (p.rankVol === null || p.n <= 1) ? '' : `<br>Volume de compras <b>${p.rankVol}º de ${p.n}</b> · ${fmtPct1(p.partVolTime)} do volume do time`;
   return l1 + l2;
 }
 
@@ -2509,7 +2509,7 @@ function detalhePremio(t, pe) {
     nome: pe.nome, tag: T.label, tagCls: T.pdfTag, tipo: t, stats: null, com: [],
     pre: [{ lbl: 'Prêmio execução', sub: '', val: exec }, { lbl: 'Prêmio resultado', sub: '', val: res }, { lbl: 'Objetivo coletivo', sub: '', val: obj }],
     totCom: 0, totPre: exec + res + obj, total: exec + res + obj,
-    pos: it ? { rank: 1, n: 1, partTime: 100, partFolha: it.part } : null,
+    pos: it ? { soFolha: true, partFolha: it.part } : null,
   };
 }
 const detalheDe = (tipo, key) => TIMES_PREMIO[tipo] ? detalhePremio(tipo, premioPessoa(tipo, key)) : detalhePessoa(tipo, key);
@@ -2569,6 +2569,9 @@ function resumoPorTime() {
       x.rankVol = x.volume === null ? null : 1 + t.lista.filter(y => y.volume > x.volume + 0.004).length;
     });
   });
+  // posição na remuneração entre todas as pessoas de todos os times (mesma base do % da folha)
+  const todos = times.flatMap(t => t.lista);
+  todos.forEach(x => { x.rankGeral = 1 + todos.filter(y => y.total > x.total + 0.004).length; });
   return { times, pessoas: soma('pessoas'), com: soma('com'), pre: soma('pre'), total: totalGeral, volume };
 }
 
