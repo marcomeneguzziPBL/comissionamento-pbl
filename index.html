@@ -579,12 +579,15 @@ tr:not(.totals-row):hover td{opacity:.85;cursor:pointer}
 
 <script>
 // ── NOMES DO JURÍDICO ────────────────────────────────────────────────────
+// Nomes de pessoas são sempre exibidos em ordem alfabética (porNome), exceto em
+// tabelas/rankings onde a ordem por quantidade faz sentido.
+const porNome = (a, b) => String(a).localeCompare(String(b), 'pt-BR', { sensitivity: 'base' });
 const JURIDICO_NOMES = [
-  "Tarciane", "Fernando", "Daniel", "Nicolli", "Vitória", "Eduardo", "Amanda", "Natália"
+  "Amanda", "Daniel", "Eduardo", "Fernando", "Natália", "Nicolli", "Tarciane", "Vitória"
 ];
 
 // ── NOMES DO CONTENCIOSO ─────────────────────────────────────────────────
-const CONTENCIOSO_NOMES = ["Raphaelly", "Brenna", "Amanda"];
+const CONTENCIOSO_NOMES = ["Amanda", "Brenna", "Raphaelly"];
 
 // ── REGRAS ESPECÍFICAS DO JURÍDICO (por nome normalizado) ────────────────
 // trein: campo "Prêmio Treinamento" · prec: campos de Precatório
@@ -982,7 +985,7 @@ function renderTime(tipo) {
     let premiosHTML = `
         <div class="card-divider"></div>
         <div class="card-group-label">Prêmios</div>
-        <div class="row"><span class="lbl">Objetivo de volume<br><span style="font-size:11px;color:var(--mu)">${textoDegrau(d.volume)}</span></span><span class="val">${fmt(pVol)}</span></div>
+        <div class="row"><span class="lbl">Objetivo de volume</span><span class="val">${fmt(pVol)}</span></div>
         <div class="row"><span class="lbl">Objetivo coletivo</span><span class="val" id="row-objcol-val-${sid(key)}">R$ 0,00</span></div>
         <div class="row"><span class="lbl">Campanha</span><span class="val" id="row-camp-val-${sid(key)}">R$ 0,00</span></div>
         ${(tipo==='juridico' && temTrein(d)) ? `
@@ -1122,7 +1125,12 @@ function renderTime(tipo) {
 
   atualizarPosicoes();
 
-  removed.forEach(key=>{
+  // Cards em ordem alfabética (a tabela-resumo acima segue por volume)
+  [...cardsEl.children]
+    .sort((a,b) => porNome(data[a.dataset.key].nome, data[b.dataset.key].nome))
+    .forEach(c => cardsEl.appendChild(c));
+
+  [...removed].sort((a,b) => porNome(data[a]?.nome || a, data[b]?.nome || b)).forEach(key=>{
     const d=tipo==='comercial'?state.comercial[key]:state.juridico[key];
     const chip=document.createElement('div');
     chip.className='removed-chip';
@@ -1421,7 +1429,7 @@ function abrirModalManuais() {
   const jurRem = state.removedJuridico;
   const jurNomes = Object.keys(state.juridico)
     .filter(k => !jurRem.includes(k))
-    .sort((a,b) => state.juridico[b].volume - state.juridico[a].volume);
+    .sort((a,b) => porNome(state.juridico[a].nome, state.juridico[b].nome));
 
   if (jurNomes.length) {
     const sec = document.createElement('div');
@@ -1488,7 +1496,7 @@ function abrirModalManuais() {
   const comRem = state.removedComercial;
   const comNomes = Object.keys(state.comercial)
     .filter(k => !comRem.includes(k))
-    .sort((a,b) => state.comercial[b].volume - state.comercial[a].volume);
+    .sort((a,b) => porNome(state.comercial[a].nome, state.comercial[b].nome));
 
   if (comNomes.length) {
     const sec = document.createElement('div');
@@ -1874,7 +1882,7 @@ function cardPNGHTML(tipo, key) {
   const det = detalheDe(tipo, key);
   if (!det) return '';
   const mesRef = document.getElementById('mes-ref').textContent || '—';
-  const linha = x => `<div class="pc-row${ehZero(x.val) ? ' z' : ''}"><span class="pc-lbl">${x.lbl}${x.sub && !/próximo degrau|1º degrau/.test(x.sub) ? `<span class="pc-sub">${x.sub}</span>` : ''}</span><span class="pc-val">${ehZero(x.val) ? '—' : fmt(x.val)}</span></div>`;
+  const linha = x => `<div class="pc-row${ehZero(x.val) ? ' z' : ''}"><span class="pc-lbl">${x.lbl}${x.sub ? `<span class="pc-sub">${x.sub}</span>` : ''}</span><span class="pc-val">${ehZero(x.val) ? '—' : fmt(x.val)}</span></div>`;
   const dois = det.com.length > 0;
   const tot = det.totCom + det.totPre, pc = tot > 0 ? det.totCom / tot * 100 : 0;
   return `<div class="pc-wrap">
@@ -2203,14 +2211,14 @@ function exportarPDF() {
   </div>`;
 
   const comRem = state.removedComercial;
-  const comNomes = Object.keys(state.comercial).filter(k=>!comRem.includes(k)).sort((a,b)=>state.comercial[b].volume-state.comercial[a].volume);
+  const comNomes = Object.keys(state.comercial).filter(k=>!comRem.includes(k)).sort((a,b)=>porNome(state.comercial[a].nome, state.comercial[b].nome));
   if (comNomes.length) {
     html += '<div class="team-title">Comercial</div>';
     comNomes.forEach(k => html += pessoaHTML('comercial', k));
   }
 
   const jurRem = state.removedJuridico;
-  const jurNomes = Object.keys(state.juridico).filter(k=>!jurRem.includes(k)).sort((a,b)=>state.juridico[b].volume-state.juridico[a].volume);
+  const jurNomes = Object.keys(state.juridico).filter(k=>!jurRem.includes(k)).sort((a,b)=>porNome(state.juridico[a].nome, state.juridico[b].nome));
   if (jurNomes.length) {
     html += '<div class="team-title new-page">Jurídico</div>';
     jurNomes.forEach(k => html += pessoaHTML('juridico', k));
@@ -2258,7 +2266,7 @@ function montarRegistro() {
   // Comercial
   const comRem = state.removedComercial;
   Object.keys(state.comercial).filter(k=>!comRem.includes(k))
-    .sort((a,b)=>state.comercial[b].volume-state.comercial[a].volume)
+    .sort((a,b)=>porNome(state.comercial[a].nome, state.comercial[b].nome))
     .forEach(key=>{
       const d       = state.comercial[key];
       const credVal = d.creditos * CFG.CREDITO_VAL;
@@ -2293,7 +2301,7 @@ function montarRegistro() {
   // Jurídico
   const jurRem = state.removedJuridico;
   Object.keys(state.juridico).filter(k=>!jurRem.includes(k))
-    .sort((a,b)=>state.juridico[b].volume-state.juridico[a].volume)
+    .sort((a,b)=>porNome(state.juridico[a].nome, state.juridico[b].nome))
     .forEach(key=>{
       const d        = state.juridico[key];
       const isNic    = temPrec(d);
@@ -2397,13 +2405,6 @@ function subLiquidados(d, paraRelatorio=false) {
   return `${fmtPct(tot > 0 ? d.creditos / tot * 100 : 0)} de ${fmtN(liqQt)} créditos liquidados`;
 }
 
-// "próximo degrau R$ 1.200.000,00 · faltam R$ 42.300,00 (+R$ 100,00)"
-function textoDegrau(volume) {
-  if (volume < CFG.PREMIO_BASE_VOL) return `faltam ${fmt(CFG.PREMIO_BASE_VOL - volume)} para o 1º degrau (${fmt(CFG.PREMIO_BASE_VAL)})`;
-  const prox = CFG.PREMIO_BASE_VOL + (Math.floor((volume - CFG.PREMIO_BASE_VOL) / CFG.PREMIO_INC_VOL) + 1) * CFG.PREMIO_INC_VOL;
-  return `próximo degrau ${fmt(prox)} · faltam ${fmt(prox - volume)} (+${fmt(CFG.PREMIO_INC_VAL)})`;
-}
-
 // posição da pessoa no time e participação no time e na folha
 function posicaoPessoa(tipo, key, res=resumoPorTime()) {
   const time = res.times.find(x => x.id === tipo);
@@ -2473,7 +2474,7 @@ function detalhePessoa(tipo, key) {
     add(com, 'Créditos acordos',           `${fmtN(a1)} × ${TXT.cred}`, a1 * CFG.CREDITO_VAL);
     add(com, 'Créditos acordos adicionais',`${fmtN(a2)} × ${TXT.cred}`, a2 * CFG.CREDITO_VAL);
   }
-  add(pre, 'Objetivo de volume', textoDegrau(d.volume), premioVolume(d.volume));
+  add(pre, 'Objetivo de volume', '', premioVolume(d.volume));
   add(pre, 'Objetivo coletivo',  '', state.manuais[`obj_col_${tipo}`] || 0);
   add(pre, 'Campanha',           '', getManual(key,'camp'));
   if (jur && temTrein(d)) add(pre, 'Treinamento', '', getManual(key,'trein'));
@@ -2614,7 +2615,7 @@ function exportarExcel() {
   XLSX.utils.book_append_sheet(wb, wsRes, 'Resumo');
 
   const aoaPes = [['Time','Pessoa','Volume (R$)','Comissões (R$)','Prêmios (R$)','Total (R$)','% do total']];
-  res.times.forEach(t => t.lista.forEach(x => aoaPes.push([t.label, x.nome, x.volume === null ? '—' : x.volume, x.com, x.pre, x.total, x.part / 100])));
+  res.times.forEach(t => [...t.lista].sort((a,b) => porNome(a.nome, b.nome)).forEach(x => aoaPes.push([t.label, x.nome, x.volume === null ? '—' : x.volume, x.com, x.pre, x.total, x.part / 100])));
   const wsPes = XLSX.utils.aoa_to_sheet(aoaPes);
   wsPes['!cols'] = [{ wch: 32 }, { wch: 22 }, { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 12 }];
   for (let r = 1; r < aoaPes.length; r++) for (let c = 2; c <= 6; c++) {
