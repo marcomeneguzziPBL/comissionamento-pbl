@@ -270,18 +270,7 @@ tr:not(.totals-row):hover td{opacity:.85;cursor:pointer}
 .modal-total .val{font-size:22px;font-weight:700;color:var(--g)}
 
 /* CONFERÊNCIA */
-.conf{background:var(--white);border:1px solid var(--bo);border-radius:10px;margin-bottom:20px;box-shadow:var(--card-sh);overflow:hidden}
-.conf summary{cursor:pointer;padding:12px 18px;font-size:13px;font-weight:600;list-style:none}
-.conf summary::-webkit-details-marker{display:none}
-.conf summary.conf-ok{color:var(--g)}
-.conf summary.conf-warn{color:var(--goldd)}
-.conf-body{border-top:1px solid var(--bo);padding:8px 18px 12px}
-.conf-row{display:grid;grid-template-columns:20px minmax(220px,300px) 1fr;gap:8px;padding:5px 0;font-size:12px;border-bottom:1px dashed var(--bo)}
-.conf-row:last-child{border-bottom:none}
-.conf-item{color:var(--mu)}
-.conf-val{font-weight:500;word-break:break-word}
-.conf-warn .conf-ic,.conf-warn .conf-val{color:var(--goldd)}
-.conf-ok .conf-ic{color:var(--g)}
+.alerta-cons{font-size:12px;color:var(--danger);margin:-8px 0 16px}
 
 /* GLOBAL CARDS */
 .global-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:24px}
@@ -390,7 +379,7 @@ tr:not(.totals-row):hover td{opacity:.85;cursor:pointer}
       </div>
     </div>
 
-    <details class="conf" id="conferencia" style="display:none"></details>
+    <div class="alerta-cons" id="alertaConsistencia" style="display:none"></div>
 
     <div class="tabs-wrap">
       <div class="tabs">
@@ -1067,18 +1056,17 @@ function adicionarConsistencia(L) {
   }
 }
 
+// Atualiza a barra fixa e o aviso de consistência. O painel detalhado da planilha não é mais exibido:
+// a observação principal fica na barra de status; o aviso abaixo só aparece se houver divergência entre cálculos.
 function renderConferencia() {
   atualizarBarra();
-  const el = document.getElementById('conferencia');
+  const el = document.getElementById('alertaConsistencia');
   if (!el) return;
-  const L = conferenciaLinhas();
-  if (!L.length) { el.style.display = 'none'; return; }
-  const warns = L.filter(x => x.status === 'warn').length;
-  const icone = { ok:'✓', warn:'⚠', info:'•' };
+  const r = verificarConsistencia(false);
+  if (r.ok || !r.conferidos) { el.style.display = 'none'; el.textContent = ''; return; }
+  const ex = r.diverg.slice(0, 2).map(x => `${x.quem} (${x.item})`).join('; ');
+  el.textContent = `⚠ ${r.diverg.length} divergência(s) entre os cálculos do sistema: ${ex}${r.diverg.length > 2 ? '…' : ''}. Confira antes de gerar PDF ou Excel.`;
   el.style.display = 'block';
-  if (el.dataset.warns !== String(warns)) { el.open = warns > 0; el.dataset.warns = String(warns); }
-  el.innerHTML = `<summary class="${warns ? 'conf-warn' : 'conf-ok'}">${warns ? `⚠ Conferência da planilha — ${warns} ponto${warns>1?'s':''} de atenção` : '✓ Conferência da planilha — sem pendências'}</summary>
-    <div class="conf-body">${L.map(x => `<div class="conf-row conf-${x.status}"><span class="conf-ic">${icone[x.status]}</span><span class="conf-item">${x.item}</span><span class="conf-val">${x.valor}</span></div>`).join('')}</div>`;
 }
 
 // ── RENDER COMERCIAL / JURIDICO ───────────────────────────────────────────
