@@ -1000,6 +1000,10 @@ function verificarConsistencia(completa = false) {
     });
   });
 
+  Object.entries(TIMES_PREMIO).forEach(([t, T]) => {
+    const tm = res.times.find(x => x.id === t);
+    if (tm && document.getElementById(`st-${t}-tot`)) conferir(`${T.label} · total do time`, 'Total', { 'tabela': dom(`st-${t}-tot`), 'resumo': tm.total, 'Sheets/Excel': reg.rows.filter(r => r[1] === T.label).reduce((a, r) => a + r[30], 0) });
+  });
   conferir('Total geral', 'Remuneração variável', { 'Sheets/Excel': reg.rows.reduce((a, r) => a + r[30], 0), 'resumo': res.total, 'times somados': res.times.reduce((a, x) => a + x.total, 0) });
   return { ok: diverg.length === 0, conferidos, diverg };
 }
@@ -1337,12 +1341,13 @@ function renderTimePremio(t) {
           <span class="tag ${T.tag}">${T.label}</span>
         </div>
       </div>
+      <div class="rankline" id="posicao-${t}-${sid(pe.key)}"></div>
     </div>
     <div class="card-body" onclick="abrirModalPremios('${t}','${pe.key}')">
       <div class="card-group-label">Prêmios</div>
-      <div class="row"><span class="lbl">Prêmio Execução</span><span class="val" id="${k}-exec-val">R$ 0,00</span></div>
-      <div class="row"><span class="lbl">Prêmio Resultado</span><span class="val" id="${k}-res-val">R$ 0,00</span></div>
-      <div class="row"><span class="lbl">Objetivo Coletivo</span><span class="val" id="${k}-objcol-val">R$ 0,00</span></div>
+      <div class="row"><span class="lbl">Prêmio execução</span><span class="val" id="${k}-exec-val">R$ 0,00</span></div>
+      <div class="row"><span class="lbl">Prêmio resultado</span><span class="val" id="${k}-res-val">R$ 0,00</span></div>
+      <div class="row"><span class="lbl">Objetivo coletivo</span><span class="val" id="${k}-objcol-val">R$ 0,00</span></div>
       <p class="hint">Clique para ver o detalhamento</p>
     </div>
     <div class="card-total">
@@ -1364,20 +1369,34 @@ function renderTimePremio(t) {
     <td id="s-${k}-tot">R$ 0,00</td>`;
     tbodyEl.appendChild(tr);
   });
+  if (T.pessoas.length > 1) {
+    const trT = document.createElement('tr');
+    trT.className = 'totals-row';
+    trT.innerHTML = `<td>Total</td>
+      <td class="td-pre-first" id="st-${t}-exec">R$ 0,00</td>
+      <td class="td-pre" id="st-${t}-res">R$ 0,00</td>
+      <td class="td-pre-last" id="st-${t}-objcol">R$ 0,00</td>
+      <td id="st-${t}-tot">R$ 0,00</td>`;
+    tbodyEl.appendChild(trT);
+  }
   recalcTimePremio(t);
 }
 
 function recalcTimePremio(t) {
   const set = (id, v) => { const e=document.getElementById(id); if (e) e.textContent = fmt(v); };
   const objCol = objTime(t);
+  let sExec = 0, sRes = 0, sObj = 0;
   TIMES_PREMIO[t].pessoas.forEach(pe=>{
     const k=`${t}-${pe.key}`;
     const exec = premioVal(pe,'exec'), res = premioVal(pe,'res');
+    sExec += exec; sRes += res; sObj += objCol;
     set(`total-${k}`, exec + res + objCol);
     set(`${k}-exec-val`, exec);  set(`${k}-res-val`, res);  set(`${k}-objcol-val`, objCol);
     set(`s-${k}-exec`, exec);    set(`s-${k}-res`, res);    set(`s-${k}-objcol`, objCol);
     set(`s-${k}-tot`, exec + res + objCol);
+    atenuarZeros(cardDe(t, pe.key));
   });
+  set(`st-${t}-exec`, sExec); set(`st-${t}-res`, sRes); set(`st-${t}-objcol`, sObj); set(`st-${t}-tot`, sExec + sRes + sObj);
   atualizarPosicoes();
   renderConferencia();
 }
@@ -1606,7 +1625,9 @@ function mostrarAbaManuais(team) {
   document.querySelectorAll('#mmBody .mm-tab').forEach(b => b.classList.toggle('on', b.dataset.team === team));
 }
 function montarAbasManuais(body) {
-  const secs = [...body.querySelectorAll('.mm-team')];
+  const ordem = ['comercial', 'juridico', ...Object.keys(TIMES_PREMIO)];
+  const secs = [...body.querySelectorAll('.mm-team')].sort((a, b) => ordem.indexOf(a.dataset.team) - ordem.indexOf(b.dataset.team));
+  secs.forEach(sec => body.appendChild(sec));
   const nomes = { juridico: 'Jurídico', comercial: 'Comercial' };
   Object.entries(TIMES_PREMIO).forEach(([t, T]) => { nomes[t] = T.label; });
   const bar = document.createElement('div');
@@ -2590,22 +2611,19 @@ function posicaoPessoa(tipo, key, res=resumoPorTime()) {
 // Linha 1: posição e participação pela remuneração · Linha 2: posição e participação pelo volume de compras
 function posicaoTexto(p) {
   if (!p) return '';
-  if (p.soFolha) return `${fmtPct(p.partFolha)} da folha`;
   const l1 = `Remuneração <b>${p.rank}º de ${p.nGeral}</b> · ${fmtPct(p.partFolha)} da folha`;
   const l2 = (p.rankVol === null || p.n <= 1) ? '' : `<br>Volume de compras <b>${p.rankVol}º de ${p.n}</b> · ${fmtPct(p.partVolTime)} do volume do time`;
   return l1 + l2;
 }
 
-// Atualiza a linha de posição dos cards da tela (Comercial e Jurídico)
+// Atualiza a linha de posição dos cards da tela (todos os times)
 function atualizarPosicoes() {
   if (!state.comercial || !document.getElementById('appContent')) return;
   const res = resumoPorTime();
-  ['comercial','juridico'].forEach(tipo => {
-    const time = res.times.find(x => x.id === tipo);
-    if (!time) return;
+  res.times.forEach(time => {
     time.lista.forEach(x => {
-      const el = document.getElementById(`posicao-${tipo}-${sid(x.key)}`);
-      if (el) el.innerHTML = posicaoTexto(posicaoPessoa(tipo, x.key, res));
+      const el = document.getElementById(`posicao-${time.id}-${sid(x.key)}`);
+      if (el) el.innerHTML = posicaoTexto(posicaoPessoa(time.id, x.key, res));
     });
   });
 }
@@ -2679,7 +2697,7 @@ function detalhePremio(t, pe) {
     nome: pe.nome, tag: T.label, tagCls: T.pdfTag, tipo: t, stats: null, com: [],
     pre: [{ lbl: 'Prêmio execução', sub: '', val: exec }, { lbl: 'Prêmio resultado', sub: '', val: res }, { lbl: 'Objetivo coletivo', sub: '', val: obj }],
     totCom: 0, totPre: exec + res + obj, total: exec + res + obj,
-    pos: it ? { soFolha: true, partFolha: it.part } : null,
+    pos: posicaoPessoa(t, pe.key, res0),
   };
 }
 const detalheDe = (tipo, key) => TIMES_PREMIO[tipo] ? detalhePremio(tipo, premioPessoa(tipo, key)) : detalhePessoa(tipo, key);
