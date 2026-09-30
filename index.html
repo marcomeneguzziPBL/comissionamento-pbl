@@ -824,6 +824,13 @@ function processarPlanilha(data) {
   state.removedJuridico=[];
   state.totalCreditosEmpresa = totalCreditosEmpresa;
 
+  // Nova planilha = novo fechamento: zera valores manuais e créditos liquidados do mês anterior
+  const tinhaManuais = Object.keys(state.manuais).length > 0 || getVal('#gc-liq-qt') > 0;
+  state.manuais = {};
+  const liqInput = document.getElementById('gc-liq-qt');
+  if (liqInput) liqInput.value = '';
+  document.getElementById('gc-liq-val').textContent = fmt(0);
+
   // Garantir que todos os nomes do jurídico aparecem, mesmo sem compras
   garantirNomesJuridico(juridico);
 
@@ -871,6 +878,7 @@ function processarPlanilha(data) {
   if (desc.length) {
     msg += ` · ⚠ Jurídico fora da lista (ignorado): ` + desc.map(([n,u]) => `${n} (${u.linhas} linha${u.linhas>1?'s':''}, ${fmtN(u.creditos)} créd.)`).join(', ');
   }
+  if (tinhaManuais) msg += ' · valores manuais e liquidados anteriores foram zerados';
   setStatus(msg, desc.length ? 'error' : 'ok');
 }
 
@@ -2682,6 +2690,7 @@ function setStatus(msg,type=''){
 
 document.getElementById('fileInput').addEventListener('change',e=>{
   const f=e.target.files[0]; if(f) lerArquivo(f);
+  e.target.value=''; // permite escolher o mesmo arquivo de novo (ex.: planilha corrigida com o mesmo nome)
 });
 const zone=document.getElementById('uploadZone');
 zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('drag-over');});
