@@ -2092,7 +2092,7 @@ function exportarPDF() {
     .row .val{font-weight:600}
     .row .sub{font-size:9px;color:#7aaa9a;display:block}
     .row.z .lbl,.row.z .val{color:#9db3ab;font-weight:400}
-    .rankp{font-size:10px;color:#546860;padding:7px 16px;border-bottom:1px solid #c2d9d1}.rankp b{color:#111}
+    .rankp{font-size:10px;line-height:1.6;color:#546860;padding:7px 16px;border-bottom:1px solid #c2d9d1}.rankp b{color:#111}
     .pmix{display:flex;height:5px;background:#e3eee9}
     .person .row .lbl{max-width:68%}
     .totals{display:grid;grid-template-columns:1fr 1fr 1fr;border-top:1px solid #c2d9d1;background:#dff0e9}
@@ -2410,26 +2410,16 @@ function posicaoPessoa(tipo, key, res=resumoPorTime()) {
   const time = res.times.find(x => x.id === tipo);
   const i = time ? time.lista.findIndex(x => x.key === key) : -1;
   if (i < 0) return null;
-  const x = time.lista[i];
-  // empates recebem a mesma posição (ex.: dois com volume zero ficam ambos em 7º)
-  const rank    = 1 + time.lista.filter(y => y.total > x.total + 0.004).length;
-  const rankVol = x.volume === null ? null : 1 + time.lista.filter(y => y.volume > x.volume + 0.004).length;
-  return { rank, rankVol, n: time.lista.length, partTime: time.total > 0 ? x.total / time.total * 100 : 0, partFolha: x.part };
+  const x = time.lista[i];   // empates recebem a mesma posição (ex.: dois com volume zero ficam ambos em 7º)
+  return { rank: x.rank, rankVol: x.rankVol, n: time.lista.length, partTime: time.total > 0 ? x.total / time.total * 100 : 0, partFolha: x.part };
 }
-// "Remuneração 2º de 8 · Volume 3º de 8 · 27,6% do time · 14,7% da folha"
-// quebra=true separa em duas linhas (card da tela)
-function posicaoTexto(p, quebra=false) {
+// Linha 1: posição pela remuneração + participação · Linha 2: posição pelo volume de compras
+function posicaoTexto(p) {
   if (!p) return '';
-  const partes = [];
-  if (p.n > 1) {
-    let l1 = `Remuneração <b>${p.rank}º de ${p.n}</b>`;
-    if (p.rankVol !== null) l1 += ` · Volume <b>${p.rankVol}º de ${p.n}</b>`;
-    partes.push(l1);
-    partes.push(`${fmtPct1(p.partTime)} do time · ${fmtPct1(p.partFolha)} da folha`);
-  } else {
-    partes.push(`${fmtPct1(p.partFolha)} da folha`);
-  }
-  return partes.join(quebra ? '<br>' : ' · ');
+  if (p.n <= 1) return `${fmtPct1(p.partFolha)} da folha`;
+  const l1 = `Remuneração <b>${p.rank}º de ${p.n}</b> · ${fmtPct1(p.partTime)} do time · ${fmtPct1(p.partFolha)} da folha`;
+  const l2 = p.rankVol === null ? '' : `<br>Volume de compras <b>${p.rankVol}º de ${p.n}</b>`;
+  return l1 + l2;
 }
 
 // Atualiza a linha de posição dos cards da tela (Comercial e Jurídico)
@@ -2441,7 +2431,7 @@ function atualizarPosicoes() {
     if (!time) return;
     time.lista.forEach(x => {
       const el = document.getElementById(`posicao-${tipo}-${sid(x.key)}`);
-      if (el) el.innerHTML = posicaoTexto(posicaoPessoa(tipo, x.key, res), true);
+      if (el) el.innerHTML = posicaoTexto(posicaoPessoa(tipo, x.key, res));
     });
   });
 }
@@ -2564,7 +2554,12 @@ function resumoPorTime() {
   times.forEach(t => {
     t.part = pc(t.total);
     t.remVol = t.volume > 0 ? t.total / t.volume * 100 : null;   // só Comercial e Jurídico
-    t.lista.sort((a,b) => b.total - a.total).forEach(x => { x.part = pc(x.total); });
+    t.lista.sort((a,b) => b.total - a.total);
+    t.lista.forEach(x => {
+      x.part    = pc(x.total);
+      x.rank    = 1 + t.lista.filter(y => y.total > x.total + 0.004).length;
+      x.rankVol = x.volume === null ? null : 1 + t.lista.filter(y => y.volume > x.volume + 0.004).length;
+    });
   });
   const volume = state.conferencia?.volume?.empresa ?? Object.values(state.comercial).reduce((a,d) => a + d.volume, 0);
   return { times, pessoas: soma('pessoas'), com: soma('com'), pre: soma('pre'), total: totalGeral, volume };
