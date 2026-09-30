@@ -1004,8 +1004,7 @@ function renderTime(tipo) {
         <div class="card-stats">
           <div class="stat"><div class="stat-val">${fmtN(d.creditos)}</div><div class="stat-label">Créditos</div></div>
           <div class="stat"><div class="stat-val">${fmtN(d.adicionais)}</div><div class="stat-label">Adicionais</div></div>
-          <div class="stat"><div class="stat-val">${fmtN(d.linhas)}</div><div class="stat-label">Compras</div></div>
-          <div class="stat"><div class="stat-val" style="font-size:14px;white-space:nowrap">${fmt(d.volume)}</div><div class="stat-label">Volume</div></div>
+          <div class="stat"><div class="stat-val" style="font-size:16px;white-space:nowrap">${fmt(d.volume)}</div><div class="stat-label">Volume</div></div>
         </div>
       </div>
       <div class="card-body" onclick="abrirModal('${tipo}','${key}')">
@@ -1906,13 +1905,12 @@ function cardPNGHTML(tipo, key) {
     .pc-tc+.pc-tc{border-left:1px solid #c2d9d1}
     .pc-tl{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#546860;display:block;margin-bottom:3px}
     .pc-tv{font-size:14px;font-weight:700;color:#0D4A3A;display:block}.pc-tv.pc-big{font-size:17px}
-    .pc-note{font-size:11px;color:#546860;line-height:1.5;margin:12px 4px 0;padding:9px 12px;background:#f4f9f7;border-left:3px solid #C49A45;border-radius:0 6px 6px 0}
-    .pc-f{font-size:10px;color:#7aaa9a;text-align:right;margin:8px 4px 0}
+    .pc-f{font-size:10px;color:#7aaa9a;text-align:right;margin:10px 4px 0}
   </style>
   <div class="pc-h"><span>Comissionamento PBL</span><span>${mesRef}</span></div>
   <div class="pc-card">
     <div class="pc-top"><span class="pc-name">${det.nome}</span><span class="pc-tag ${det.tagCls}">${det.tag}</span></div>
-    ${det.stats ? `<div class="pc-stats">${det.stats.map(x => `<div class="pc-stat"><div class="pc-sv"${x.pequeno ? ' style="font-size:14px;white-space:nowrap"' : ''}>${x.v}</div><div class="pc-sl">${x.l}</div></div>`).join('')}</div>` : '<div style="height:8px;border-bottom:1px solid #c2d9d1"></div>'}
+    ${det.stats ? `<div class="pc-stats">${det.stats.map(x => `<div class="pc-stat"><div class="pc-sv"${x.pequeno ? ' style="font-size:16px;white-space:nowrap"' : ''}>${x.v}</div><div class="pc-sl">${x.l}</div></div>`).join('')}</div>` : '<div style="height:8px;border-bottom:1px solid #c2d9d1"></div>'}
     <div class="pc-body">
       ${dois ? `<div class="pc-grp">Comissões</div>${det.com.map(linha).join('')}` : ''}
       <div class="pc-grp${dois ? ' g2' : ''}">Prêmios</div>${det.pre.map(linha).join('')}
@@ -1923,7 +1921,6 @@ function cardPNGHTML(tipo, key) {
       <div class="pc-tc"><span class="pc-tl">Total</span><span class="pc-tv pc-big">${fmt(det.total)}</span></div>
     </div>
   </div>
-  <div class="pc-note">Confira os valores acima. Se estiver de acordo, responda <b>“De acordo”</b>. Se tiver alguma dúvida, informe qual item deseja revisar.</div>
   <div class="pc-f">Gerado em ${new Date().toLocaleDateString('pt-BR')}</div>
 </div>`;
 }
@@ -2143,7 +2140,7 @@ function exportarPDF() {
     return `<div class="person">
       <div class="person-header"><span class="person-name">${det.nome}</span><span class="person-tag ${det.tagCls}">${det.tag}</span></div>
       ${det.pos ? `<div class="rankp">${posicaoTexto(det.pos)}</div>` : ''}
-      ${det.stats ? `<div class="person-stats">${det.stats.map(x => `<div class="stat"><div class="stat-val"${x.pequeno ? ' style="font-size:12px"' : ''}>${x.v}</div><div class="stat-lbl">${x.l}</div></div>`).join('')}</div>` : ''}
+      ${det.stats ? `<div class="person-stats">${det.stats.map(x => `<div class="stat"><div class="stat-val"${x.pequeno ? ' style="font-size:14px"' : ''}>${x.v}</div><div class="stat-lbl">${x.l}</div></div>`).join('')}</div>` : ''}
       <div class="person-body"${dois ? '' : ' style="grid-template-columns:1fr"'}>
         ${dois ? `<div class="section"><div class="section-title">Comissões</div>${det.com.map(linha).join('')}</div>` : ''}
         <div class="section"><div class="section-title">Prêmios</div>${det.pre.map(linha).join('')}</div>
@@ -2485,7 +2482,7 @@ function detalhePessoa(tipo, key) {
     nome: d.nome, tag: jur ? 'Jurídico' : 'Comercial', tagCls: jur ? 'tag-jur' : 'tag-com', tipo,
     stats: [
       { v: fmtN(d.creditos), l: 'Créditos' }, { v: fmtN(d.adicionais), l: 'Adicionais' },
-      { v: fmtN(d.linhas), l: 'Compras' }, { v: fmt(d.volume), l: 'Volume', pequeno: true },
+      { v: fmt(d.volume), l: 'Volume', pequeno: true },
     ],
     com, pre, totCom: t.com, totPre: t.pre, total: t.total, pos: posicaoPessoa(tipo, key),
   };
