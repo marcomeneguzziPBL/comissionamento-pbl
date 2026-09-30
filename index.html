@@ -2411,10 +2411,26 @@ function posicaoPessoa(tipo, key, res=resumoPorTime()) {
   const i = time ? time.lista.findIndex(x => x.key === key) : -1;
   if (i < 0) return null;
   const x = time.lista[i];
-  return { rank: i + 1, n: time.lista.length, partTime: time.total > 0 ? x.total / time.total * 100 : 0, partFolha: x.part };
+  // empates recebem a mesma posição (ex.: dois com volume zero ficam ambos em 7º)
+  const rank    = 1 + time.lista.filter(y => y.total > x.total + 0.004).length;
+  const rankVol = x.volume === null ? null : 1 + time.lista.filter(y => y.volume > x.volume + 0.004).length;
+  return { rank, rankVol, n: time.lista.length, partTime: time.total > 0 ? x.total / time.total * 100 : 0, partFolha: x.part };
 }
-const posicaoTexto = p => !p ? '' :
-  (p.n > 1 ? `<b>${p.rank}º de ${p.n}</b> no time · ${fmtPct1(p.partTime)} do time · ` : '') + `${fmtPct1(p.partFolha)} da folha`;
+// "Remuneração 2º de 8 · Volume 3º de 8 · 27,6% do time · 14,7% da folha"
+// quebra=true separa em duas linhas (card da tela)
+function posicaoTexto(p, quebra=false) {
+  if (!p) return '';
+  const partes = [];
+  if (p.n > 1) {
+    let l1 = `Remuneração <b>${p.rank}º de ${p.n}</b>`;
+    if (p.rankVol !== null) l1 += ` · Volume <b>${p.rankVol}º de ${p.n}</b>`;
+    partes.push(l1);
+    partes.push(`${fmtPct1(p.partTime)} do time · ${fmtPct1(p.partFolha)} da folha`);
+  } else {
+    partes.push(`${fmtPct1(p.partFolha)} da folha`);
+  }
+  return partes.join(quebra ? '<br>' : ' · ');
+}
 
 // Atualiza a linha de posição dos cards da tela (Comercial e Jurídico)
 function atualizarPosicoes() {
@@ -2425,7 +2441,7 @@ function atualizarPosicoes() {
     if (!time) return;
     time.lista.forEach(x => {
       const el = document.getElementById(`posicao-${tipo}-${sid(x.key)}`);
-      if (el) el.innerHTML = posicaoTexto(posicaoPessoa(tipo, x.key, res));
+      if (el) el.innerHTML = posicaoTexto(posicaoPessoa(tipo, x.key, res), true);
     });
   });
 }
