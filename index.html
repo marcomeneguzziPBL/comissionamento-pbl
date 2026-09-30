@@ -176,6 +176,9 @@ body{background:var(--bg);background-color:var(--bg-solid);color:var(--tx);font-
 .rankline{font-size:11px;color:var(--mu);margin:-2px 0 8px}.rankline b{color:var(--tx)}
 .mixbar{display:flex;height:6px;background:var(--bo)}
 .row.z .lbl,.row.z .val{opacity:.5;font-weight:400}
+.mm-input.inv,.gc-input.inv{border-color:var(--danger)!important;background:var(--danger-bg)!important}
+.breakdown-row.z{opacity:.55}
+.breakdown-row.subtot{border-top:1px solid var(--bo);padding-top:6px;margin-top:4px}
 .hint{font-size:10px;color:var(--mu);text-align:center;padding:6px 0 2px;opacity:.7}
 .card-group-label{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mu);margin:8px 0 6px;padding-bottom:4px;border-bottom:1px solid var(--bo)}
 
@@ -714,10 +717,24 @@ function premioVolume(vol) {
   return CFG.PREMIO_BASE_VAL + fatias * CFG.PREMIO_INC_VAL;
 }
 
+// número >= 0 (vazio, inválido ou negativo vira 0)
+const numPos = v => Math.max(0, parseFloat(v) || 0);
 function getVal(selector) {
   const el = document.querySelector(selector);
-  return parseFloat(el?.value) || 0;
+  return numPos(el?.value);
 }
+
+// Campos numéricos não aceitam valor negativo: ao digitar, o campo volta a 0 e fica em vermelho por instantes
+document.addEventListener('input', e => {
+  const el = e.target;
+  if (!(el instanceof HTMLInputElement) || el.type !== 'number') return;
+  if (parseFloat(el.value) < 0) {
+    el.value = 0;
+    el.classList.add('inv');
+    el.title = 'Valores negativos não são aceitos';
+    setTimeout(() => { el.classList.remove('inv'); el.title = ''; }, 1800);
+  }
+}, true);
 
 // ── PARSE ─────────────────────────────────────────────────────────────────
 function processarPlanilha(data) {
@@ -857,14 +874,74 @@ function processarPlanilha(data) {
   setStatus(msg, desc.length ? 'error' : 'ok');
 }
 
+// ── VERIFICAÇÃO INTERNA DE CONSISTÊNCIA ───────────────────────────────────
+// Compara, para cada pessoa, o mesmo valor calculado/exibido em caminhos diferentes:
+// card, tabela-resumo, cálculo central, linhas do PDF, registro do Sheets/Excel (e modal, na verificação completa).
+const brl = t => { const n = parseFloat(String(t ?? '').replace(/[^\d,-]/g, '').replace(',', '.')); return isNaN(n) ? null : n; };
+const centavos = v => Math.round(v * 100);
+
+function verificarConsistencia(completa = false) {
+  if (!document.getElementById('appContent')) return { ok: true, conferidos: 0, diverg: [] };
+  const diverg = [];
+  let conferidos = 0;
+  const dom = id => { const e = document.getElementById(id); return e ? brl(e.textContent) : null; };
+  const conferir = (quem, item, fontes) => {
+    const vals = Object.entries(fontes).filter(([, v]) => v !== null && v !== undefined && !isNaN(v));
+    if (vals.length < 2) return;
+    conferidos++;
+    const base = centavos(vals[0][1]);
+    if (vals.some(([, v]) => Math.abs(centavos(v) - base) > 1)) diverg.push({ quem, item, fontes: vals });
+  };
+  const soma = arr => arr.reduce((a, x) => a + x.val, 0);
+  const reg = montarRegistro();
+  const linhaReg = (time, nome) => reg.rows.find(r => r[1] === time && r[2] === nome);
+  const res = resumoPorTime();
+
+  [['comercial','Comercial',state.comercial,state.removedComercial],
+   ['juridico','Jurídico',state.juridico,state.removedJuridico]].forEach(([tipo, label, data, rem]) => {
+    Object.keys(data).filter(k => !rem.includes(k)).forEach(key => {
+      const d = data[key], sk = sid(key), t = totaisPessoa(tipo, key), det = detalhePessoa(tipo, key), row = linhaReg(label, d.nome);
+      conferir(`${label} · ${d.nome}`, 'Comissões', { 'card': dom(`subtot-com-${tipo}-${sk}`), 'cálculo': t.com, 'linhas do PDF': soma(det.com), 'Sheets/Excel': row ? row[28] : null });
+      conferir(`${label} · ${d.nome}`, 'Prêmios',   { 'card': dom(`subtot-pre-${tipo}-${sk}`), 'cálculo': t.pre, 'linhas do PDF': soma(det.pre), 'Sheets/Excel': row ? row[29] : null });
+      const fontes = { 'card': dom(`total-${tipo}-${sk}`), 'tabela': dom(`s-tot-${tipo}-${sk}`), 'cálculo': t.total, 'PDF': det.total, 'Sheets/Excel': row ? row[30] : null };
+      if (completa) {
+        abrirModal(tipo, key);
+        fontes['modal'] = brl(document.getElementById('modal-total').textContent);
+        closeModal();
+      }
+      conferir(`${label} · ${d.nome}`, 'Total', fontes);
+    });
+    const tm = res.times.find(x => x.id === tipo);
+    if (tm) conferir(`${label} · total do time`, 'Total', { 'tabela': dom(`st-tot-${tipo}`), 'resumo': tm.total, 'Sheets/Excel': reg.rows.filter(r => r[1] === label).reduce((a, r) => a + r[30], 0) });
+  });
+
+  Object.entries(TIMES_PREMIO).forEach(([t, T]) => {
+    T.pessoas.forEach(pe => {
+      const det = detalhePremio(t, pe), row = linhaReg(T.label, pe.nome);
+      conferir(`${T.label} · ${pe.nome}`, 'Total', { 'card': dom(`total-${t}-${pe.key}`), 'tabela': dom(`s-${t}-${pe.key}-tot`), 'cálculo': totalPremioPessoa(t, pe), 'linhas do PDF': soma(det.pre), 'Sheets/Excel': row ? row[30] : null });
+    });
+  });
+
+  conferir('Total geral', 'Remuneração variável', { 'Sheets/Excel': reg.rows.reduce((a, r) => a + r[30], 0), 'resumo': res.total, 'times somados': res.times.reduce((a, x) => a + x.total, 0) });
+  return { ok: diverg.length === 0, conferidos, diverg };
+}
+
+// Antes de gerar PDF/Excel/registro: avisa se houver divergência e deixa o usuário decidir
+function confirmarConsistencia(acao) {
+  const r = verificarConsistencia(true);
+  if (r.ok) return true;
+  const linhas = r.diverg.slice(0, 6).map(x => `• ${x.quem} — ${x.item}: ` + x.fontes.map(([n, v]) => `${n} ${fmt(v)}`).join(' | ')).join('\n');
+  return confirm(`Atenção: ${r.diverg.length} divergência(s) entre os cálculos do sistema.\n\n${linhas}${r.diverg.length > 6 ? '\n…' : ''}\n\nDeseja ${acao} mesmo assim?`);
+}
+
 // ── CONFERÊNCIA DA PLANILHA ───────────────────────────────────────────────
 // Linhas { item, valor, status } — status: 'ok' | 'warn' | 'info'
 function conferenciaLinhas() {
   const c = state.conferencia;
-  if (!c) return [];
   const L = [];
   const add = (item, valor, status='info') => L.push({ item, valor, status });
   const lista = (arr, max=8) => arr.slice(0,max).join(', ') + (arr.length>max ? ` … (+${arr.length-max})` : '');
+  if (!c) { adicionarConsistencia(L); return L; }
 
   add('Linhas com dados na planilha', fmtN(c.linhasLidas));
   add('Linhas PAGO consideradas', fmtN(c.linhasPagas));
@@ -889,7 +966,20 @@ function conferenciaLinhas() {
   }
   const ms = Object.entries(c.meses||{});
   add('Competência (mês das datas das linhas PAGO)', ms.length ? ms.map(([m,n])=>`${m}: ${n}`).join(' · ') : '—', ms.length > 1 ? 'warn' : 'ok');
+  adicionarConsistencia(L);
   return L;
+}
+
+// linha de consistência interna dos cálculos (card × tabela × PDF × Sheets/Excel)
+function adicionarConsistencia(L) {
+  const r = verificarConsistencia(false);
+  if (!r.conferidos) return;
+  if (r.ok) {
+    L.push({ item: 'Consistência dos cálculos', valor: `${r.conferidos} valores conferidos entre cards, tabelas, PDF, Sheets e Excel — sem divergências`, status: 'ok' });
+  } else {
+    r.diverg.slice(0, 5).forEach(x => L.push({ item: `Divergência · ${x.quem} (${x.item})`, valor: x.fontes.map(([n, v]) => `${n} ${fmt(v)}`).join(' · '), status: 'warn' }));
+    if (r.diverg.length > 5) L.push({ item: 'Divergências', valor: `… e mais ${r.diverg.length - 5}`, status: 'warn' });
+  }
 }
 
 function renderConferencia() {
@@ -900,7 +990,7 @@ function renderConferencia() {
   const warns = L.filter(x => x.status === 'warn').length;
   const icone = { ok:'✓', warn:'⚠', info:'•' };
   el.style.display = 'block';
-  el.open = warns > 0;
+  if (el.dataset.warns !== String(warns)) { el.open = warns > 0; el.dataset.warns = String(warns); }
   el.innerHTML = `<summary class="${warns ? 'conf-warn' : 'conf-ok'}">${warns ? `⚠ Conferência da planilha — ${warns} ponto${warns>1?'s':''} de atenção` : '✓ Conferência da planilha — sem pendências'}</summary>
     <div class="conf-body">${L.map(x => `<div class="conf-row conf-${x.status}"><span class="conf-ic">${icone[x.status]}</span><span class="conf-item">${x.item}</span><span class="conf-val">${x.valor}</span></div>`).join('')}</div>`;
 }
@@ -1123,7 +1213,9 @@ function renderTime(tipo) {
   }
   tbodyEl.appendChild(trT);
 
-  atualizarPosicoes();
+  // Reaplica valores manuais (o render inicial dos cards não os inclui)
+  Object.keys(data).filter(k => !removed.includes(k)).forEach(k => _recalcCardInternal(tipo, k));
+  recalcTotals(tipo);
 
   // Cards em ordem alfabética (a tabela-resumo acima segue por volume)
   [...cardsEl.children]
@@ -1208,6 +1300,7 @@ function recalcTimePremio(t) {
     set(`s-${k}-tot`, exec + res + objCol);
   });
   atualizarPosicoes();
+  renderConferencia();
 }
 
 // ── LIQUIDADOS ────────────────────────────────────────────────────────────
@@ -1375,7 +1468,7 @@ function abrirModalIndividual(tipo, key) {
 function aplicarModalInd() {
   const tipo = _modalIndTipo;
   const key  = _modalIndKey;
-  const get  = id => parseFloat(document.getElementById(`ind-${id}`)?.value) || 0;
+  const get  = id => numPos(document.getElementById(`ind-${id}`)?.value);
 
   if (TIMES_PREMIO[tipo]) {
     const pe = premioPessoa(tipo, key);
@@ -1573,8 +1666,8 @@ function abrirModalManuais() {
 
 function aplicarManuais() {
   // Salvar obj_col antes de recalcular os cards
-  state.manuais['obj_col_juridico']  = parseFloat(document.getElementById('mm-obj-col-juridico')?.value)  || 0;
-  state.manuais['obj_col_comercial'] = parseFloat(document.getElementById('mm-obj-col-comercial')?.value) || 0;
+  state.manuais['obj_col_juridico']  = numPos(document.getElementById('mm-obj-col-juridico')?.value);
+  state.manuais['obj_col_comercial'] = numPos(document.getElementById('mm-obj-col-comercial')?.value);
 
   // Jurídico
   const jurRem = state.removedJuridico;
@@ -1582,11 +1675,11 @@ function aplicarManuais() {
     const d = state.juridico[key];
     const isNic = temPrec(d);
     if (!state.manuais[key]) state.manuais[key] = {};
-    state.manuais[key].ins   = parseFloat(document.getElementById(`mm-ins-${sid(key)}`)?.value) || 0;
-    state.manuais[key].trein = temTrein(d) ? (parseFloat(document.getElementById(`mm-trein-jur-${sid(key)}`)?.value) || 0) : 0;
-    state.manuais[key].prec  = isNic ? (parseFloat(document.getElementById(`mm-prec-${sid(key)}`)?.value) || 0) : 0;
-    state.manuais[key].prec2 = isNic ? (parseFloat(document.getElementById(`mm-prec2-${sid(key)}`)?.value) || 0) : 0;
-    state.manuais[key].camp  = parseFloat(document.getElementById(`mm-camp-jur-${sid(key)}`)?.value) || 0;
+    state.manuais[key].ins   = numPos(document.getElementById(`mm-ins-${sid(key)}`)?.value);
+    state.manuais[key].trein = temTrein(d) ? (numPos(document.getElementById(`mm-trein-jur-${sid(key)}`)?.value)) : 0;
+    state.manuais[key].prec  = isNic ? (numPos(document.getElementById(`mm-prec-${sid(key)}`)?.value)) : 0;
+    state.manuais[key].prec2 = isNic ? (numPos(document.getElementById(`mm-prec2-${sid(key)}`)?.value)) : 0;
+    state.manuais[key].camp  = numPos(document.getElementById(`mm-camp-jur-${sid(key)}`)?.value);
     _recalcCardInternal('juridico', key);
   });
   recalcTotals('juridico');
@@ -1595,19 +1688,19 @@ function aplicarManuais() {
   const comRem = state.removedComercial;
   Object.keys(state.comercial).filter(k=>!comRem.includes(k)).forEach(key => {
     if (!state.manuais[key]) state.manuais[key] = {};
-    state.manuais[key].acordo  = parseFloat(document.getElementById(`mm-acordo-${sid(key)}`)?.value)  || 0;
-    state.manuais[key].acordo2 = parseFloat(document.getElementById(`mm-acordo2-${sid(key)}`)?.value) || 0;
-    state.manuais[key].camp    = parseFloat(document.getElementById(`mm-camp-com-${sid(key)}`)?.value) || 0;
+    state.manuais[key].acordo  = numPos(document.getElementById(`mm-acordo-${sid(key)}`)?.value);
+    state.manuais[key].acordo2 = numPos(document.getElementById(`mm-acordo2-${sid(key)}`)?.value);
+    state.manuais[key].camp    = numPos(document.getElementById(`mm-camp-com-${sid(key)}`)?.value);
     _recalcCardInternal('comercial', key);
   });
   recalcTotals('comercial');
 
   // Times de prêmio
   Object.entries(TIMES_PREMIO).forEach(([t, T]) => {
-    state.manuais[T.objKey] = parseFloat(document.getElementById(`mm-obj-col-${t}`)?.value) || 0;
+    state.manuais[T.objKey] = numPos(document.getElementById(`mm-obj-col-${t}`)?.value);
     T.pessoas.forEach(pe => {
-      state.manuais[pe.exec] = parseFloat(document.getElementById(`mm-${t}-${pe.key}-exec`)?.value) || 0;
-      state.manuais[pe.res]  = parseFloat(document.getElementById(`mm-${t}-${pe.key}-res`)?.value)  || 0;
+      state.manuais[pe.exec] = numPos(document.getElementById(`mm-${t}-${pe.key}-exec`)?.value);
+      state.manuais[pe.res]  = numPos(document.getElementById(`mm-${t}-${pe.key}-res`)?.value);
     });
   });
   recalcTimesPremio();
@@ -1688,137 +1781,59 @@ function recalcTotals(tipo) {
   if (el(`st-camp-${tipo}`))   el(`st-camp-${tipo}`).textContent   = fmt(tCamp);
   if (el(`st-tot-${tipo}`))    el(`st-tot-${tipo}`).textContent    = fmt(tT);
   atualizarPosicoes();
+  renderConferencia();
 }
 
 // ── MODAL BREAKDOWN ───────────────────────────────────────────────────────
 function abrirModal(tipo, key) {
-  const d=tipo==='comercial'?state.comercial[key]:state.juridico[key];
+  const d = tipo==='comercial' ? state.comercial[key] : state.juridico[key];
   if (!d) return;
-  const nomeDisp = d.nome;
-  const comissao = comissaoBase(tipo, d);
-  const insQt = tipo==='juridico' ? getManual(key,'ins') : 0;
-  const insVal = insQt * CFG.INSERCAO_VAL;
-  const liqVal = tipo==='juridico' ? comissaoLiquidados(key) : 0;
-  const pVol=premioVolume(d.volume);
-  const objCol=state.manuais[`obj_col_${tipo}`]||0;
-  const precQt=getManual(key,'prec');
-  const precQt2=getManual(key,'prec2');
-  const precVal=(precQt+precQt2)* CFG.PRECATORIO_VAL;
-  const treinModal = (tipo==='juridico' && temTrein(d)) ? getManual(key,'trein') : 0;
-  const acordoQtModal  = tipo==='comercial' ? getManual(key,'acordo')  : 0;
-  const acordo2QtModal = tipo==='comercial' ? getManual(key,'acordo2') : 0;
-  const acordoValModal  = acordoQtModal  * CFG.CREDITO_VAL;
-  const acordo2ValModal = acordo2QtModal * CFG.CREDITO_VAL;
-  const total=comissao+insVal+liqVal+pVol+objCol+precVal+treinModal+acordoValModal+acordo2ValModal+getManual(key,'camp');
+  const det = detalhePessoa(tipo, key);
+  const linha = (x, cls) => {
+    const z = ehZero(x.val);
+    return `<div class="breakdown-row${z ? ' z' : ''}"><span class="blbl">${x.lbl}${x.sub ? `<br><span style="font-size:11px;color:var(--mu)">${x.sub}</span>` : ''}</span><span class="bval ${cls}">${z ? '—' : fmt(x.val)}</span></div>`;
+  };
+  const subtotal = (rotulo, v, cls) => `<div class="breakdown-row subtot"><span class="blbl"><b>${rotulo}</b></span><span class="bval ${cls}">${fmt(v)}</span></div>`;
 
-  document.getElementById('modal-name').textContent=nomeDisp;
-  document.getElementById('modal-tag').innerHTML=`<span class="tag ${tipo}">${tipo==='comercial'?'Comercial':'Jurídico'}</span>`;
+  // explicação do prêmio de volume
+  det.pre[0].sub = d.volume >= CFG.PREMIO_BASE_VOL
+    ? `Volume ${fmt(d.volume)} ≥ ${fmt(CFG.PREMIO_BASE_VOL)} → base ${fmt(CFG.PREMIO_BASE_VAL)} + ${Math.floor((d.volume-CFG.PREMIO_BASE_VOL)/CFG.PREMIO_INC_VOL)} × ${fmt(CFG.PREMIO_INC_VAL)}`
+    : `Volume ${fmt(d.volume)} abaixo de ${fmt(CFG.PREMIO_BASE_VOL)} → sem prêmio`;
+  // explicação dos créditos adicionais
+  det.com[1].sub = `${fmtN(d.adicionais)} × ${TXT.cred} · compras ≥ ${fmt(CFG.ADICIONAL_THRESHOLD)} rendem +${CFG.ADICIONAL_CREDITOS} créditos cada`;
 
-  let html='';
-
-  html+=`
+  let html = `
     <div class="modal-section">
       <div class="modal-section-title">Comissões</div>
-      <div class="breakdown-row">
-        <span class="blbl">Créditos Comprados</span>
-        <span class="bval">${fmtN(d.creditos)} créditos</span>
-      </div>
-      <div class="breakdown-row">
-        <span class="blbl">Créditos Comprados Adicionais<br><span style="font-size:11px;color:var(--mu)">(compras ≥ ${fmt(CFG.ADICIONAL_THRESHOLD)} → +${CFG.ADICIONAL_CREDITOS} créditos cada)</span></span>
-        <span class="bval">${fmtN(d.adicionais)} créditos</span>
-      </div>
-      <div class="breakdown-row">
-        <span class="blbl">Total de créditos</span>
-        <span class="bval">${fmtN(d.creditos+d.adicionais)} créditos</span>
-      </div>
-      <div class="breakdown-row">
-        <span class="blbl">Comissão créditos<br><span style="font-size:11px;color:var(--mu)">${fmtN(d.creditos+d.adicionais)} × ${TXT.cred}</span></span>
-        <span class="bval green">${fmt(comissao)}</span>
-      </div>
-      ${tipo==='comercial' ? `
-      <div class="breakdown-row">
-        <span class="blbl">Créditos Acordos<br><span style="font-size:11px;color:var(--mu)">${fmtN(acordoQtModal)} × ${TXT.cred}</span></span>
-        <span class="bval green">${fmt(acordoValModal)}</span>
-      </div>
-      <div class="breakdown-row">
-        <span class="blbl">Créditos Acordos Adicionais<br><span style="font-size:11px;color:var(--mu)">${fmtN(acordo2QtModal)} × ${TXT.cred}</span></span>
-        <span class="bval green">${fmt(acordo2ValModal)}</span>
-      </div>` : ''}
+      ${det.com.map(x => linha(x, 'green')).join('')}
+      ${subtotal('Subtotal comissões', det.totCom, 'green')}
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-title">Prêmios</div>
+      ${det.pre.map(x => linha(x, 'gold')).join('')}
+      ${subtotal('Subtotal prêmios', det.totPre, 'gold')}
     </div>`;
 
-  if (tipo==='juridico') {
+  if (tipo === 'juridico') {
     const totalEmpresa = state.totalCreditosEmpresa;
-    const pct = totalEmpresa > 0 ? (d.creditos / totalEmpresa * 100).toFixed(2) : '0.00';
     const liqQt = getVal('#gc-liq-qt');
     const liqTotal = liqQt * CFG.LIQ_VAL_UNIT;
-    html+=`
+    const part = totalEmpresa > 0 ? d.creditos / totalEmpresa * 100 : 0;
+    html += `
     <div class="modal-section">
-      <div class="modal-section-title">Processos inseridos</div>
-      <div class="breakdown-row">
-        <span class="blbl">Inserções informadas</span>
-        <span class="bval">${fmtN(insQt)}</span>
-      </div>
-      <div class="breakdown-row">
-        <span class="blbl">Comissão inserções<br><span style="font-size:11px;color:var(--mu)">${fmtN(insQt)} × ${TXT.ins}</span></span>
-        <span class="bval green">${fmt(insVal)}</span>
-      </div>
-    </div>
-    <div class="modal-section">
-      <div class="modal-section-title">Comissão Processos Liquidados</div>
-      <div class="breakdown-row">
-        <span class="blbl">Créditos Comprados da pessoa</span>
-        <span class="bval">${fmtN(d.creditos)}</span>
-      </div>
-      <div class="breakdown-row">
-        <span class="blbl">Total créditos empresa</span>
-        <span class="bval">${fmtN(totalEmpresa)}</span>
-      </div>
-      <div class="breakdown-row">
-        <span class="blbl">% participação</span>
-        <span class="bval">${pct}%</span>
-      </div>
-      <div class="breakdown-row">
-        <span class="blbl">Total liquidado (créditos × ${TXT.liq})<br><span style="font-size:11px;color:var(--mu)">${fmtN(liqQt)} créditos liquidados</span></span>
-        <span class="bval">${fmt(liqTotal)}</span>
-      </div>
-      <div class="breakdown-row">
-        <span class="blbl">Comissão liquidados<br><span style="font-size:11px;color:var(--mu)">${pct}% × ${fmt(liqTotal)}</span></span>
-        <span class="bval green">${fmt(liqVal)}</span>
-      </div>
+      <div class="modal-section-title">Como foi calculado o liquidado</div>
+      <div class="breakdown-row"><span class="blbl">Créditos comprados da pessoa</span><span class="bval">${fmtN(d.creditos)}</span></div>
+      <div class="breakdown-row"><span class="blbl">Total de créditos da empresa</span><span class="bval">${fmtN(totalEmpresa)}</span></div>
+      <div class="breakdown-row"><span class="blbl">Participação</span><span class="bval">${fmtPct(part)}</span></div>
+      <div class="breakdown-row"><span class="blbl">Total liquidado<br><span style="font-size:11px;color:var(--mu)">${fmtN(liqQt)} créditos × ${TXT.liq}</span></span><span class="bval">${fmt(liqTotal)}</span></div>
+      <div class="breakdown-row"><span class="blbl">Comissão do liquidado<br><span style="font-size:11px;color:var(--mu)">${fmtPct(part)} × ${fmt(liqTotal)}</span></span><span class="bval green">${fmt(comissaoLiquidados(key))}</span></div>
     </div>`;
   }
 
-  // Prêmio Objetivo
-  let premioDetalhe = d.volume >= CFG.PREMIO_BASE_VOL
-    ? `Volume ≥ ${fmt(CFG.PREMIO_BASE_VOL)} → base ${fmt(CFG.PREMIO_BASE_VAL)} + ${Math.floor((d.volume-CFG.PREMIO_BASE_VOL)/CFG.PREMIO_INC_VOL)} × ${fmt(CFG.PREMIO_INC_VAL)}`
-    : `Volume ${fmt(d.volume)} abaixo de ${fmt(CFG.PREMIO_BASE_VOL)} → sem prêmio`;
-  html+=`
-    <div class="modal-section">
-      <div class="modal-section-title">Prêmio Objetivo</div>
-      <div class="breakdown-row">
-        <span class="blbl">Volume total</span>
-        <span class="bval">${fmt(d.volume)}</span>
-      </div>
-      <div class="breakdown-row">
-        <span class="blbl">Cálculo<br><span style="font-size:11px;color:var(--mu)">${premioDetalhe}</span></span>
-        <span class="bval gold">${fmt(pVol)}</span>
-      </div>
-    </div>
-    <div class="modal-section">
-      <div class="modal-section-title">Prêmios manuais</div>
-      ${treinModal > 0 ? `<div class="breakdown-row"><span class="blbl">Prêmio Treinamento</span><span class="bval gold">${fmt(treinModal)}</span></div>` : ''}
-      ${getManual(key,'camp') > 0 ? `<div class="breakdown-row"><span class="blbl">Prêmio Campanha</span><span class="bval gold">${fmt(getManual(key,'camp'))}</span></div>` : ''}
-      </div>`;
-  if (tipo==='juridico' && temPrec(d)) {
-    html+=`<div class="breakdown-row">
-        <span class="blbl">Comissão Precatório</span>
-        <span class="bval gold">${fmt(precVal)}</span>
-      </div>`;
-  }
-  html+=`</div>`;
-
-  document.getElementById('modal-body').innerHTML=html;
-  document.getElementById('modal-total').textContent=fmt(total);
+  document.getElementById('modal-name').textContent = det.nome;
+  document.getElementById('modal-tag').innerHTML = `<span class="tag ${tipo}">${det.tag}</span>`;
+  document.getElementById('modal-body').innerHTML = html;
+  document.getElementById('modal-total').textContent = fmt(det.total);
   document.getElementById('modalBackdrop').classList.add('open');
 }
 
@@ -1832,9 +1847,9 @@ function abrirModalPremios(t, key) {
   document.getElementById('modal-body').innerHTML = `
     <div class="modal-section">
       <div class="modal-section-title">Prêmios</div>
-      <div class="breakdown-row"><span class="blbl">Prêmio Execução</span><span class="bval gold">${fmt(exec)}</span></div>
-      <div class="breakdown-row"><span class="blbl">Prêmio Resultado</span><span class="bval gold">${fmt(res)}</span></div>
-      <div class="breakdown-row"><span class="blbl">Objetivo Coletivo</span><span class="bval gold">${fmt(objCol)}</span></div>
+      <div class="breakdown-row"><span class="blbl">Prêmio execução</span><span class="bval gold">${fmt(exec)}</span></div>
+      <div class="breakdown-row"><span class="blbl">Prêmio resultado</span><span class="bval gold">${fmt(res)}</span></div>
+      <div class="breakdown-row"><span class="blbl">Objetivo coletivo</span><span class="bval gold">${fmt(objCol)}</span></div>
     </div>`;
   document.getElementById('modal-total').textContent = fmt(exec + res + objCol);
   document.getElementById('modalBackdrop').classList.add('open');
@@ -2051,6 +2066,7 @@ function carregarSessao(event) {
   event.target.value = '';
 }
 function exportarPDF() {
+  if (!confirmarConsistencia('gerar o PDF')) return;
   const mesRef = document.getElementById('mes-ref').textContent || '—';
   const win = window.open('', '_blank');
 
@@ -2370,6 +2386,7 @@ function montarRegistro() {
 
 async function registrarMes() {
   const btn = document.getElementById('btnRegistrar');
+  if (!confirmarConsistencia('registrar o mês')) return;
   const { mesRef, headers, rows } = montarRegistro();
 
   if (!confirm(`Registrar o mês "${mesRef}" no histórico do Google Sheets?`)) return;
@@ -2597,6 +2614,7 @@ function obsComercialJuridico(resumo) {
 
 // ── EXPORTAR EXCEL (local) ────────────────────────────────────────────────
 function exportarExcel() {
+  if (!confirmarConsistencia('exportar o Excel')) return;
   const { mesRef, headers, rows } = montarRegistro();
   const MOEDA = '"R$" #,##0.00';
   const wb = XLSX.utils.book_new();
