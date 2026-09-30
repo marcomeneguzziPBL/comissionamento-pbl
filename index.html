@@ -176,6 +176,31 @@ body{background:var(--bg);background-color:var(--bg-solid);color:var(--tx);font-
 .rankline{font-size:11px;color:var(--mu);margin:-2px 0 8px}.rankline b{color:var(--tx)}
 .mixbar{display:flex;height:6px;background:var(--bo)}
 .row.z .lbl,.row.z .val{opacity:.5;font-weight:400}
+.resbar{position:sticky;top:0;z-index:150;display:flex;align-items:center;gap:14px;background:var(--white);border:1px solid var(--bo);border-radius:10px;padding:8px 14px;margin-bottom:16px;box-shadow:var(--card-sh)}
+.resbar:empty{display:none}
+.rb-main{display:flex;flex-direction:column;flex:none}
+.rb-k{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mu)}
+.rb-v{font-size:18px;font-weight:700;color:var(--g);line-height:1.15}
+.rb-chips{display:flex;gap:6px;flex:1;min-width:0;overflow-x:auto;padding:2px 0}
+.rb-chip{display:flex;align-items:center;gap:6px;border:1px solid var(--bo);background:var(--bg-solid);border-radius:999px;padding:4px 10px;font:inherit;font-size:11px;color:var(--mu);cursor:pointer;white-space:nowrap;transition:border-color .15s}
+.rb-chip i{width:8px;height:8px;border-radius:2px;flex:none}
+.rb-chip b{color:var(--tx)}
+.rb-chip:hover{border-color:var(--g)}
+.rb-prog{flex:none;display:flex;flex-direction:column;align-items:flex-end;border:1px solid var(--bo);background:var(--bg-solid);border-radius:8px;padding:4px 12px;font:inherit;cursor:pointer;color:var(--mu)}
+.rb-prog span{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.rb-prog b{font-size:14px}
+.rb-prog.ok b{color:var(--g)}
+.rb-prog.pend{border-color:var(--gold)}.rb-prog.pend b{color:var(--goldd)}
+.nome-wrap{display:flex;align-items:center;min-width:0}
+.stdot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-left:8px;flex:none}
+.stdot.ok{background:var(--g)}
+.stdot.pend{border:2px solid var(--gold);background:transparent}
+.mm-tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;position:sticky;top:0;background:var(--white);padding:4px 0 8px;z-index:2}
+.mm-tab{border:1px solid var(--bo);background:var(--bg-solid);color:var(--mu);border-radius:999px;padding:5px 12px;font:inherit;font-size:12px;font-weight:500;cursor:pointer}
+.mm-tab.on{background:var(--g);border-color:var(--g);color:#fff}
+.mm-tab-n{font-size:10px;opacity:.8;margin-left:4px}
+.mm-prog{font-size:12px;color:var(--mu);margin-left:14px;font-weight:500}
+.mm-ok{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--mu);margin-top:8px;cursor:pointer}
 .mm-input.inv,.gc-input.inv{border-color:var(--danger)!important;background:var(--danger-bg)!important}
 .breakdown-row.z{opacity:.55}
 .breakdown-row.subtot{border-top:1px solid var(--bo);padding-top:6px;margin-top:4px}
@@ -333,6 +358,8 @@ tr:not(.totals-row):hover td{opacity:.85;cursor:pointer}
 
   <div id="appContent" style="display:none">
 
+    <div class="resbar" id="resbar"></div>
+
 
     <div class="global-cards">
       <div class="global-card">
@@ -392,13 +419,13 @@ tr:not(.totals-row):hover td{opacity:.85;cursor:pointer}
             <thead><tr>
               <th>Nome</th>
               <th>Volume</th>
-              <th class="th-com th-com-first">Créditos</th>
-              <th class="th-com">Adicionais</th>
-              <th class="th-com">Créditos Acordos</th>
-              <th class="th-com th-com-last">Créditos Acordos Adic.</th>
-              <th class="th-pre th-pre-first">Objetivo</th>
-              <th class="th-pre">Obj. Coletivo</th>
-              <th class="th-pre th-pre-last">Prêmio Campanha</th>
+              <th class="th-com th-com-first">Créditos comprados</th>
+              <th class="th-com">Créditos adicionais</th>
+              <th class="th-com">Créditos acordos</th>
+              <th class="th-com th-com-last">Créditos acordos adicionais</th>
+              <th class="th-pre th-pre-first">Objetivo de volume</th>
+              <th class="th-pre">Objetivo coletivo</th>
+              <th class="th-pre th-pre-last">Campanha</th>
               <th>Total</th>
             </tr></thead>
             <tbody id="tbody-comercial"></tbody>
@@ -425,16 +452,16 @@ tr:not(.totals-row):hover td{opacity:.85;cursor:pointer}
             <thead><tr>
               <th>Nome</th>
               <th>Volume</th>
-              <th class="th-com th-com-first">Créditos</th>
-              <th class="th-com">Adicionais</th>
+              <th class="th-com th-com-first">Créditos comprados</th>
+              <th class="th-com">Créditos adicionais</th>
               <th class="th-com">Precatório</th>
-              <th class="th-com">Precatório Adic.</th>
-              <th class="th-com">Inseridos</th>
-              <th class="th-com th-com-last">Liquidados</th>
-              <th class="th-pre th-pre-first">Objetivo</th>
-              <th class="th-pre">Obj. Coletivo</th>
+              <th class="th-com">Precatório adicional</th>
+              <th class="th-com">Processos inseridos</th>
+              <th class="th-com th-com-last">Processos liquidados</th>
+              <th class="th-pre th-pre-first">Objetivo de volume</th>
+              <th class="th-pre">Objetivo coletivo</th>
               <th class="th-pre">Treinamento</th>
-              <th class="th-pre th-pre-last">Prêmio Campanha</th>
+              <th class="th-pre th-pre-last">Campanha</th>
               <th>Total</th>
             </tr></thead>
             <tbody id="tbody-juridico"></tbody>
@@ -453,9 +480,9 @@ tr:not(.totals-row):hover td{opacity:.85;cursor:pointer}
           <table>
             <thead><tr>
               <th>Nome</th>
-              <th class="th-pre th-pre-first">Prêmio Execução</th>
-              <th class="th-pre">Prêmio Resultado</th>
-              <th class="th-pre th-pre-last">Obj. Coletivo</th>
+              <th class="th-pre th-pre-first">Prêmio execução</th>
+              <th class="th-pre">Prêmio resultado</th>
+              <th class="th-pre th-pre-last">Objetivo coletivo</th>
               <th>Total</th>
             </tr></thead>
             <tbody id="tbody-administrativo"></tbody>
@@ -474,9 +501,9 @@ tr:not(.totals-row):hover td{opacity:.85;cursor:pointer}
           <table>
             <thead><tr>
               <th>Nome</th>
-              <th class="th-pre th-pre-first">Prêmio Execução</th>
-              <th class="th-pre">Prêmio Resultado</th>
-              <th class="th-pre th-pre-last">Obj. Coletivo</th>
+              <th class="th-pre th-pre-first">Prêmio execução</th>
+              <th class="th-pre">Prêmio resultado</th>
+              <th class="th-pre th-pre-last">Objetivo coletivo</th>
               <th>Total</th>
             </tr></thead>
             <tbody id="tbody-calculos"></tbody>
@@ -495,9 +522,9 @@ tr:not(.totals-row):hover td{opacity:.85;cursor:pointer}
           <table>
             <thead><tr>
               <th>Nome</th>
-              <th class="th-pre th-pre-first">Prêmio Execução</th>
-              <th class="th-pre">Prêmio Resultado</th>
-              <th class="th-pre th-pre-last">Obj. Coletivo</th>
+              <th class="th-pre th-pre-first">Prêmio execução</th>
+              <th class="th-pre">Prêmio resultado</th>
+              <th class="th-pre th-pre-last">Objetivo coletivo</th>
               <th>Total</th>
             </tr></thead>
             <tbody id="tbody-contencioso"></tbody>
@@ -513,7 +540,7 @@ tr:not(.totals-row):hover td{opacity:.85;cursor:pointer}
 <div class="modal-manuais-backdrop" id="modalManuaisBackdrop" onclick="fecharModalManuais(event)">
   <div class="modal-manuais">
     <div class="mm-header">
-      <span class="mm-title">Dados manuais</span>
+      <span class="mm-title">Dados manuais</span><span class="mm-prog" id="mmProg"></span>
       <button class="btn-close" onclick="closeModalManuais()">✕</button>
     </div>
     <div class="mm-body" id="mmBody"></div>
@@ -653,6 +680,7 @@ let state = {
   totalCreditosEmpresa: 0,
   manuais: {}, // { key: { ins, camp, prec } }
   conferencia: null, // resultado da checagem da planilha (ver processarPlanilha)
+  confirmados: {},   // "tipo:chave" → true quando a pessoa foi marcada como 'nada a lançar'
 };
 
 // ── UTILS ─────────────────────────────────────────────────────────────────
@@ -827,6 +855,7 @@ function processarPlanilha(data) {
   // Nova planilha = novo fechamento: zera valores manuais e créditos liquidados do mês anterior
   const tinhaManuais = Object.keys(state.manuais).length > 0 || getVal('#gc-liq-qt') > 0;
   state.manuais = {};
+  state.confirmados = {};
   const liqInput = document.getElementById('gc-liq-qt');
   if (liqInput) liqInput.value = '';
   document.getElementById('gc-liq-val').textContent = fmt(0);
@@ -880,6 +909,47 @@ function processarPlanilha(data) {
   }
   if (tinhaManuais) msg += ' · valores manuais e liquidados anteriores foram zerados';
   setStatus(msg, desc.length ? 'error' : 'ok');
+}
+
+// ── LANÇAMENTOS MANUAIS: status por pessoa e progresso ────────────────────
+const CAMPOS_MANUAIS = ['ins', 'prec', 'prec2', 'trein', 'camp', 'acordo', 'acordo2'];
+function temLancamento(tipo, key) {
+  if (state.confirmados[`${tipo}:${key}`]) return true;
+  if (TIMES_PREMIO[tipo]) {
+    const pe = premioPessoa(tipo, key);
+    return !!pe && (premioVal(pe, 'exec') > 0 || premioVal(pe, 'res') > 0);
+  }
+  const m = state.manuais[key] || {};
+  return CAMPOS_MANUAIS.some(f => (m[f] || 0) > 0);
+}
+function pessoasAtivas() {
+  const out = [];
+  [['comercial', state.comercial, state.removedComercial], ['juridico', state.juridico, state.removedJuridico]].forEach(([tipo, data, rem]) =>
+    Object.keys(data).filter(k => !rem.includes(k)).forEach(k => out.push({ tipo, key: k, nome: data[k].nome })));
+  Object.entries(TIMES_PREMIO).forEach(([t, T]) => T.pessoas.forEach(pe => out.push({ tipo: t, key: pe.key, nome: pe.nome })));
+  return out;
+}
+function progressoManuais() {
+  const todas = pessoasAtivas();
+  const pendentes = todas.filter(x => !temLancamento(x.tipo, x.key));
+  return { feitos: todas.length - pendentes.length, total: todas.length, pendentes };
+}
+
+// Barra fixa no topo: total da remuneração variável, total por time e progresso dos lançamentos manuais
+function atualizarBarra() {
+  const el = document.getElementById('resbar');
+  if (!el || (!Object.keys(state.comercial || {}).length && !Object.keys(state.juridico || {}).length)) return;
+  const res = resumoPorTime(), pr = progressoManuais();
+  const chips = res.times.map(t => `<button class="rb-chip" onclick="switchTab('${t.id}')" title="Abrir ${t.label}"><i style="background:${t.cor}"></i><span>${t.label}</span><b>${fmt(t.total)}</b></button>`).join('');
+  const pend = pr.pendentes.map(x => x.nome).join(', ');
+  el.innerHTML = `<div class="rb-main"><span class="rb-k">Remuneração variável</span><span class="rb-v">${fmt(res.total)}</span></div>
+    <div class="rb-chips">${chips}</div>
+    <button class="rb-prog ${pr.feitos === pr.total ? 'ok' : 'pend'}" onclick="abrirModalManuais()" title="${pr.feitos === pr.total ? 'Todas as pessoas têm lançamento ou foram marcadas como "nada a lançar"' : 'Pendentes: ' + pend}"><span>Lançamentos manuais</span><b>${pr.feitos} de ${pr.total}</b></button>`;
+  document.querySelectorAll('.stdot').forEach(d => {
+    const ok = temLancamento(d.dataset.tipo, d.dataset.key);
+    d.className = 'stdot ' + (ok ? 'ok' : 'pend');
+    d.title = ok ? 'Lançamentos manuais feitos (ou marcado como "nada a lançar")' : 'Pendente: nenhum lançamento manual nesta pessoa';
+  });
 }
 
 // ── VERIFICAÇÃO INTERNA DE CONSISTÊNCIA ───────────────────────────────────
@@ -991,6 +1061,7 @@ function adicionarConsistencia(L) {
 }
 
 function renderConferencia() {
+  atualizarBarra();
   const el = document.getElementById('conferencia');
   if (!el) return;
   const L = conferenciaLinhas();
@@ -1093,7 +1164,7 @@ function renderTime(tipo) {
     card.innerHTML=`
       <div class="card-top">
         <div class="card-top-row">
-          <span class="person-name">${nomeDisp}</span>
+          <span class="nome-wrap"><span class="person-name">${nomeDisp}</span><span class="stdot pend" data-tipo="${tipo}" data-key="${key}"></span></span>
           <div class="card-actions">
             <button class="btn-preencher" onclick="event.stopPropagation();abrirModalIndividual('${tipo}','${key}')">✏️ Preencher</button>
             <button class="btn-preencher" onclick="event.stopPropagation();exportarCardPNG(this)" title="Exportar como PNG">📷</button>
@@ -1259,7 +1330,7 @@ function renderTimePremio(t) {
     card.innerHTML=`
     <div class="card-top">
       <div class="card-top-row">
-        <span class="person-name">${pe.nome}</span>
+        <span class="nome-wrap"><span class="person-name">${pe.nome}</span><span class="stdot pend" data-tipo="${t}" data-key="${pe.key}"></span></span>
         <div class="card-actions">
           <button class="btn-preencher" onclick="event.stopPropagation();abrirModalIndividual('${t}','${pe.key}')">✏️ Preencher</button>
           <button class="btn-preencher" onclick="event.stopPropagation();exportarCardPNG(this)" title="Exportar como PNG">📷</button>
@@ -1440,9 +1511,9 @@ function abrirModalIndividual(tipo, key) {
   if (TIMES_PREMIO[tipo]) {
     const pe = premioPessoa(tipo, key);
     document.getElementById('modalIndTitle').textContent = pe?.nome || key;
-    html += field('Prêmio Execução',  'p_exec',   pe ? premioVal(pe,'exec') : 0);
-    html += field('Prêmio Resultado', 'p_res',    pe ? premioVal(pe,'res')  : 0);
-    html += field('Objetivo Coletivo','p_objcol', objTime(tipo));
+    html += field('Prêmio execução',  'p_exec',   pe ? premioVal(pe,'exec') : 0);
+    html += field('Prêmio resultado', 'p_res',    pe ? premioVal(pe,'res')  : 0);
+    html += field('Objetivo coletivo','p_objcol', objTime(tipo));
   } else {
     const d = tipo === 'comercial' ? state.comercial[key] : state.juridico[key];
     const m = state.manuais[key] || {};
@@ -1450,25 +1521,26 @@ function abrirModalIndividual(tipo, key) {
     document.getElementById('modalIndTitle').textContent = d.nome;
 
     if (tipo === 'comercial') {
-      html += field('Créditos Acordos (qtd.)', 'acordo', m.acordo||0, '× '+TXT.cred);
-      html += field('Créditos Acordos Adicionais (qtd.)', 'acordo2', m.acordo2||0, '× '+TXT.cred);
+      html += field('Créditos acordos (qtd.)', 'acordo', m.acordo||0, '× '+TXT.cred);
+      html += field('Créditos acordos adicionais (qtd.)', 'acordo2', m.acordo2||0, '× '+TXT.cred);
     }
 
     if (tipo === 'juridico') {
-      html += field('Processos Inseridos', 'ins', m.ins||0, '× '+TXT.ins);
+      html += field('Processos inseridos', 'ins', m.ins||0, '× '+TXT.ins);
       if (isNic) {
         html += field('Precatório (qtd.)', 'prec', m.prec||0, '× '+TXT.prec);
-        html += field('Precatório Adicional (qtd.)', 'prec2', m.prec2||0, '× '+TXT.prec);
+        html += field('Precatório adicional (qtd.)', 'prec2', m.prec2||0, '× '+TXT.prec);
       }
       if (temTrein(d)) {
         html += `<div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mu);margin:14px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--bo)">Prêmios Especiais</div>`;
-        html += field('Prêmio Treinamento', 'trein', m.trein||0);
+        html += field('Treinamento', 'trein', m.trein||0);
       }
     }
 
-    html += field('Prêmio Campanha', 'camp', m.camp||0);
+    html += field('Campanha', 'camp', m.camp||0);
   }
 
+  html += `<label class="mm-ok"><input type="checkbox" id="ind-ok" ${state.confirmados[`${tipo}:${key}`] ? 'checked' : ''} onchange="_modalIndDirty=true"> Nada a lançar para esta pessoa neste mês</label>`;
   document.getElementById('modalIndBody').innerHTML = html;
   document.getElementById('modalIndBackdrop').classList.add('open');
 }
@@ -1477,6 +1549,7 @@ function aplicarModalInd() {
   const tipo = _modalIndTipo;
   const key  = _modalIndKey;
   const get  = id => numPos(document.getElementById(`ind-${id}`)?.value);
+  state.confirmados[`${tipo}:${key}`] = !!document.getElementById('ind-ok')?.checked;
 
   if (TIMES_PREMIO[tipo]) {
     const pe = premioPessoa(tipo, key);
@@ -1522,6 +1595,52 @@ document.addEventListener('click', e => {
   const backdrop = document.getElementById('modalIndBackdrop');
   if (backdrop && e.target === backdrop) fecharModalInd(true);
 });
+function criarNadaALancar(tipo, key) {
+  const l = document.createElement('label');
+  l.className = 'mm-ok';
+  l.innerHTML = `<input type="checkbox" class="mm-okbox" ${state.confirmados[`${tipo}:${key}`] ? 'checked' : ''}> Nada a lançar neste mês`;
+  return l;
+}
+function mostrarAbaManuais(team) {
+  document.querySelectorAll('#mmBody .mm-team').forEach(sec => { sec.style.display = sec.dataset.team === team ? '' : 'none'; });
+  document.querySelectorAll('#mmBody .mm-tab').forEach(b => b.classList.toggle('on', b.dataset.team === team));
+}
+function montarAbasManuais(body) {
+  const secs = [...body.querySelectorAll('.mm-team')];
+  const nomes = { juridico: 'Jurídico', comercial: 'Comercial' };
+  Object.entries(TIMES_PREMIO).forEach(([t, T]) => { nomes[t] = T.label; });
+  const bar = document.createElement('div');
+  bar.className = 'mm-tabs';
+  secs.forEach(sec => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'mm-tab'; b.dataset.team = sec.dataset.team;
+    b.innerHTML = `${nomes[sec.dataset.team]}<span class="mm-tab-n"></span>`;
+    b.onclick = () => mostrarAbaManuais(sec.dataset.team);
+    bar.appendChild(b);
+  });
+  body.insertBefore(bar, body.firstChild);
+  if (!body.dataset.ouvindo) {
+    body.addEventListener('input', atualizarProgressoManuais);
+    body.addEventListener('change', atualizarProgressoManuais);
+    body.dataset.ouvindo = '1';
+  }
+  mostrarAbaManuais(secs[0]?.dataset.team);
+  atualizarProgressoManuais();
+}
+// pessoa "com lançamento" = algum campo > 0 ou marcada como "nada a lançar" (lendo os campos abertos no modal)
+function atualizarProgressoManuais() {
+  let feitos = 0, total = 0;
+  document.querySelectorAll('#mmBody .mm-team').forEach(sec => {
+    const pessoas = [...sec.querySelectorAll('.mm-person[data-key]')];
+    const f = pessoas.filter(p => p.querySelector('.mm-okbox')?.checked || [...p.querySelectorAll('input.mm-input')].some(i => numPos(i.value) > 0)).length;
+    feitos += f; total += pessoas.length;
+    const badge = document.querySelector(`#mmBody .mm-tab[data-team="${sec.dataset.team}"] .mm-tab-n`);
+    if (badge) badge.textContent = `${f}/${pessoas.length}`;
+  });
+  const el = document.getElementById('mmProg');
+  if (el) el.textContent = `${feitos} de ${total} com lançamentos`;
+}
+
 function abrirModalManuais() {
   const body = document.getElementById('mmBody');
   body.innerHTML = '';
@@ -1534,12 +1653,12 @@ function abrirModalManuais() {
 
   if (jurNomes.length) {
     const sec = document.createElement('div');
-    sec.className = 'mm-team';
+    sec.className = 'mm-team'; sec.dataset.team = 'juridico';
     sec.innerHTML = `<div class="mm-team-label">Jurídico</div>
     <div class="mm-person">
       <div class="mm-person-name" style="font-size:12px;font-weight:600;color:var(--mu)">Prêmio coletivo do time</div>
       <div class="mm-field">
-        <label>Prêmio Objetivo Coletivo</label>
+        <label>Objetivo coletivo do time</label>
         <input type="number" min="0" step="0.01" class="mm-input" id="mm-obj-col-juridico" value="${state.manuais['obj_col_juridico']||0}" placeholder="0,00">
       </div>
     </div>`;
@@ -1549,11 +1668,11 @@ function abrirModalManuais() {
       const m = state.manuais[key] || {};
       const nomeDisp = d.nome;
       const p = document.createElement('div');
-      p.className = 'mm-person';
+      p.className = 'mm-person'; p.dataset.tipo = 'juridico'; p.dataset.key = key;
       p.innerHTML = `
         <div class="mm-person-name">${nomeDisp}</div>
         <div class="mm-field">
-          <label>Processos Inseridos</label>
+          <label>Processos inseridos</label>
           <div class="mm-field-right">
             <input type="number" min="0" step="1" class="mm-input" id="mm-ins-${sid(key)}" value="${m.ins||0}" placeholder="0">
             <span class="mm-input-hint">× ${TXT.ins}</span>
@@ -1568,7 +1687,7 @@ function abrirModalManuais() {
           </div>
         </div>
         <div class="mm-field">
-          <label>Precatório Adicional (qtd.)</label>
+          <label>Precatório adicional (qtd.)</label>
           <div class="mm-field-right">
             <input type="number" min="0" step="1" class="mm-input" id="mm-prec2-${sid(key)}" value="${m.prec2||0}" placeholder="0">
             <span class="mm-input-hint">× ${TXT.prec}</span>
@@ -1576,18 +1695,19 @@ function abrirModalManuais() {
         </div>` : ''}
         ${temTrein(d) ? `
         <div class="mm-field">
-          <label>Prêmio Treinamento</label>
+          <label>Treinamento</label>
           <div class="mm-field-right">
             <input type="number" min="0" step="0.01" class="mm-input" id="mm-trein-jur-${sid(key)}" value="${m.trein||0}" placeholder="0,00">
           </div>
         </div>` : ''}
         <div class="mm-field">
-          <label>Prêmio Campanha</label>
+          <label>Campanha</label>
           <div class="mm-field-right">
             <input type="number" min="0" step="0.01" class="mm-input" id="mm-camp-jur-${sid(key)}" value="${m.camp||0}" placeholder="0,00">
           </div>
         </div>
         `;
+      p.appendChild(criarNadaALancar(p.dataset.tipo, key));
       sec.appendChild(p);
     });
     body.appendChild(sec);
@@ -1601,12 +1721,12 @@ function abrirModalManuais() {
 
   if (comNomes.length) {
     const sec = document.createElement('div');
-    sec.className = 'mm-team';
+    sec.className = 'mm-team'; sec.dataset.team = 'comercial';
     sec.innerHTML = `<div class="mm-team-label">Comercial</div>
     <div class="mm-person">
       <div class="mm-person-name" style="font-size:12px;font-weight:600;color:var(--mu)">Prêmio coletivo do time</div>
       <div class="mm-field">
-        <label>Prêmio Objetivo Coletivo</label>
+        <label>Objetivo coletivo do time</label>
         <input type="number" min="0" step="0.01" class="mm-input" id="mm-obj-col-comercial" value="${state.manuais['obj_col_comercial']||0}" placeholder="0,00">
       </div>
     </div>`;
@@ -1614,29 +1734,30 @@ function abrirModalManuais() {
       const d = state.comercial[key];
       const m = state.manuais[key] || {};
       const p = document.createElement('div');
-      p.className = 'mm-person';
+      p.className = 'mm-person'; p.dataset.tipo = 'comercial'; p.dataset.key = key;
       p.innerHTML = `
         <div class="mm-person-name">${d.nome}</div>
         <div class="mm-field">
-          <label>Créditos Acordos (qtd.)</label>
+          <label>Créditos acordos (qtd.)</label>
           <div class="mm-field-right">
             <input type="number" min="0" step="1" class="mm-input" id="mm-acordo-${sid(key)}" value="${m.acordo||0}" placeholder="0">
             <span class="mm-input-hint">× ${TXT.cred}</span>
           </div>
         </div>
         <div class="mm-field">
-          <label>Créditos Acordos Adicionais (qtd.)</label>
+          <label>Créditos acordos adicionais (qtd.)</label>
           <div class="mm-field-right">
             <input type="number" min="0" step="1" class="mm-input" id="mm-acordo2-${sid(key)}" value="${m.acordo2||0}" placeholder="0">
             <span class="mm-input-hint">× ${TXT.cred}</span>
           </div>
         </div>
         <div class="mm-field">
-          <label>Prêmio Campanha</label>
+          <label>Campanha</label>
           <div class="mm-field-right">
             <input type="number" min="0" step="0.01" class="mm-input" id="mm-camp-com-${sid(key)}" value="${m.camp||0}" placeholder="0,00">
           </div>
         </div>`;
+      p.appendChild(criarNadaALancar(p.dataset.tipo, key));
       sec.appendChild(p);
     });
     body.appendChild(sec);
@@ -1645,34 +1766,40 @@ function abrirModalManuais() {
   // Times de prêmio (Financeiro e Administrativo, Cálculos Judiciais, Contencioso)
   Object.entries(TIMES_PREMIO).forEach(([t, T]) => {
     const sec = document.createElement('div');
-    sec.className = 'mm-team';
+    sec.className = 'mm-team'; sec.dataset.team = t;
     sec.innerHTML = `
       <div class="mm-team-label">${T.label}</div>
       <div class="mm-person">
         <div class="mm-person-name" style="font-size:12px;font-weight:600;color:var(--mu)">Prêmio coletivo do time</div>
         <div class="mm-field">
-          <label>Prêmio Objetivo Coletivo</label>
+          <label>Objetivo coletivo do time</label>
           <input type="number" min="0" step="0.01" class="mm-input" id="mm-obj-col-${t}" value="${objTime(t)}" placeholder="0,00">
         </div>
       </div>` + T.pessoas.map(pe => `
-      <div class="mm-person">
+      <div class="mm-person" data-tipo="${t}" data-key="${pe.key}">
         <div class="mm-person-name">${pe.nome}</div>
         <div class="mm-field">
-          <label>Prêmio Execução</label>
+          <label>Prêmio execução</label>
           <input type="number" min="0" step="0.01" class="mm-input" id="mm-${t}-${pe.key}-exec" value="${premioVal(pe,'exec')}" placeholder="0,00">
         </div>
         <div class="mm-field">
-          <label>Prêmio Resultado</label>
+          <label>Prêmio resultado</label>
           <input type="number" min="0" step="0.01" class="mm-input" id="mm-${t}-${pe.key}-res" value="${premioVal(pe,'res')}" placeholder="0,00">
         </div>
       </div>`).join('');
+    sec.querySelectorAll('.mm-person[data-key]').forEach(p => p.appendChild(criarNadaALancar(p.dataset.tipo, p.dataset.key)));
     body.appendChild(sec);
   });
+
+  montarAbasManuais(body);
 
   document.getElementById('modalManuaisBackdrop').classList.add('open');
 }
 
 function aplicarManuais() {
+  document.querySelectorAll('#mmBody .mm-person[data-key]').forEach(p => {
+    state.confirmados[`${p.dataset.tipo}:${p.dataset.key}`] = !!p.querySelector('.mm-okbox')?.checked;
+  });
   // Salvar obj_col antes de recalcular os cards
   state.manuais['obj_col_juridico']  = numPos(document.getElementById('mm-obj-col-juridico')?.value);
   state.manuais['obj_col_comercial'] = numPos(document.getElementById('mm-obj-col-comercial')?.value);
@@ -1994,6 +2121,7 @@ function salvarSessao() {
     mesRef: document.getElementById('mes-ref').textContent || '—',
     liquidadosQt: getVal('#gc-liq-qt'),
     manuais: state.manuais,
+    confirmados: state.confirmados,
     removedComercial: state.removedComercial,
     removedJuridico: state.removedJuridico,
     comercial: state.comercial,
@@ -2026,6 +2154,7 @@ function carregarSessao(event) {
       state.juridico               = sessao.juridico  || {};
       garantirNomesJuridico(state.juridico); // sessões antigas recebem nomes novos da lista
       state.manuais                = sessao.manuais   || {};
+      state.confirmados            = sessao.confirmados || {};
       state.removedComercial       = sessao.removedComercial || [];
       state.removedJuridico        = sessao.removedJuridico  || [];
       state.totalCreditosEmpresa   = sessao.totalCreditosEmpresa || 0;
@@ -2336,7 +2465,7 @@ function montarRegistro() {
       const adicVal  = d.adicionais * CFG.CREDITO_VAL;
       const insQt    = getManual(key, 'ins');
       const insVal   = insQt * CFG.INSERCAO_VAL;
-      const pct      = totalEmp > 0 ? (d.creditos / totalEmp * 100).toFixed(2) + '%' : '0%';
+      const pct      = totalEmp > 0 ? d.creditos / totalEmp : 0;   // fração: Sheets/Excel exibem como %
       const liqVal   = comissaoLiquidados(key);
       const precQt   = isNic ? getManual(key, 'prec') : 0;
       const precQt2  = isNic ? getManual(key, 'prec2') : 0;
@@ -2440,7 +2569,6 @@ async function registrarMes() {
   }
 }
 // ── DETALHE DE UMA PESSOA (base do card do PDF e do PNG) ──────────────────
-const fmtPct1 = v => Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%';
 const ehZero  = v => Math.abs(v) < 0.005;
 
 // "17,39% de 100 créditos liquidados"
@@ -2462,9 +2590,9 @@ function posicaoPessoa(tipo, key, res=resumoPorTime()) {
 // Linha 1: posição e participação pela remuneração · Linha 2: posição e participação pelo volume de compras
 function posicaoTexto(p) {
   if (!p) return '';
-  if (p.soFolha) return `${fmtPct1(p.partFolha)} da folha`;
-  const l1 = `Remuneração <b>${p.rank}º de ${p.nGeral}</b> · ${fmtPct1(p.partFolha)} da folha`;
-  const l2 = (p.rankVol === null || p.n <= 1) ? '' : `<br>Volume de compras <b>${p.rankVol}º de ${p.n}</b> · ${fmtPct1(p.partVolTime)} do volume do time`;
+  if (p.soFolha) return `${fmtPct(p.partFolha)} da folha`;
+  const l1 = `Remuneração <b>${p.rank}º de ${p.nGeral}</b> · ${fmtPct(p.partFolha)} da folha`;
+  const l2 = (p.rankVol === null || p.n <= 1) ? '' : `<br>Volume de compras <b>${p.rankVol}º de ${p.n}</b> · ${fmtPct(p.partVolTime)} do volume do time`;
   return l1 + l2;
 }
 
@@ -2647,10 +2775,11 @@ function exportarExcel() {
   const wsCom = XLSX.utils.aoa_to_sheet([headers, ...rows]);
   wsCom['!cols'] = headers.map((h,i) => ({ wch: i === 1 ? 32 : i === 2 ? 20 : 17 }));
   headers.forEach((h,c) => {
-    if (!/\(R\$\)/.test(h)) return;
+    const formato = /\(R\$\)/.test(h) ? MOEDA : (/^%/.test(h) ? '0.00%' : null);
+    if (!formato) return;
     for (let r = 1; r <= rows.length; r++) {
       const cell = wsCom[XLSX.utils.encode_cell({ r, c })];
-      if (cell && cell.t === 'n') cell.z = MOEDA;
+      if (cell && cell.t === 'n') cell.z = formato;
     }
   });
   XLSX.utils.book_append_sheet(wb, wsCom, 'Comissões');
