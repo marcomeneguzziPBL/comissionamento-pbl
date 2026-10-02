@@ -513,6 +513,7 @@ tr:not(.totals-row):hover td{opacity:.85;cursor:pointer}
               <th>Nome</th>
               <th class="th-pre th-pre-first">Prêmio execução</th>
               <th class="th-pre">Prêmio resultado</th>
+              <th class="th-pre">Treinamento</th>
               <th class="th-pre th-pre-last">Objetivo coletivo</th>
               <th>Total</th>
             </tr></thead>
@@ -609,10 +610,8 @@ const JURIDICO_NOMES = [
 const CONTENCIOSO_NOMES = ["Amanda", "Brenna", "Raphaelly"];
 
 // ── REGRAS ESPECÍFICAS DO JURÍDICO (por nome normalizado) ────────────────
-// trein: campo "Prêmio Treinamento" · prec: campos de Precatório
+// prec: campos de Precatório. Treinamento vale para todo o Jurídico e para o Contencioso (aparece nos cards só quando preenchido).
 const REGRAS_JUR = {
-  daniel:   { trein: true },
-  tarciane: { trein: true },
   nicolli:  { prec: true },
 };
 
@@ -628,7 +627,7 @@ function semAcento(v) {
 const chaveNome = n => semAcento(n).replace(/\s+/g, ' ');
 // slug seguro para chaves/ids: só a-z, 0-9 e _
 const slugNome  = n => chaveNome(n).replace(/[^a-z0-9]+/g, '_');
-const temTrein  = d => !!(d && REGRAS_JUR[chaveNome(d.nome)]?.trein);
+const temTrein  = d => !!d;   // todo o Jurídico pode ter treinamento
 const temPrec   = d => !!(d && REGRAS_JUR[chaveNome(d.nome)]?.prec);
 
 // Garante que todos os nomes da lista do jurídico existam em `obj`, mesmo sem compras
@@ -708,11 +707,11 @@ const TIMES_PREMIO = {
     pessoas: [{ nome: 'Camila', key: 'camila', exec: 'camila_exec', res: 'camila_res' }],
   },
   contencioso: {
-    label: 'Contencioso', cor: '#a13a52', tag: 'contencioso', pdfTag: 'tag-cont', pdfNovaPagina: true,
+    label: 'Contencioso', cor: '#a13a52', tag: 'contencioso', trein: true, pdfTag: 'tag-cont', pdfNovaPagina: true,
     objKey: 'obj_col_contencioso', objLegacy: null,
     pessoas: CONTENCIOSO_NOMES.map(nome => {
       const key = slugNome(nome);
-      return { nome, key, exec: `${key}_exec`, res: `${key}_res` };
+      return { nome, key, exec: `${key}_exec`, res: `${key}_res`, trein: `${key}_trein` };
     }),
   },
 };
@@ -722,7 +721,7 @@ const objTime      = t => {
   const T = TIMES_PREMIO[t], v = state.manuais[T.objKey];
   return v !== undefined ? v : (T.objLegacy ? (state.manuais[T.objLegacy] || 0) : 0);
 };
-const totalPremioPessoa = (t, p) => premioVal(p,'exec') + premioVal(p,'res') + objTime(t);
+const totalPremioPessoa = (t, p) => premioVal(p,'exec') + premioVal(p,'res') + premioVal(p,'trein') + objTime(t);
 
 function getManual(key, field) {
   return (state.manuais[key] && state.manuais[key][field]) || 0;
@@ -906,7 +905,7 @@ function temLancamento(tipo, key) {
   if (state.confirmados[`${tipo}:${key}`]) return true;
   if (TIMES_PREMIO[tipo]) {
     const pe = premioPessoa(tipo, key);
-    return !!pe && (premioVal(pe, 'exec') > 0 || premioVal(pe, 'res') > 0);
+    return !!pe && (premioVal(pe, 'exec') > 0 || premioVal(pe, 'res') > 0 || premioVal(pe, 'trein') > 0);
   }
   const m = state.manuais[key] || {};
   return CAMPOS_MANUAIS.some(f => (m[f] || 0) > 0);
@@ -1152,8 +1151,8 @@ function renderTime(tipo) {
         <div class="row"><span class="lbl">Objetivo de volume</span><span class="val">${fmt(pVol)}</span></div>
         <div class="row"><span class="lbl">Objetivo coletivo</span><span class="val" id="row-objcol-val-${sid(key)}">R$ 0,00</span></div>
         <div class="row"><span class="lbl">Campanha</span><span class="val" id="row-camp-val-${sid(key)}">R$ 0,00</span></div>
-        ${(tipo==='juridico' && temTrein(d)) ? `
-        <div class="row"><span class="lbl">Treinamento</span><span class="val" id="row-trein-val-${sid(key)}">R$ 0,00</span></div>` : ''}
+        ${tipo==='juridico' ? `
+        <div class="row" id="row-trein-${sid(key)}" style="display:none"><span class="lbl">Treinamento</span><span class="val" id="row-trein-val-${sid(key)}">R$ 0,00</span></div>` : ''}
         `;
 
     card.innerHTML=`
@@ -1338,6 +1337,7 @@ function renderTimePremio(t) {
       <div class="card-group-label">Prêmios</div>
       <div class="row"><span class="lbl">Prêmio execução</span><span class="val" id="${k}-exec-val">R$ 0,00</span></div>
       <div class="row"><span class="lbl">Prêmio resultado</span><span class="val" id="${k}-res-val">R$ 0,00</span></div>
+      ${T.trein ? `<div class="row" id="${k}-trein-row" style="display:none"><span class="lbl">Treinamento</span><span class="val" id="${k}-trein-val">R$ 0,00</span></div>` : ''}
       <div class="row"><span class="lbl">Objetivo coletivo</span><span class="val" id="${k}-objcol-val">R$ 0,00</span></div>
       <p class="hint">Clique para ver o detalhamento</p>
     </div>
@@ -1356,6 +1356,7 @@ function renderTimePremio(t) {
     <td>${pe.nome}</td>
     <td class="td-pre-first" id="s-${k}-exec">R$ 0,00</td>
     <td class="td-pre" id="s-${k}-res">R$ 0,00</td>
+    ${T.trein ? `<td class="td-pre" id="s-${k}-trein">R$ 0,00</td>` : ''}
     <td class="td-pre-last" id="s-${k}-objcol">R$ 0,00</td>
     <td id="s-${k}-tot">R$ 0,00</td>`;
     tbodyEl.appendChild(tr);
@@ -1366,6 +1367,7 @@ function renderTimePremio(t) {
     trT.innerHTML = `<td>Total</td>
       <td class="td-pre-first" id="st-${t}-exec">R$ 0,00</td>
       <td class="td-pre" id="st-${t}-res">R$ 0,00</td>
+      ${T.trein ? `<td class="td-pre" id="st-${t}-trein">R$ 0,00</td>` : ''}
       <td class="td-pre-last" id="st-${t}-objcol">R$ 0,00</td>
       <td id="st-${t}-tot">R$ 0,00</td>`;
     tbodyEl.appendChild(trT);
@@ -1376,18 +1378,23 @@ function renderTimePremio(t) {
 function recalcTimePremio(t) {
   const set = (id, v) => { const e=document.getElementById(id); if (e) e.textContent = fmt(v); };
   const objCol = objTime(t);
-  let sExec = 0, sRes = 0, sObj = 0;
+  let sExec = 0, sRes = 0, sTr = 0, sObj = 0;
   TIMES_PREMIO[t].pessoas.forEach(pe=>{
     const k=`${t}-${pe.key}`;
-    const exec = premioVal(pe,'exec'), res = premioVal(pe,'res');
-    sExec += exec; sRes += res; sObj += objCol;
-    set(`total-${k}`, exec + res + objCol);
+    const exec = premioVal(pe,'exec'), res = premioVal(pe,'res'), tr = premioVal(pe,'trein');
+    sExec += exec; sRes += res; sTr += tr; sObj += objCol;
+    set(`total-${k}`, exec + res + tr + objCol);
     set(`${k}-exec-val`, exec);  set(`${k}-res-val`, res);  set(`${k}-objcol-val`, objCol);
     set(`s-${k}-exec`, exec);    set(`s-${k}-res`, res);    set(`s-${k}-objcol`, objCol);
-    set(`s-${k}-tot`, exec + res + objCol);
+    set(`s-${k}-tot`, exec + res + tr + objCol);
+    if (TIMES_PREMIO[t].trein) {
+      set(`${k}-trein-val`, tr); set(`s-${k}-trein`, tr);
+      const linha = document.getElementById(`${k}-trein-row`);
+      if (linha) linha.style.display = tr > 0 ? '' : 'none';   // só aparece no card quando preenchido
+    }
     atenuarZeros(cardDe(t, pe.key));
   });
-  set(`st-${t}-exec`, sExec); set(`st-${t}-res`, sRes); set(`st-${t}-objcol`, sObj); set(`st-${t}-tot`, sExec + sRes + sObj);
+  set(`st-${t}-exec`, sExec); set(`st-${t}-res`, sRes); set(`st-${t}-trein`, sTr); set(`st-${t}-objcol`, sObj); set(`st-${t}-tot`, sExec + sRes + sTr + sObj);
   atualizarPosicoes();
   renderConferencia();
 }
@@ -1454,6 +1461,7 @@ function _recalcCardInternal(tipo, key) {
   if (el(`row-prec2-val-${sid(key)}`)) el(`row-prec2-val-${sid(key)}`).textContent = fmt(precQt2 * CFG.PRECATORIO_VAL);
   if (el(`s-pvol-${tipo}-${sid(key)}`)) el(`s-pvol-${tipo}-${sid(key)}`).textContent = fmt(pVol);
   if (el(`row-trein-val-${sid(key)}`)) el(`row-trein-val-${sid(key)}`).textContent = fmt(trein);
+  if (el(`row-trein-${sid(key)}`)) el(`row-trein-${sid(key)}`).style.display = trein > 0 ? '' : 'none';
   if (el(`row-acordo-val-${sid(key)}`))  el(`row-acordo-val-${sid(key)}`).textContent  = fmt(acordoVal);
   if (el(`acordo-sub-${sid(key)}`))      el(`acordo-sub-${sid(key)}`).textContent      = `${fmtN(acordoQt)} × ${TXT.cred}`;
   if (el(`row-acordo2-val-${sid(key)}`)) el(`row-acordo2-val-${sid(key)}`).textContent = fmt(acordo2Val);
@@ -1523,6 +1531,7 @@ function abrirModalIndividual(tipo, key) {
     document.getElementById('modalIndTitle').textContent = pe?.nome || key;
     html += field('Prêmio execução',  'p_exec',   pe ? premioVal(pe,'exec') : 0);
     html += field('Prêmio resultado', 'p_res',    pe ? premioVal(pe,'res')  : 0);
+    if (TIMES_PREMIO[tipo].trein) html += field('Treinamento', 'p_trein', pe ? premioVal(pe,'trein') : 0);
     html += field('Objetivo coletivo','p_objcol', objTime(tipo));
   } else {
     const d = tipo === 'comercial' ? state.comercial[key] : state.juridico[key];
@@ -1566,6 +1575,7 @@ function aplicarModalInd() {
     if (pe) {
       state.manuais[pe.exec] = get('p_exec');
       state.manuais[pe.res]  = get('p_res');
+      if (pe.trein) state.manuais[pe.trein] = get('p_trein');
     }
     state.manuais[TIMES_PREMIO[tipo].objKey] = get('p_objcol');
     recalcTimePremio(tipo);
@@ -1804,6 +1814,10 @@ function abrirModalManuais() {
           <label>Prêmio resultado</label>
           <input type="number" min="0" step="0.01" class="mm-input" id="mm-${t}-${pe.key}-res" value="${premioVal(pe,'res')}" placeholder="0,00">
         </div>
+        ${T.trein ? `<div class="mm-field">
+          <label>Treinamento</label>
+          <input type="number" min="0" step="0.01" class="mm-input" id="mm-${t}-${pe.key}-trein" value="${premioVal(pe,'trein')}" placeholder="0,00">
+        </div>` : ''}
       </div>`).join('');
     sec.querySelectorAll('.mm-person[data-key]').forEach(p => p.appendChild(criarNadaALancar(p.dataset.tipo, p.dataset.key)));
     body.appendChild(sec);
@@ -1854,6 +1868,7 @@ function aplicarManuais() {
     T.pessoas.forEach(pe => {
       state.manuais[pe.exec] = numPos(document.getElementById(`mm-${t}-${pe.key}-exec`)?.value);
       state.manuais[pe.res]  = numPos(document.getElementById(`mm-${t}-${pe.key}-res`)?.value);
+      if (pe.trein) state.manuais[pe.trein] = numPos(document.getElementById(`mm-${t}-${pe.key}-trein`)?.value);
     });
   });
   recalcTimesPremio();
@@ -1994,7 +2009,7 @@ function abrirModalPremios(t, key) {
   const T  = TIMES_PREMIO[t];
   const pe = premioPessoa(t, key);
   if (!pe) return;
-  const exec = premioVal(pe,'exec'), res = premioVal(pe,'res'), objCol = objTime(t);
+  const exec = premioVal(pe,'exec'), res = premioVal(pe,'res'), tr = premioVal(pe,'trein'), objCol = objTime(t);
   document.getElementById('modal-name').textContent = pe.nome;
   document.getElementById('modal-tag').innerHTML = `<span class="tag ${T.tag}">${T.label}</span>`;
   document.getElementById('modal-body').innerHTML = `
@@ -2002,9 +2017,10 @@ function abrirModalPremios(t, key) {
       <div class="modal-section-title">Prêmios</div>
       <div class="breakdown-row"><span class="blbl">Prêmio execução</span><span class="bval gold">${fmt(exec)}</span></div>
       <div class="breakdown-row"><span class="blbl">Prêmio resultado</span><span class="bval gold">${fmt(res)}</span></div>
+      ${tr > 0 ? `<div class="breakdown-row"><span class="blbl">Treinamento</span><span class="bval gold">${fmt(tr)}</span></div>` : ''}
       <div class="breakdown-row"><span class="blbl">Objetivo coletivo</span><span class="bval gold">${fmt(objCol)}</span></div>
     </div>`;
-  document.getElementById('modal-total').textContent = fmt(exec + res + objCol);
+  document.getElementById('modal-total').textContent = fmt(exec + res + tr + objCol);
   document.getElementById('modalBackdrop').classList.add('open');
 }
 
@@ -2520,8 +2536,8 @@ function montarRegistro() {
   Object.entries(TIMES_PREMIO).forEach(([t, T]) => {
     const objCol = objTime(t);
     T.pessoas.forEach(pe => {
-      const exec = premioVal(pe,'exec'), res = premioVal(pe,'res');
-      const tot  = exec + res + objCol;
+      const exec = premioVal(pe,'exec'), res = premioVal(pe,'res'), trein = premioVal(pe,'trein');
+      const tot  = exec + res + trein + objCol;
       rows.push([
         mesRef, T.label, pe.nome,
         0,
@@ -2530,7 +2546,7 @@ function montarRegistro() {
         '—', 0,
         '—','—','—', 0,
         '—', 0, '—', 0,
-        0, objCol, 0, 0, exec, res,
+        0, objCol, trein, 0, exec, res,
         0, tot, tot
       ]);
     });
@@ -2673,7 +2689,7 @@ function detalhePessoa(tipo, key) {
   add(pre, 'Objetivo de volume', '', premioVolume(d.volume));
   add(pre, 'Objetivo coletivo',  '', state.manuais[`obj_col_${tipo}`] || 0);
   add(pre, 'Campanha',           '', getManual(key,'camp'));
-  if (jur && temTrein(d)) add(pre, 'Treinamento', '', getManual(key,'trein'));
+  if (jur && getManual(key,'trein') > 0) add(pre, 'Treinamento', '', getManual(key,'trein'));
   const t = totaisPessoa(tipo, key);
   return {
     nome: d.nome, tag: jur ? 'Jurídico' : 'Comercial', tagCls: jur ? 'tag-jur' : 'tag-com', tipo,
@@ -2687,14 +2703,16 @@ function detalhePessoa(tipo, key) {
 
 function detalhePremio(t, pe) {
   const T = TIMES_PREMIO[t];
-  const exec = premioVal(pe,'exec'), res = premioVal(pe,'res'), obj = objTime(t);
+  const exec = premioVal(pe,'exec'), res = premioVal(pe,'res'), tr = premioVal(pe,'trein'), obj = objTime(t);
   const res0 = resumoPorTime();
   const tm = res0.times.find(x => x.id === t);
   const it = tm && tm.lista.find(x => x.key === pe.key);
   return {
     nome: pe.nome, tag: T.label, tagCls: T.pdfTag, tipo: t, stats: null, com: [],
-    pre: [{ lbl: 'Prêmio execução', sub: '', val: exec }, { lbl: 'Prêmio resultado', sub: '', val: res }, { lbl: 'Objetivo coletivo', sub: '', val: obj }],
-    totCom: 0, totPre: exec + res + obj, total: exec + res + obj,
+    pre: [{ lbl: 'Prêmio execução', sub: '', val: exec }, { lbl: 'Prêmio resultado', sub: '', val: res }]
+      .concat(tr > 0 ? [{ lbl: 'Treinamento', sub: '', val: tr }] : [])
+      .concat([{ lbl: 'Objetivo coletivo', sub: '', val: obj }]),
+    totCom: 0, totPre: exec + res + tr + obj, total: exec + res + tr + obj,
     pos: posicaoPessoa(t, pe.key, res0),
   };
 }
