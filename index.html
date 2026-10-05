@@ -2744,7 +2744,7 @@ function resumoPorTime() {
     const lista = ks.map(k => {
       const d = data[k], t = totaisPessoa(tipo,k);
       com += t.com; pre += t.pre; volume += d.volume;
-      return { key: k, nome: d.nome, volume: d.volume, com: t.com, pre: t.pre, total: t.total };
+      return { key: k, nome: d.nome, volume: d.volume, cred: d.creditos, com: t.com, pre: t.pre, total: t.total };
     });
     times.push({ id: tipo, label, cor: tipo === 'comercial' ? '#0D4A3A' : '#C49A45', pessoas: ks.length, volume, com, pre, total: com + pre, lista });
   });
@@ -2800,18 +2800,26 @@ function obsComercialJuridico(resumo) {
   const tCom = resumo.times.find(t => t.label === 'Comercial');
   const tJur = resumo.times.find(t => t.label === 'Jurídico');
   const base = '<b>Observação — Comercial × Jurídico:</b> cada compra paga é atribuída a um Comercial e a um Jurídico; por isso os dois times são medidos sobre as mesmas compras.';
-  if (!c || !tCom || !tJur) return base;
-  const difVol = c.volume.empresa - c.volume.juridico;
-  const difCred = c.creditos.empresa - c.creditos.juridico;
+  if (!tCom || !tJur) return base;
+  // diferença calculada sobre o que está efetivamente nos times (inclui pessoas removidas da tela)
+  const soma = (t, f) => t.lista.reduce((a, x) => a + (x[f] || 0), 0);
+  const difVol  = tCom.volume - tJur.volume;
+  const difCred = soma(tCom, 'cred') - soma(tJur, 'cred');
   if (Math.abs(difVol) <= 0.005 && Math.abs(difCred) <= 0.005) {
-    return base + ' Neste mês todas as compras têm Jurídico da lista, e o volume dos dois times coincide.';
+    return base + ' Neste mês o volume dos dois times coincide.';
   }
-  const fora = Object.entries(c.jurDesconhecidos || {}).map(([n,u]) => `"${n}" (${u.linhas} linha${u.linhas>1?'s':''})`);
-  const semJur = c.semJuridico.linhas.length;
-  const origem = [fora.length ? 'compras com Jurídico fora da lista: ' + fora.join(', ') : '', semJur ? `${semJur} linha(s) sem Jurídico preenchido` : ''].filter(Boolean).join('; ');
-  return `${base} Neste mês o volume do Comercial (${fmt(tCom.volume)}) é maior que o do Jurídico (${fmt(tJur.volume)}) em ${fmt(difVol)}` +
-    `${difCred ? ' e em ' + fmtN(difCred) + ' crédito(s)' : ''}: ${origem || 'compras sem Jurídico da lista'}. ` +
-    `Essas compras geram remuneração para o Comercial, mas não para o Jurídico, e por isso não entram nos valores acima.`;
+  const causas = [];
+  const fora = Object.entries((c && c.jurDesconhecidos) || {}).map(([n, u]) => `"${n}" (${u.linhas} linha${u.linhas > 1 ? 's' : ''})`);
+  if (fora.length) causas.push('compras com Jurídico fora da lista: ' + fora.join(', '));
+  const semJur = c ? c.semJuridico.linhas.length : 0;
+  if (semJur) causas.push(`${semJur} linha(s) sem Jurídico preenchido`);
+  const remJur = state.removedJuridico.map(k => state.juridico[k]).filter(d => d && d.volume > 0);
+  if (remJur.length) causas.push('pessoas removidas do Jurídico: ' + remJur.map(d => `${d.nome} (${fmt(d.volume)})`).join(', '));
+  const remCom = state.removedComercial.map(k => state.comercial[k]).filter(d => d && d.volume > 0);
+  if (remCom.length) causas.push('pessoas removidas do Comercial: ' + remCom.map(d => `${d.nome} (${fmt(d.volume)})`).join(', '));
+  return `${base} Neste mês o volume do Comercial (${fmt(tCom.volume)}) é ${difVol >= 0 ? 'maior' : 'menor'} que o do Jurídico (${fmt(tJur.volume)}) em ${fmt(Math.abs(difVol))}` +
+    `${difCred ? ' e em ' + fmtN(Math.abs(difCred)) + ' crédito(s)' : ''}${causas.length ? ': ' + causas.join('; ') : ''}. ` +
+    `Essas compras não geram remuneração no time em que a pessoa está fora da lista ou foi removida, e por isso não entram nos valores acima.`;
 }
 
 // ── EXPORTAR EXCEL (local) ────────────────────────────────────────────────
