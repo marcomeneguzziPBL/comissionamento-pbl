@@ -603,8 +603,12 @@ tr:not(.totals-row):hover td{opacity:.85;cursor:pointer}
 // tabelas/rankings onde a ordem por quantidade faz sentido.
 const porNome = (a, b) => String(a).localeCompare(String(b), 'pt-BR', { sensitivity: 'base' });
 const JURIDICO_NOMES = [
-  "Amanda", "Daniel", "Eduardo", "Fernando", "Millena", "Natália", "Nicolli", "Rodrigo", "Tarciane", "Vitória"
+  "Daniel", "Fernando", "Millena", "Natália", "Nicolli", "Rodrigo", "Tarciane", "Vitória"
 ];
+
+// ── NOMES FIXOS DO COMERCIAL ─────────────────────────────────────────────
+// Sempre aparecem (mesmo sem compras). Outros nomes da planilha continuam entrando normalmente.
+const COMERCIAL_NOMES = ["Andressa", "Bárbara", "Gabriella", "Hilary"];
 
 // ── NOMES DO CONTENCIOSO ─────────────────────────────────────────────────
 const CONTENCIOSO_NOMES = ["Amanda", "Brenna", "Raphaelly"];
@@ -633,6 +637,13 @@ const temPrec   = d => !!(d && REGRAS_JUR[chaveNome(d.nome)]?.prec);
 // Garante que todos os nomes da lista do jurídico existam em `obj`, mesmo sem compras
 function garantirNomesJuridico(obj) {
   JURIDICO_NOMES.forEach(nome => {
+    const key = nome.toLowerCase();
+    if (!obj[key]) obj[key] = { nome, creditos: 0, adicionais: 0, volume: 0, linhas: 0 };
+  });
+}
+
+function garantirNomesComercial(obj) {
+  COMERCIAL_NOMES.forEach(nome => {
     const key = nome.toLowerCase();
     if (!obj[key]) obj[key] = { nome, creditos: 0, adicionais: 0, volume: 0, linhas: 0 };
   });
@@ -804,8 +815,9 @@ function processarPlanilha(data) {
     // Comercial
     const nC = row[colC] ? String(row[colC]).trim() : '';
     if (nC) {
-      const key = nC.toLowerCase();
-      if (!comercial[key]) comercial[key]={nome:cap(nC),creditos:0,adicionais:0,volume:0,linhas:0};
+      const fixo = COMERCIAL_NOMES.find(n => semAcento(n) === semAcento(nC));   // "Barbara" → "Bárbara"
+      const key = (fixo || nC).toLowerCase();
+      if (!comercial[key]) comercial[key]={nome:fixo || cap(nC),creditos:0,adicionais:0,volume:0,linhas:0};
       comercial[key].creditos  += creditos;
       comercial[key].adicionais+= adicional;
       comercial[key].volume    += valor;
@@ -850,6 +862,7 @@ function processarPlanilha(data) {
 
   // Garantir que todos os nomes do jurídico aparecem, mesmo sem compras
   garantirNomesJuridico(juridico);
+  garantirNomesComercial(comercial);
 
   // Competência: mês mais frequente entre as linhas PAGO
   let mesRef = null, maxLinhas = 0;
