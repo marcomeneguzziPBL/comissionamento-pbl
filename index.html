@@ -2249,7 +2249,48 @@ function carregarSessao(event) {
   reader.readAsText(file);
   event.target.value = '';
 }
+// ── ESCOLHA DE TIMES PARA PDF / EXCEL ─────────────────────────────────────
+const TIMES_EXPORT = ['Comercial', 'Jurídico', ...Object.values(TIMES_PREMIO).map(T => T.label)];
+let _timesExportSel = null;   // lembra a última escolha na sessão da página
+function escolherTimes(titulo, aoConfirmar) {
+  const marcados = new Set(_timesExportSel || TIMES_EXPORT);
+  const bd = document.createElement('div');
+  bd.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
+  bd.innerHTML = `<div style="background:var(--white,#fff);color:var(--tx,#111);border-radius:10px;max-width:380px;width:100%;padding:20px 22px;box-shadow:0 10px 40px rgba(0,0,0,.3);font-size:14px">
+    <div style="font-weight:700;font-size:15px;margin-bottom:4px">${titulo}</div>
+    <div style="font-size:12px;opacity:.7;margin-bottom:12px">Marque os times que devem entrar no arquivo.</div>
+    <label style="display:flex;gap:8px;padding:5px 0;font-weight:600;cursor:pointer"><input type="checkbox" id="exp-todos"> Todos os times</label>
+    <div style="border-top:1px solid rgba(128,128,128,.3);margin:4px 0 6px"></div>
+    ${TIMES_EXPORT.map((t, i) => `<label style="display:flex;gap:8px;padding:4px 0;cursor:pointer"><input type="checkbox" class="exp-time" data-i="${i}"> ${t}</label>`).join('')}
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+      <button type="button" id="exp-cancela" class="btn-pdf">Cancelar</button>
+      <button type="button" id="exp-ok" class="btn-pdf" style="background:var(--g,#0D4A3A);color:#fff">Gerar</button>
+    </div></div>`;
+  document.body.appendChild(bd);
+  const cks = [...bd.querySelectorAll('.exp-time')], todos = bd.querySelector('#exp-todos'), ok = bd.querySelector('#exp-ok');
+  const atualiza = () => {
+    const n = cks.filter(c => c.checked).length;
+    todos.checked = n === cks.length; todos.indeterminate = n > 0 && n < cks.length;
+    ok.disabled = n === 0; ok.style.opacity = n === 0 ? .5 : 1;
+  };
+  cks.forEach(c => { c.checked = marcados.has(TIMES_EXPORT[c.dataset.i]); c.onchange = atualiza; });
+  todos.onchange = () => { cks.forEach(c => c.checked = todos.checked); atualiza(); };
+  atualiza();
+  bd.querySelector('#exp-cancela').onclick = () => bd.remove();
+  bd.onclick = e => { if (e.target === bd) bd.remove(); };
+  ok.onclick = () => {
+    const sel = cks.filter(c => c.checked).map(c => TIMES_EXPORT[c.dataset.i]);
+    _timesExportSel = sel; bd.remove(); aoConfirmar(sel);
+  };
+}
+const sufixoTimes = sel => sel.length === TIMES_EXPORT.length ? '' : '_' + sel.map(t => t.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'-').replace(/[^a-zA-Z0-9-]/g,'')).join('_');
+
 function exportarPDF() {
+  escolherTimes('Exportar PDF', sel => gerarPDF(sel));
+}
+
+function gerarPDF(sel) {
+  const filtrado = sel.length !== TIMES_EXPORT.length;
   if (!confirmarConsistencia('gerar o PDF')) return;
   const mesRef = document.getElementById('mes-ref').textContent || '—';
   const win = window.open('', '_blank');
@@ -2366,23 +2407,36 @@ function exportarPDF() {
   }
 
   // Página de resumo gerencial
-  const resumo = resumoPorTime();
+  const resumoFull = resumoPorTime();
+  const resumo = { ...resumoFull };
+  if (filtrado) {   // só os times escolhidos; % continuam sobre o total geral da empresa
+    resumo.times = resumoFull.times.filter(t => sel.includes(t.label));
+    const nomes = new Set(); resumo.times.forEach(t => t.lista.forEach(x => nomes.add(chaveNome(x.nome))));
+    resumo.pessoasUnicas = nomes.size;
+    resumo.multiFuncao = resumoFull.multiFuncao.filter(n => resumo.times.filter(t => t.lista.some(x => chaveNome(x.nome) === chaveNome(n))).length > 1);
+    resumo.com = resumo.times.reduce((a, t) => a + t.com, 0);
+    resumo.pre = resumo.times.reduce((a, t) => a + t.pre, 0);
+    resumo.total = resumo.com + resumo.pre;
+  }
   const pct = v => fmtPct(v);
   const totG = resumo.total;
+  const totEmpresa = resumoFull.times.reduce((a, t) => a + t.total, 0);   // base dos % (todos os times)
+  const partSel = totEmpresa > 0 ? totG / totEmpresa * 100 : 0;
+  const rotTotal = filtrado ? 'Total dos times selecionados' : 'Total geral';
   const mixCom = totG > 0 ? resumo.com / totG * 100 : 0;
   const mixPre = totG > 0 ? resumo.pre / totG * 100 : 0;
   const media  = resumo.pessoasUnicas > 0 ? totG / resumo.pessoasUnicas : 0;
   const baseLinhas = state.conferencia ? `${fmtN(state.conferencia.linhasPagas)} linhas pagas na planilha` : '';
   html += `<div class="resumo">
     <h2>Resumo gerencial · Remuneração variável</h2>
-    <div class="rsub">Competência: <b>${mesRef}</b>${baseLinhas ? ' · base: ' + baseLinhas : ''} · valores em reais (R$)</div>
+    <div class="rsub">Competência: <b>${mesRef}</b>${filtrado ? ' · times: <b>' + sel.join(', ') + '</b>' : ''}${baseLinhas ? ' · base: ' + baseLinhas : ''} · valores em reais (R$)</div>
 
     <div class="kpis">
-      <div class="kpi kpi-main"><div class="k">Total da remuneração variável</div><div class="v">${fmt(totG)}</div><div class="s">${resumo.pessoasUnicas} pessoas · média ${fmt(media)} por pessoa</div></div>
+      <div class="kpi kpi-main"><div class="k">Total da remuneração variável</div><div class="v">${fmt(totG)}</div><div class="s">${resumo.pessoasUnicas} pessoas · média ${fmt(media)} por pessoa${filtrado ? ' · ' + pct(partSel) + ' do total da empresa' : ''}</div></div>
       <div class="kpi"><div class="k">Comissões</div><div class="v">${fmt(resumo.com)}</div><div class="s">${pct(mixCom)} do total</div></div>
       <div class="kpi"><div class="k">Prêmios</div><div class="v">${fmt(resumo.pre)}</div><div class="s">${pct(mixPre)} do total</div></div>
       <div class="kpi"><div class="k">Volume total (PAGO)</div><div class="v">${fmt(resumo.volume)}</div><div class="s">compras pagas no mês</div></div>
-      <div class="kpi"><div class="k">Remuneração ÷ volume</div><div class="v">${resumo.volume > 0 ? pct(totG / resumo.volume * 100) : '—'}</div><div class="s">custo variável sobre o volume</div></div>
+      ${filtrado ? '' : `<div class="kpi"><div class="k">Remuneração ÷ volume</div><div class="v">${resumo.volume > 0 ? pct(totG / resumo.volume * 100) : '—'}</div><div class="s">custo variável sobre o volume</div></div>`}
     </div>
 
     <div class="rsec">Participação de cada time na remuneração variável</div>
@@ -2393,7 +2447,7 @@ function exportarPDF() {
       <thead><tr><th>Time</th><th>Pessoas</th><th>Comissões</th><th>Prêmios</th><th>Total</th><th>% do total</th></tr></thead>
       <tbody>
         ${resumo.times.map(t => `<tr><td><i class="dot" style="background:${t.cor}"></i>${t.label}</td><td>${t.pessoas}</td><td>${fmt(t.com)}</td><td>${fmt(t.pre)}</td><td>${fmt(t.total)}</td><td><b>${pct(t.part)}</b></td></tr>`).join('')}
-        <tr class="total"><td>Total geral</td><td>${resumo.pessoasUnicas}</td><td>${fmt(resumo.com)}</td><td>${fmt(resumo.pre)}</td><td>${fmt(totG)}</td><td>${totG > 0 ? pct(100) : pct(0)}</td></tr>
+        <tr class="total"><td>${rotTotal}</td><td>${resumo.pessoasUnicas}</td><td>${fmt(resumo.com)}</td><td>${fmt(resumo.pre)}</td><td>${fmt(totG)}</td><td>${filtrado ? pct(partSel) : (totG > 0 ? pct(100) : pct(0))}</td></tr>
       </tbody>
     </table>
     <div class="rnote"><b>Comissões</b>: créditos, adicionais, acordos, inseridos, liquidados e precatório. <b>Prêmios</b>: objetivo de volume, objetivo coletivo, execução, resultado, treinamento e campanha.${resumo.multiFuncao.length ? ` O total de pessoas conta uma vez quem atua em mais de um time (${resumo.multiFuncao.join(', ')}).` : ''}</div>
@@ -2406,28 +2460,28 @@ function exportarPDF() {
       <tbody>
         ${resumo.times.map(t => { const comp = (t.id === 'comercial' || t.id === 'juridico'); return `<tr class="grp"><td><i class="dot" style="background:${t.cor}"></i>${t.label}</td><td>${comp ? fmt(t.volume) : ''}</td><td></td><td>${comp ? fmt(t.com) : ''}</td><td>${fmt(t.pre)}</td><td>${fmt(t.total)}</td><td class="pos">${pct(t.part)}</td></tr>`
           + t.lista.map(x => `<tr class="pes"><td>${x.nome}</td><td>${comp ? fmt(x.volume) : ''}</td><td class="pos">${comp && t.volume > 0 ? pct(x.partVolTime) : ''}</td><td>${comp ? fmt(x.com) : ''}</td><td>${fmt(x.pre)}</td><td>${fmt(x.total)}</td><td class="pos">${pct(x.part)}</td></tr>`).join(''); }).join('')}
-        <tr class="total"><td>Total geral</td><td></td><td></td><td>${fmt(resumo.com)}</td><td>${fmt(resumo.pre)}</td><td>${fmt(totG)}</td><td class="pos">${totG > 0 ? pct(100) : pct(0)}</td></tr>
+        <tr class="total"><td>${rotTotal}</td><td></td><td></td><td>${fmt(resumo.com)}</td><td>${fmt(resumo.pre)}</td><td>${fmt(totG)}</td><td class="pos">${filtrado ? pct(partSel) : (totG > 0 ? pct(100) : pct(0))}</td></tr>
       </tbody>
     </table>
-    <div class="rnote">Subtotal de cada time em destaque. <b>% do volume</b>: sobre o volume do próprio time (Comercial e Jurídico). <b>% da remuneração</b>: sobre a remuneração variável total (todos os times).</div>
-    <div class="rnote obs">${obsComercialJuridico(resumo)}</div>
+    <div class="rnote">Subtotal de cada time em destaque. <b>% do volume</b>: sobre o volume do próprio time (Comercial e Jurídico). <b>% da remuneração</b>: sobre a remuneração variável total (todos os times${filtrado ? ', mesmo neste arquivo parcial' : ''}).</div>
+    ${(!filtrado || (sel.includes('Comercial') && sel.includes('Jurídico'))) ? `<div class="rnote obs">${obsComercialJuridico(resumo)}</div>` : ''}
   </div>`;
 
   const comRem = state.removedComercial;
   const comNomes = Object.keys(state.comercial).filter(k=>!comRem.includes(k)).sort((a,b)=>porNome(state.comercial[a].nome, state.comercial[b].nome));
-  if (comNomes.length) {
+  if (comNomes.length && sel.includes('Comercial')) {
     html += '<div class="team-title">Comercial</div>';
     comNomes.forEach(k => html += pessoaHTML('comercial', k));
   }
 
   const jurRem = state.removedJuridico;
   const jurNomes = Object.keys(state.juridico).filter(k=>!jurRem.includes(k)).sort((a,b)=>porNome(state.juridico[a].nome, state.juridico[b].nome));
-  if (jurNomes.length) {
+  if (jurNomes.length && sel.includes('Jurídico')) {
     html += '<div class="team-title new-page">Jurídico</div>';
     jurNomes.forEach(k => html += pessoaHTML('juridico', k));
   }
 
-  Object.entries(TIMES_PREMIO).forEach(([t, T]) => {
+  Object.entries(TIMES_PREMIO).filter(([t, T]) => sel.includes(T.label)).forEach(([t, T]) => {
     html += `<div class="team-title${T.pdfNovaPagina ? ' new-page' : ''}">${T.label}</div>`;
     T.pessoas.forEach(pe => { html += pessoaHTML(t, pe.key); });
   });
@@ -2837,8 +2891,15 @@ function obsComercialJuridico(resumo) {
 
 // ── EXPORTAR EXCEL (local) ────────────────────────────────────────────────
 function exportarExcel() {
+  escolherTimes('Exportar Excel', sel => gerarExcel(sel));
+}
+
+function gerarExcel(sel) {
+  const filtrado = sel.length !== TIMES_EXPORT.length;
   if (!confirmarConsistencia('exportar o Excel')) return;
-  const { mesRef, headers, rows } = montarRegistro();
+  const reg = montarRegistro();
+  const { mesRef, headers } = reg;
+  const rows = reg.rows.filter(r => sel.includes(r[1]));
   const MOEDA = '"R$" #,##0.00';
   const wb = XLSX.utils.book_new();
 
@@ -2855,9 +2916,18 @@ function exportarExcel() {
   XLSX.utils.book_append_sheet(wb, wsCom, 'Comissões');
 
   const res = resumoPorTime();
+  const totEmpresa = res.total;   // base dos % (todos os times)
+  if (filtrado) {
+    res.times = res.times.filter(t => sel.includes(t.label));
+    const nomes = new Set(); res.times.forEach(t => t.lista.forEach(x => nomes.add(chaveNome(x.nome))));
+    res.pessoasUnicas = nomes.size;
+    res.com = res.times.reduce((a, t) => a + t.com, 0);
+    res.pre = res.times.reduce((a, t) => a + t.pre, 0);
+    res.total = res.com + res.pre;
+  }
   const aoaRes = [['Time','Pessoas','Comissões (R$)','Prêmios (R$)','Total (R$)','% do total'],
     ...res.times.map(t => [t.label, t.pessoas, t.com, t.pre, t.total, t.part / 100]),
-    ['Total geral', res.pessoasUnicas, res.com, res.pre, res.total, res.total > 0 ? 1 : 0],
+    [filtrado ? 'Total dos times selecionados' : 'Total geral', res.pessoasUnicas, res.com, res.pre, res.total, filtrado ? (totEmpresa > 0 ? res.total / totEmpresa : 0) : (res.total > 0 ? 1 : 0)],
     [],
     ['Volume total PAGO (R$)', '', '', '', res.volume],
     ['Total geral ÷ volume', '', '', '', res.volume > 0 ? res.total / res.volume : 0]];
@@ -2892,7 +2962,7 @@ function exportarExcel() {
   }
 
   const arq = mesRef.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_]/g,'');
-  XLSX.writeFile(wb, `comissionamento_pbl_${arq}.xlsx`);
+  XLSX.writeFile(wb, `comissionamento_pbl_${arq}${sufixoTimes(sel)}.xlsx`);
 }
 
 function setStatus(msg,type=''){
